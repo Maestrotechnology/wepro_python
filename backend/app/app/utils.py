@@ -1,0 +1,360 @@
+import datetime
+from app.core.config import settings
+from datetime import datetime
+from app.core.config import settings
+from app.models import *
+import sys
+import math
+from pyfcm import FCMNotification
+import smtplib
+from app.models import *
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+
+import os
+import shutil
+import smtplib
+from email_validator import validate_email, EmailNotValidError
+import tracemalloc
+from email.mime.text import MIMEText
+
+tracemalloc.start()
+
+
+def send_push_notification(db, user_ids, message, data_message=None):
+    android_ids = []
+    ios_ids = []
+
+    get_users = (
+        db.query(ApiTokens.push_device_id, ApiTokens.device_type)
+        .filter(
+            ApiTokens.user_id.in_(user_ids), ApiTokens.status == 1
+        )
+        .all()
+    )
+
+    for notify in get_users:
+        if notify.push_device_id != None:
+            if notify.device_type == 1:
+                android_ids.append(notify.push_device_id)
+            elif notify.device_type == 2:
+                ios_ids.append(notify.push_device_id)
+
+
+    push_service = FCMNotification(
+            api_key="AAAAksKYbd8:APA91bE5SQ5t44lq1rHwvgL6--pWYauetRYV722ClO255j6XVUTHIE3rdo0ZoD8MxTwka9SJEfHQ3q2-2teuXbGSThBpC4Ai0DEgt9lJMWuo8p1ZkBGhVm9dwpWgizT00gpIRmpRa-pc"
+        )
+    message_title = message["msg_title"]
+    message_body = message["msg_body"]
+
+    if android_ids != []:
+        # Android
+        registration_ids = android_ids
+        result = push_service.notify_multiple_devices(
+            registration_ids=registration_ids,
+            message_title=message_title,
+            message_body=message_body,
+            data_message=data_message
+        )
+    if ios_ids != []:
+        # IOS
+        result = push_service.notify_multiple_devices(
+            registration_ids=ios_ids,
+            message_title=message_title,
+            message_body=message_body,
+            data_message=data_message
+        )
+
+
+    return True
+
+
+def get_timer(data):
+    time1 = data.created_at
+    time2 = datetime.now()
+
+    time_difference = (time2 - time1).total_seconds() / 60
+    # hours = time_diff.seconds // 3600
+    # minutes = (time_diff.seconds % 3600) // 60
+    return (f"{int(time_difference)}")
+
+async def send_mail_req_approval(db,receiver_email, message):  # Demo
+
+    from_email = "johnsonkoilraj53@gmail.com"
+    to_email = receiver_email
+    # to_email = receiver_email->set list method
+
+    subject = "Account Approval"
+    body = message
+
+
+    filename = "quotation.pdf"
+
+    addEmailHistory = EmailHistory(
+        from_email=from_email,
+        subject=subject,
+        to_email=receiver_email,
+        status=1,
+        created_at = datetime.now(),
+        message = "send mail for Account Approved"
+
+    )
+    db.add(addEmailHistory)
+    db.commit()
+
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    # msg['To'] = ", ".join(to_email) 
+
+    msg['Subject'] = subject
+    html = """\
+    <html>
+    <head></head>
+    <body>
+        <p>The email was sent from Wepro <br>
+        ---  <b>{message}</b>  ---.
+        </p>
+    </body>
+    </html>
+    """
+
+    html = html.format(message=body) 
+    msg.attach(MIMEText(html, 'html'))
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(from_email, "auwg hwhc mmoe dxrx")
+        server.sendmail(from_email, to_email, msg.as_string())
+    
+    return {"status":1,"msg":"Success"}
+
+async def send_mail(db,receiver_email, message):  # Demo
+    sender_email = "maestronithishraj@gmail.com"
+    receiver_email = receiver_email
+    password = "ycjanameheveewtb"
+
+    msg = MIMEText(message)
+
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = "Otp "
+
+    # msg = str(message)
+    addEmailHistory = EmailHistory(
+        from_email=sender_email,
+        subject="OTP",
+        to_email=receiver_email,
+        status=1,
+        created_at = datetime.now(),
+        message = message
+    )
+    db.add(addEmailHistory)
+    db.commit()
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+    # server = smtplib.SMTP("smtp.gmail.com", 587)
+    # server.ehlo()
+    # server.starttls()
+    # server.login(sender_email, password)
+    # server.sendmail(sender_email, receiver_email, msg)
+    # server.quit()
+
+    return True
+
+
+def file_storage(file_name, f_name):
+
+    base_dir = settings.BASE_UPLOAD_FOLDER+"/file_rk"
+
+    dt = str(int(datetime.utcnow().timestamp()))
+
+    try:
+        os.makedirs(base_dir, mode=0o777, exist_ok=True)
+    except OSError as e:
+        sys.exit("Can't create {dir}: {err}".format(
+            dir=base_dir, err=e))
+
+    output_dir = base_dir + "/"
+
+    filename = file_name.filename
+    # Split file name and extension
+
+    txt = filename[::-1]
+    splitted = txt.split(".", 1)
+    txt1 = splitted[0][::-1]
+    txt2 = splitted[1][::-1]
+
+    files_name = f_name.split(".")
+
+    save_full_path = f'{output_dir}{files_name[0]}{dt}.{txt1}'
+
+    file_exe = f"file_rk/{f_name}{dt}.{txt1}"
+    with open(save_full_path, "wb") as buffer:
+        shutil.copyfileobj(file_name.file, buffer)
+
+    return save_full_path, file_exe
+
+
+def store_file(file):
+
+    base_dir = settings.BASE_UPLOAD_FOLDER+"/upload_files/"
+
+    dt = str(int(datetime.utcnow().timestamp()))
+
+    try:
+        os.makedirs(base_dir, mode=0o777, exist_ok=True)
+    except OSError as e:
+        sys.exit("Can't create {dir}: {err}".format(
+            dir=base_dir, err=e))
+
+    filename = file.filename
+
+    file_properties = filename.split(".")
+
+    file_extension = file_properties[-1]
+
+    file_properties.pop()
+    file_splitted_name = file_properties[0]
+
+    write_path = f"{base_dir}{file_splitted_name}{dt}.{file_extension}"
+    db_path = f"/upload_files/{file_splitted_name}{dt}.{file_extension}"
+
+    with open(write_path, "wb") as new_file:
+        shutil.copyfileobj(file.file, new_file)
+
+    return db_path
+
+
+def pagination(row_count=0, page=1, size=10):
+    current_page_no = page if page >= 1 else 1
+
+    total_pages = math.ceil(row_count / size)
+
+    if current_page_no > total_pages:
+        current_page_no = total_pages
+
+    limit = current_page_no * size
+    offset = limit - size
+
+    if limit > row_count:
+        limit = offset + (row_count % size)
+
+    limit = limit - offset
+
+    if offset < 0:
+        offset = 0
+
+    return [limit, offset]
+
+
+def get_pagination(row_count=0, current_page_no=1, default_page_size=10):
+    current_page_no = current_page_no if current_page_no >= 1 else 1
+
+    total_pages = math.ceil(row_count / default_page_size)
+
+    if current_page_no > total_pages:
+        current_page_no = total_pages
+
+    limit = current_page_no * default_page_size
+    offset = limit - default_page_size
+
+    if limit > row_count:
+        limit = offset + (row_count % default_page_size)
+
+    limit = limit - offset
+
+    if offset < 0:
+        offset = 0
+
+    return [total_pages, offset, limit]
+
+
+def paginate(page, size, data, total):
+    reply = {"items": data, "total": total, "page": page, "size": size}
+    return reply
+
+
+def paginate_for_file_count(page, size, data, total, file_count):
+    reply = {"items": data, "total": total, "page": page,
+             "file_count": file_count, "size": size}
+    return reply
+
+
+# async def send_emails(from_mail, to_mail, subject, message):
+#     conf = ConnectionConfig(
+#         MAIL_USERNAME="emailtomaestro@gmail.com",  # "testmaestromail@gmail.com",
+#         MAIL_PASSWORD="prdwskswxgqlsjqa",  # testmaestro@123",
+#         MAIL_FROM="emailtomaestro@gmail.com",  # from_mail,
+#         MAIL_PORT=587,
+#         MAIL_SERVER="smtp.gmail.com",  # "smtp.gmail.com",
+#         MAIL_FROM_NAME="MConnect",  # from_mail,
+#         MAIL_TLS=True,
+#         MAIL_SSL=False,
+#         VALIDATE_CERTS=True,
+#         USE_CREDENTIALS=True
+#     )
+#     message = MessageSchema(
+#         subject=subject,
+#         recipients=[to_mail],
+#         body=message,
+#     )
+
+#     fm = FastMail(conf)
+#     await fm.send_message(message)
+#     return True
+
+
+def common_date(date, without_time=None):
+
+    datetime = date.strftime("%d-%m-%Y %I:%M:%S")
+
+    if without_time == 1:
+        datetime = date.strftime("%d-%m-%Y")
+    if without_time == 2:
+        datetime = date.strftime("%I:%M:%S")
+
+    return datetime
+
+
+def check(email):
+    try:
+        v = validate_email(email)
+        email = v["email"]
+        return True
+    except EmailNotValidError as e:
+        return False
+
+def convert_tz(time_data, from_zone: str, to_zone: str) -> datetime:
+
+    # METHOD 1: Hardcode zones:
+    # from_zone = tz.gettz('UTC')
+    # to_zone = tz.gettz('Asia/Kolkata')
+
+    from_zn = from_zone.split(' (') if from_zone else None
+    to_zn = to_zone.split(' (') if from_zone else None
+
+    from_zone = tz.gettz(from_zn[0])
+    to_zone = tz.gettz(to_zn[0])
+
+    # METHOD 2: Auto-detect zones:
+    # from_zone = tz.tzutc()
+    # to_zone = tz.tzlocal()
+
+    # utc1 = datetime.utcnow()
+    from_time = time_data
+    if type(time_data) == str:
+        try:
+            from_time = datetime.strptime(time_data, '%Y-%m-%d %H:%M:%S')
+        except:
+            from_time = datetime.strptime(time_data, '%Y-%m-%dT%H:%M:%S')
+    from_time_zone = from_time.replace(tzinfo=from_zone, microsecond=0)
+
+    # Convert time zone
+    to_time = from_time_zone.astimezone(to_zone)
+
+    return to_time.replace(tzinfo=None)
