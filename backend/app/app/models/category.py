@@ -9,6 +9,8 @@ class Category(Base):
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
     title=Column(String(250))
+    seo_url = Column(String(250))
+
     img_alter=Column(String(250))
     img_path = Column(Text)
     sort_order = Column(Integer,comment="category order no")
@@ -22,4 +24,5 @@ class Category(Base):
     createdBy = relationship('User', foreign_keys=[created_by])
     updatedBy = relationship('User', foreign_keys=[updated_by])
     sub_category =relationship("SubCategory",back_populates="category")
+    article =relationship("Article",back_populates="category")
 

@@ -7,6 +7,7 @@ from .media_files import MediaFiles
 from .brand_campaigns import BrandCampaigns
 from .category import Category
 from .sub_category import SubCategory
-from .journal import Journal
-from .journal_files import JournalFiles
+from .article import Article
+from .article_files import ArticleFiles
 from .mail_history import EmailHistory
+from .article_history import ArticleHistory

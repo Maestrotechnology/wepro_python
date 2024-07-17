@@ -6,6 +6,8 @@ from app.db.base_class import Base
 
 class MediaFiles(Base):
 
+    __tablename__ ="media_files"
+
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
     title=Column(String(250))

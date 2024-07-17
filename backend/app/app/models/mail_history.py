@@ -12,11 +12,11 @@ class EmailHistory(Base):
     subject = Column(String(255))
     message = Column(String(255))
     response = Column(String(255))
-    journal_id = Column(Integer,ForeignKey("journal.id"),comment="journal tab id")
+    article_id = Column(Integer,ForeignKey("article.id"),comment="article tab id")
 
     created_at=Column(DateTime)
 
 
     status=Column(TINYINT,comment="-1->delete,1->active,0->inactive")
-    journal=relationship("journal",back_populates="email_history")
-    user=relationship("User",back_populates="email_history")
+    article=relationship("Article",back_populates="email_history")
+    # user=relationship("User",back_populates="email_history")

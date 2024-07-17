@@ -5,12 +5,17 @@ from sqlalchemy.dialects.mysql import TINYINT
 from app.db.base_class import Base
 
 class SubCategory(Base):
+    __tablename__="sub_category"
 
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
+    seo_url = Column(String(250))
+
     title=Column(String(250))
-    alt_img=Column(String(250))
+    img_alter=Column(String(250))
     img_path = Column(Text)
+    sort_order = Column(Integer,comment="sub category order no")
+
     category_id = Column(Integer,ForeignKey("category.id"),comment="category tab id")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
@@ -23,4 +28,5 @@ class SubCategory(Base):
     createdBy = relationship('User', foreign_keys=[created_by])
     updatedBy = relationship('User', foreign_keys=[updated_by])
     category =relationship("Category",back_populates="sub_category")
+    article =relationship("Article",back_populates="sub_category")
 

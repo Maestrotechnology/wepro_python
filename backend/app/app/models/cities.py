@@ -8,8 +8,11 @@ class Cities(Base):
     id=Column(Integer,primary_key=True)
     state_id=Column(Integer,ForeignKey("states.id"))
     name=Column(String(250))
+
+    status=Column(TINYINT,comment="1->active,-1->deleted")
+
     
     states=relationship("States",back_populates="cities")
     user = relationship('User',back_populates="cities")
-    journal = relationship('Journal',back_populates="cities")
+    article = relationship('Article',back_populates="cities")
 

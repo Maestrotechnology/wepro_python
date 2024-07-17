@@ -25,7 +25,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      meta_description:str=Form(None),
                      img_alter:str=Form(None),
                      meta_keywords:str=Form(None),
-                     seo_url:str=Form(None),
+                    #  seo_url:str=Form(None),
                      token:str=Form(...),
                      content_type:int=Form(None,description="1->Ads,2->others"),
                      media_type:int=Form(None,description="1->shorts,2->Video")
@@ -44,7 +44,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
             img_alter = img_alter,
             content_type = content_type,
             meta_description = meta_description,
-            seo_url = seo_url,
+            # seo_url = seo_url,
             meta_keywords = meta_keywords,
             status=1,
             created_at = datetime.now(settings.tz_IN),
@@ -70,7 +70,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      img_alter:str=Form(None),
                      meta_description:str=Form(None),
                      meta_keywords:str=Form(None),
-                     seo_url:str=Form(None),
+                    #  seo_url:str=Form(None),
                      token:str=Form(...)
                      ):
     
@@ -91,7 +91,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
             getMediaFiles.description = description
             getMediaFiles.meta_title = meta_title
             getMediaFiles.meta_description = meta_description
-            getMediaFiles.seo_url = seo_url
+            # getMediaFiles.seo_url = seo_url
             getMediaFiles.meta_keywords = meta_keywords
             getMediaFiles.updated_at = datetime.now(settings.tz_IN)
             getMediaFiles.updated_by = user.id
@@ -137,7 +137,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
                 "description":row.description,
                 "meta_title":row.meta_title,
                 "meta_description":row.meta_description,
-                "seo_url":row.seo_url,
+                # "seo_url":row.seo_url,
                 "img_alter":row.img_alter,
                 "media_type":row.media_type,
                 "content_type":row.content_type,
@@ -182,7 +182,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
             "img_alter":getData.img_alter,
             "meta_title":getData.meta_title,
             "meta_description":getData.meta_description,
-            "seo_url":getData.seo_url,
+            # "seo_url":getData.seo_url,
             "media_type":getData.media_type,
             "content_type":getData.content_type,
             "meta_keywords":getData.meta_keywords,

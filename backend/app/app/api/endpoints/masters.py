@@ -21,7 +21,7 @@ async def createCategory(db:Session = Depends(deps.get_db),
                      title:str=Form(None),
                      description:str=Form(None),
                      img_alter:str=Form(None),
-                     sort_order:str=Form(None),
+                     sort_order:int=Form(None),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
                      ):
@@ -30,6 +30,11 @@ async def createCategory(db:Session = Depends(deps.get_db),
     
     if user:
         if user.user_type in [1,2,3]:
+
+            existTitle = db.query(Category).filter(Category.title==title,Category.status==1).first()
+
+            if existTitle:
+                return {"status":0,"msg":"This Title already used."}
 
             addCategory = Category(
             title = title,
@@ -65,7 +70,7 @@ async def updateCategory(db:Session = Depends(deps.get_db),
                     title:str=Form(None),
                      description:str=Form(None),
                      img_alter:str=Form(None),
-                     sort_order:str=Form(None),
+                     sort_order:int=Form(None),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
                      
@@ -75,6 +80,13 @@ async def updateCategory(db:Session = Depends(deps.get_db),
     
     if user:
         if user.user_type in [1,2]:
+
+            existTitle = db.query(Category).filter(Category.id!=category_id,
+                                                   Category.title==title,Category.status==1).first()
+
+            if existTitle:
+                return {"status":0,"msg":"This Title already used."}
+
 
             getCategory = db.query(Category).filter(Category.id==category_id).first()
 
@@ -215,6 +227,7 @@ async def createSubCategory(db:Session = Depends(deps.get_db),
                      title:str=Form(None),
                      description:str=Form(None),
                      img_alter:str=Form(None),
+                     sort_order:int=Form(None),
                      category_id:int=Form(...),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
@@ -225,9 +238,16 @@ async def createSubCategory(db:Session = Depends(deps.get_db),
     if user:
         if user.user_type in [1,2,3]:
 
+            existTitle = db.query(Category).filter(Category.id!=category_id,
+                                                   Category.title==title,Category.status==1).first()
+
+            if existTitle:
+                return {"status":0,"msg":"This Title already used."}
+
             addSubCategory = SubCategory(
             title = title,
             img_alter = img_alter,
+            sort_order = sort_order,
             description = description,
             category_id = category_id,
             status=1,
@@ -258,6 +278,8 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
                      sub_category_id:int=Form(...),
                     img_alter:str=Form(None),
                     title:str=Form(None),
+                     sort_order:int=Form(None),
+
                      description:str=Form(None),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
@@ -268,6 +290,12 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
     
     if user:
         if user.user_type in [1,2]:
+
+            existTitle = db.query(SubCategory).filter(SubCategory.id!=sub_category_id,
+                                                   SubCategory.title==title,SubCategory.status==1).first()
+
+            if existTitle:
+                return {"status":0,"msg":"This Title already used."}
 
             getSubCategory = db.query(SubCategory).filter(SubCategory.id==sub_category_id).first()
 
@@ -284,6 +312,7 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
                 db.commit()
             
             getSubCategory.img_alter = img_alter
+            getSubCategory.sort_order = sort_order
             getSubCategory.title = title
             getSubCategory.description = description
             getSubCategory.updated_at = datetime.now(settings.tz_IN)

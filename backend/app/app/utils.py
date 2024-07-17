@@ -73,20 +73,20 @@ def send_push_notification(db, user_ids, message, data_message=None):
 
 def get_timer(data):
     time1 = data.created_at
-    time2 = datetime.now()
+    time2 = datetime.now(settings.tz_IN)
 
     time_difference = (time2 - time1).total_seconds() / 60
     # hours = time_diff.seconds // 3600
     # minutes = (time_diff.seconds % 3600) // 60
     return (f"{int(time_difference)}")
 
-async def send_mail_req_approval(db,receiver_email, message):  # Demo
+async def send_mail_req_approval(db,subject,receiver_email, message):  # Demo
 
     from_email = "johnsonkoilraj53@gmail.com"
     to_email = receiver_email
     # to_email = receiver_email->set list method
 
-    subject = "Account Approval"
+    subject = subject
     body = message
 
 
@@ -97,8 +97,8 @@ async def send_mail_req_approval(db,receiver_email, message):  # Demo
         subject=subject,
         to_email=receiver_email,
         status=1,
-        created_at = datetime.now(),
-        message = "send mail for Account Approved"
+        created_at = datetime.now(settings.tz_IN),
+        message =message
 
     )
     db.add(addEmailHistory)
@@ -126,15 +126,15 @@ async def send_mail_req_approval(db,receiver_email, message):  # Demo
 
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
-        server.login(from_email, "auwg hwhc mmoe dxrx")
+        server.login(from_email, "eelj txyx kive laag")
         server.sendmail(from_email, to_email, msg.as_string())
     
     return {"status":1,"msg":"Success"}
 
 async def send_mail(db,receiver_email, message):  # Demo
-    sender_email = "maestronithishraj@gmail.com"
+    sender_email = "johnsonkoilraj53@gmail.com"
     receiver_email = receiver_email
-    password = "ycjanameheveewtb"
+    password = "eelj txyx kive laag"
 
     msg = MIMEText(message)
 
@@ -148,7 +148,7 @@ async def send_mail(db,receiver_email, message):  # Demo
         subject="OTP",
         to_email=receiver_email,
         status=1,
-        created_at = datetime.now(),
+        created_at = datetime.now(settings.tz_IN),
         message = message
     )
     db.add(addEmailHistory)

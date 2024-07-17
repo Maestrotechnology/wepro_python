@@ -19,11 +19,11 @@ router = APIRouter()
 async def createBrandCampaigns(db:Session = Depends(deps.get_db),
                      title:str=Form(None),
                      description:str=Form(None),
-                     sort_order:str=Form(None),
+                     sort_order:int=Form(None),
                      brand_url:str=Form(None),
                      img_alter:str=Form(None),
                      token:str=Form(...),
-                     media_type:int=Form(None,description="1->shorts,-1->Video"),
+                     media_type:int=Form(None,description="1->image,2-gif"),
                      media_file:Optional[UploadFile] = File(None),
                      ):
     
@@ -67,11 +67,11 @@ async def updateBrandCampaigns(db:Session = Depends(deps.get_db),
                      brand_campaigns_id:int=Form(...),
                     title:str=Form(None),
                      description:str=Form(None),
-                     sort_order:str=Form(None),
+                     sort_order:int=Form(None),
                      brand_url:str=Form(None),
                      img_alter:str=Form(None),
                      token:str=Form(...),
-                     media_type:int=Form(None,description="1->shorts,-1->Video"),
+                     media_type:int=Form(None,description="1->image,-1->gif"),
                      media_file:Optional[UploadFile] = File(None),
                      
                      ):

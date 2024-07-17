@@ -6,6 +6,8 @@ from app.db.base_class import Base
 
 class BrandCampaigns(Base):
 
+    __tablename__ = "brand_campaigns"
+
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
     title=Column(String(250))

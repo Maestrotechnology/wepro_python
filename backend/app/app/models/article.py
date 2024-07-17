@@ -1,24 +1,28 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, Integer,ForeignKey,DECIMAL,Text,DateTime,String
+from sqlalchemy import Column, Integer,ForeignKey,DECIMAL,Text,DateTime,String,Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
 from app.db.base_class import Base
 
-class Journal(Base):
+class Article(Base):
 
     id=Column(Integer,primary_key=True)
     content=Column(String(250))
     topic=Column(String(250))
+    description=Column(String(250))
+    topics=Column(String(250))
     meta_title = Column(String(250))
     meta_description = Column(String(250))
     meta_keywords = Column(String(250))
+    submition_date = Column(Date)
     seo_url = Column(String(250))
     state_id = Column(Integer,ForeignKey("states.id")) 
     city_id = Column(Integer,ForeignKey("cities.id")) 
-    media_path = Column(String(500))
+    category_id = Column(Integer,ForeignKey("category.id")) 
+    sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
     comment = Column(String(500))
-    topic_approved = Column(TINYINT,comment="0->waiting,1->SE approved,2-CE Approved")
-    content_approved = Column(TINYINT,comment="0->waiting,1->SE approved,2-CE Approved")
+    topic_approved = Column(TINYINT,comment="0->new,1->SE approved,2-CE Approved,3-On Hold")
+    content_approved = Column(TINYINT,comment="0->new,1->SE approved,2-CE Approved,3-On Hold")
     is_journalist = Column(TINYINT,comment="1-yes")
     sub_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
     chief_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
@@ -34,8 +38,13 @@ class Journal(Base):
     subEditerUser = relationship('User', foreign_keys=[sub_editor_id])
     chiefEditerUser = relationship('User', foreign_keys=[chief_editor_id])
     updatedBy = relationship('User', foreign_keys=[updated_by])
-    cities=relationship("Cities",back_populates="journal")
-    states=relationship("States",back_populates="journal")
-    journal_files=relationship("JournalFiles",back_populates="journal")
-    email_history=relationship("EmailHistory",back_populates="journal")
+    cities=relationship("Cities",back_populates="article")
+    states=relationship("States",back_populates="article")
+    article_files=relationship("ArticleFiles",back_populates="article")
+    email_history=relationship("EmailHistory",back_populates="article")
+    article_history=relationship("ArticleHistory",back_populates="article")
+    category=relationship("Category",back_populates="article")
+    sub_category=relationship("SubCategory",back_populates="article")
+
+
 

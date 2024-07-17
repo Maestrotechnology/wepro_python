@@ -11,6 +11,6 @@ class States(Base):
 
     cities=relationship("Cities",back_populates="states")
     user = relationship('User',back_populates='states')
-    journal = relationship('Journal',back_populates='states')
+    article = relationship('Article',back_populates='states')
 
 

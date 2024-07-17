@@ -36,8 +36,7 @@ async def userDropdown(db:Session=Depends(deps.get_db),
 
             if user_type :
                 getUser = getUser.filter(User.user_type == user_type)
-            else:
-                getUser = getUser.filter(User.user_type == 4)
+
             
             getUser = getUser.order_by(User.name.asc()).all()
 
@@ -76,7 +75,7 @@ async def stateDropDown(db:Session = Depends(deps.get_db),
 
 @router.post("/city_dropdown")
 async def cityDropDown(db:Session = Depends(deps.get_db),
-                           token:str=Form(...),stateId:int=Form(None),district_id:int=Form(None)):
+                           token:str=Form(...),stateId:int=Form(None)):
     user = deps.get_user_token(db=db,token =token)
     if user:
         getAllCity = db.query(Cities).filter(Cities.status==1)

@@ -28,8 +28,8 @@ class User(Base):
     pincode = Column(String(10))
     password = Column(String(255))
     is_active = Column(TINYINT,comment = "1->active,0->inactive")
-    image_path =Column(String(255))
-    alt_image = Column(String(255))
+    img_path =Column(String(255))
+    img_alter = Column(String(255))
     reset_key=Column(String(255))
     otp = Column(String(10))
     resume_path = Column(Text)
@@ -41,13 +41,12 @@ class User(Base):
     status=Column(TINYINT,comment="-1->delete,1->active,0->inactive")
 
     api_tokens=relationship("ApiTokens",back_populates="user")
+    article_files=relationship("ArticleFiles",back_populates="user")
     cities=relationship("Cities",back_populates="user")
     states=relationship("States",back_populates="user")
-    advertisement=relationship("Advertisement",back_populates="user")
     journalist_approved_by = relationship('User', foreign_keys=[approved_by])
     user_acc_created_by = relationship('User', foreign_keys=[created_by])
     user_acc_updated_by = relationship('User', foreign_keys=[updated_by])
-    email_history = relationship('EmailHistory', back_populates="user")
 
     
 

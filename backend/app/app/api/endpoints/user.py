@@ -32,8 +32,10 @@ async def createUser(db:Session = Depends(deps.get_db),
                      ifsc_code:str=Form(None),
                      branch:str=Form(None),
                      state_id:int=Form(None),
-                     alternative_no:str=Form(...),
+                     alternative_no:str=Form(None),
                      resume_file:Optional[UploadFile] = File(None),
+                     img_path:Optional[UploadFile] = File(None),
+                    #  alt_img:str=Form(None),
                      city_id:int=Form(None),
                      password:str=Form(...),
                      user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6->Digital Marketing strategist,7-journalist,8-Member")
@@ -109,6 +111,15 @@ async def createUser(db:Session = Depends(deps.get_db),
 
                 db.commit()
 
+            if img_path:
+
+                uploadedFile = img_path.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(img_path,fName)
+                createUsers.img_path = returnFilePath
+
+                db.commit()
+
             return {"status":1,"msg":"User created successfully."}
         else:
             return {'status':0,"msg":"You are not authenticated to create a user."}
@@ -127,6 +138,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      dob:date=Form(...),
                      email:str=Form(...),
                      whatsapp_no:str=Form(None),
+                     img_path:Optional[UploadFile] = File(None),
+
                      account_number:str=Form(None),
                      bank:str=Form(None),
                      ifsc_code:str=Form(None),
@@ -211,6 +224,16 @@ async def updateUser (db:Session=Depends(deps.get_db),
                     fName,*etn = uploadedFile.split(".")
                     filePath,returnFilePath = file_storage(resume_file,fName)
                     checkUserId.resume_path = returnFilePath
+
+                
+            if img_path:
+
+                uploadedFile = img_path.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(img_path,fName)
+                checkUserId.img_path = returnFilePath
+
+                db.commit()
 
                 return {"status":1,"msg":"User successfully updated."}
             else:
@@ -321,7 +344,8 @@ async def viewUser(db:Session=Depends(deps.get_db),
                 "branch":getUser.branch,
                 "user_status":getUser.is_active,
                 "user_type":getUser.user_type,
-                "resume_path":f'{settings.BASE_DOMAIN}{getUser.resume_path}'
+                "resume_path":f'{settings.BASE_DOMAIN}{getUser.resume_path}',
+                "img_path":f'{settings.BASE_DOMAIN}{getUser.img_path}'
 
             }
             return {"status":1,"msg":"Success.","data":data}
@@ -373,7 +397,7 @@ async def activeInactiveUser(db:Session=Depends(deps.get_db),
 @router.post("/change_journalist_request")
 async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                              token:str=Form(...),user_id:int=Form(...),
-                             approval_status:int=Form(...,description="1->approved,-1->Rejected")):
+                             approval_status:int=Form(...,description="1->Interview Process,2-Approved,-1->Rejected")):
     user = deps.get_user_token(db=db,token=token)
     if user:
         if user.user_type in [1,2,3]:
@@ -383,20 +407,24 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
             getUser.approved_by=user.id
             db.commit()
             message ="Success."
-            if approval_status ==1:
+            if approval_status ==2:
                 message ="Journalist account creation request successfully approved."
 
-                sendNotifyEmail = await send_mail_req_approval(db=db,
-                    receiver_email=getUser.email,
-                    message="--",
-                    # attachment_path=attachmentPath
-                )
-                if sendNotifyEmail["status"] != 1:
-                    return {"status": 1, "msg": "Account approved ,But Failed to send email"}
-            # if approval_status ==0:
-            #     message ="Journalist Account Approved."
+            if approval_status ==1:
+                message ="You're now in the interview process. Once it's complete, you'll be approved."
+
             if approval_status ==-1:
                 message ="Journalist account creation request successfully Rejected."
+
+            approvalSts = ["-","Interview Process","Approved","Rejected"]
+            subject = f"Jouranl Account {approvalSts[approval_status]}"
+            sendNotifyEmail = await send_mail_req_approval(db=db,
+                receiver_email=getUser.email,subject=subject,
+                message=message,
+            )
+
+            # if sendNotifyEmail["status"] != 1:
+            #     return {"status": 1, "msg": "Failed to send email"}
 
             return {"status":1,"msg":message}
         else:
@@ -404,3 +432,55 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
     else:
         return {'status':-1,"msg":"Your login session expires.Please login again."}
     
+
+
+@router.post("/list_email_history")
+async def listEmailHistory(db:Session =Depends(deps.get_db),
+                   token:str=Form(...),page:int=1,
+                   size:int=10,
+                   to_email:str=Form(None),
+                   subject:str=Form(None),
+                   article_id:int=Form(None),
+                   ):
+    user = deps.get_user_token(db=db,token=token)
+
+    if user:
+        if user:
+            
+            getAllEmailHistory = db.query(EmailHistory).filter(EmailHistory.to_email == to_email,EmailHistory.status==1)
+
+            if subject:
+                getAllEmailHistory = getAllEmailHistory.filter(EmailHistory.subject.like("%"+subject+"%") )
+            if article_id:
+                getAllEmailHistory = getAllEmailHistory.filter(EmailHistory.article_id == article_id)
+            
+            getAllEmailHistory = getAllEmailHistory.order_by(EmailHistory.name.asc())
+            
+            userCount = getAllEmailHistory.count()
+            totalPages,offset,limit = get_pagination(userCount,page,size)
+            getAllEmailHistory = getAllEmailHistory.limit(limit).offset(offset).all()
+            
+            dataList = []
+            if getAllEmailHistory:
+                for history in getAllEmailHistory:
+                    dataList.append(
+                        {
+                            "email_history_id":history.id,
+                            "from_email":history.from_email,
+                            "to_email":history.to_email,
+                            "subject":history.subject,
+                            "message":history.message,
+                            "article_id":history.article_id,
+                            "created_at":history.created_at
+                        }
+                    )
+            data=({"page":page,"size":size,
+                    "total_page":totalPages,
+                    "total_count":userCount,
+                    "items":dataList})
+            
+            return ({"status":1,"msg":"Success.","data":data})
+        else:
+            return {"status":0,"msg":"You are not authenticated to see the user details."}
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
