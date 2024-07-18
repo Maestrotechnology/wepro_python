@@ -90,7 +90,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                 address = address,
                 state_id = state_id,
                 city_id = city_id,
-                approval_status =1 if user_type==7 else None,
+                is_request =2 if user_type==7 else None,
                 # approved_by =user.id if user_type==7 else None,
                 password =  get_password_hash(password),
                 is_active = 1,
@@ -132,7 +132,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      user_id:int=Form(None),
                      user_name:str=Form(...),
                      phone:str=Form(...),
-                     alternative_no:str=Form(...),
+                     alternative_no:str=Form(None),
                      address:str=Form(...),
                      pincode:str=Form(...),
                      dob:date=Form(...),
@@ -152,6 +152,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     if user:
         if user:
+     
             if user_id and user.user_type not in [1,2,3]:
                 return {"status":0,"msg":"You're not allowed to update the user."}
             elif not user_id:
@@ -235,9 +236,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
 
                 db.commit()
 
-                return {"status":1,"msg":"User successfully updated."}
-            else:
-                return {"status":0,"msg":"Invalid user."}
+            return {"status":1,"msg":"User successfully updated."}
+          
         else:
             return {"status":0,"msg":"You are not authenticated to modify any users."}
     else:
@@ -249,7 +249,8 @@ async def listUser(db:Session =Depends(deps.get_db),
                    size:int=10,phone:str=Form(None),
                    user_type:int=Form(...,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6->Digital Marketing strategist,7-journalist,8-Member"),
                    email:str=Form(None),state_id:int=Form(None),city_id:int=Form(None),
-                   user_name:str=Form(None)
+                   name:str=Form(None),
+                   application_status:int=Form(None,description="0->Request,1-interview process,-1 ->rejected")
                    ):
     user = deps.get_user_token(db=db,token=token)
 
@@ -258,17 +259,30 @@ async def listUser(db:Session =Depends(deps.get_db),
             
             getAllUser = db.query(User).filter(User.user_type == user_type,User.status==1)
 
+            if user_type==7 and (application_status!=0 and not application_status):
+                getAllUser = getAllUser.filter(User.is_request == 2)
+
             if phone:
-                getAllUser = getAllUser.filter(User.phone.like("%"+phone+"%") )
+                getAllUser = getAllUser.filter(User.phone== phone )
             if email:
                 getAllUser = getAllUser.filter(User.email == email)
             if state_id:
                 getAllUser = getAllUser.filter(User.state_id == state_id)
             if city_id:
                 getAllUser = getAllUser.filter(User.city_id == city_id)
-            if user_name:
-                getAllUser = getAllUser.filter(User.name.like("%"+user_name+"%"))
-            
+            if name:
+                getAllUser = getAllUser.filter(User.name.like("%"+name+"%"))
+
+            journalistReq = 0
+
+            if application_status==0 or application_status:
+                getAllUser = getAllUser.filter(User.is_request == application_status)
+      
+
+            if user.user_type in [1,2,3]:
+                getJournalReq=db.query(User).filter(User.user_type == 7,User.status==1,User.is_request==0).count()
+                journalistReq = getJournalReq
+
             getAllUser = getAllUser.order_by(User.name.asc())
             
             userCount = getAllUser.count()
@@ -288,9 +302,10 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "phone":userData.phone,
                             "whatsapp_no":userData.whatsapp_no,
                             "email":userData.email,
+                            "dob":userData.dob,
                             "city_id":userData.city_id,
                             "city_name":userData.cities.name if userData.city_id else None,
-                            "city_id":userData.city_id,
+                            "state_id":userData.state_id,
                             "state_name":userData.states.name if userData.state_id else None,
                             "pincode":userData.pincode,
                             "account_number":userData.account_number,
@@ -302,7 +317,8 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "user_type_name": userTypeData[userData.user_type],
                         }
                     )
-            data=({"page":page,"size":size,
+            data=({"journalist_req_count":journalistReq,
+                   "page":page,"size":size,
                     "total_page":totalPages,
                     "total_count":userCount,
                     "items":dataList})
@@ -332,10 +348,11 @@ async def viewUser(db:Session=Depends(deps.get_db),
                 "address":getUser.address,
                 "phone":getUser.phone,
                 "whatsapp_no":getUser.whatsapp_no,
+                "dob":getUser.dob,
                 "email":getUser.email,
                 "city_id":getUser.city_id,
                 "city_name":getUser.cities.name if getUser.city_id else None,
-                "city_id":getUser.city_id,
+                "state_id":getUser.state_id,
                 "state_name":getUser.states.name if getUser.state_id else None,
                 "pincode":getUser.pincode,
                 "account_number":getUser.account_number,
@@ -403,7 +420,7 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
         if user.user_type in [1,2,3]:
             getUser = db.query(User).filter(User.id == user_id,
                                             User.status == 1).first()
-            getUser.approval_status=approval_status
+            getUser.is_request=approval_status
             getUser.approved_by=user.id
             db.commit()
             message ="Success."
@@ -426,7 +443,7 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
             # if sendNotifyEmail["status"] != 1:
             #     return {"status": 1, "msg": "Failed to send email"}
 
-            return {"status":1,"msg":message}
+            return {"status":1,"msg":"success"}
         else:
             return {'status':0,"msg":"You are not authenticated to change status of any user"}
     else:

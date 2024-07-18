@@ -21,6 +21,7 @@ async def createCategory(db:Session = Depends(deps.get_db),
                      title:str=Form(None),
                      description:str=Form(None),
                      img_alter:str=Form(None),
+                     seo_url:str=Form(None),
                      sort_order:int=Form(None),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
@@ -39,6 +40,7 @@ async def createCategory(db:Session = Depends(deps.get_db),
             addCategory = Category(
             title = title,
             img_alter = img_alter,
+            seo_url = seo_url,
             description = description,
             sort_order = sort_order,
             status=1,
@@ -70,6 +72,7 @@ async def updateCategory(db:Session = Depends(deps.get_db),
                     title:str=Form(None),
                      description:str=Form(None),
                      img_alter:str=Form(None),
+                     seo_url:str=Form(None),
                      sort_order:int=Form(None),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
@@ -103,6 +106,7 @@ async def updateCategory(db:Session = Depends(deps.get_db),
                 db.commit()
             
             getCategory.title = title
+            getCategory.seo_url = seo_url
             getCategory.img_alter = img_alter
             getCategory.description = description
             getCategory.sort_order = sort_order
@@ -145,6 +149,7 @@ async def listCategory(db:Session =Depends(deps.get_db),
                     dataList.append({
                 "category_id":row.id,
                 "title":row.title,
+                "seo_url":row.seo_url,
                 "description":row.description,
                 "img_path":f"{settings.BASE_DOMAIN}{row.img_path}",
                 "img_alter":row.img_alter,
@@ -184,6 +189,7 @@ async def viewCategory(db:Session =Depends(deps.get_db),
         data={
             "category_id":getCategory.id,
             "title":getCategory.title,
+            "seo_url":getCategory.seo_url,
             "description":getCategory.description,
             "img_alter":getCategory.img_alter,
             "sort_order":getCategory.sort_order,

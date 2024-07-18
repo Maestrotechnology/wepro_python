@@ -27,14 +27,14 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      meta_keywords:str=Form(None),
                     #  seo_url:str=Form(None),
                      token:str=Form(...),
-                     content_type:int=Form(None,description="1->Ads,2->others"),
-                     media_type:int=Form(None,description="1->shorts,2->Video")
+                     content_type:int=Form(None,description="1->Ads,2->banners"),
+                     media_type:int=Form(None,description="1->img,2-shorts,3->Video")
                      ):
     
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,3]:
+        if user.user_type in [1,2,6]:
 
             addCsmSettings = MediaFiles(media_url = media_url,
             title = title,
@@ -77,7 +77,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2]:
+        if user.user_type in [1,2,6]:
 
             getMediaFiles = db.query(MediaFiles).filter(MediaFiles.id==media_files_id).first()
 
@@ -203,7 +203,7 @@ async def deleteMediaFiles(db:Session=Depends(deps.get_db),
                      media_files_id:int=Form(...)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2,3] :
+        if user.user_type in [1,2,6] :
             getMediaFiles = db.query(MediaFiles).filter(MediaFiles.id == media_files_id,
                                             MediaFiles.status == 1)
             

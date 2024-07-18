@@ -19,7 +19,7 @@ class User(Base):
     bank = Column(String(255))
     ifsc_code = Column(String(255))
     branch = Column(String(500))
-    approval_status =Column(TINYINT,comment = "1->Accepted,0->Request,-1 ->rejected")
+    is_request =Column(TINYINT,comment = "1->Interview Process,2->Accepted,0->Request,-1 ->rejected")
     state_id = Column(Integer,ForeignKey("states.id")) 
     city_id = Column(Integer,ForeignKey("cities.id")) 
     approved_by = Column(Integer,ForeignKey("user.id")) 

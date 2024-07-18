@@ -18,8 +18,8 @@ class MediaFiles(Base):
     img_alter = Column(String(255))
     # file_path = Column(String(500))
     # default_img_path = Column(String(500))
-    content_type = Column(TINYINT,comment="1->Advertisement,2->others")
-    media_type=Column(TINYINT,comment="1->shorts,2->Video")
+    content_type = Column(TINYINT,comment="1->Advertisement,2->Banners")
+    media_type=Column(TINYINT,comment="1->images,2-shorts,3->Video")
     media_url = Column(String(500))
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
