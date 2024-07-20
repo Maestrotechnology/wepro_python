@@ -18,11 +18,11 @@ router = APIRouter()
 
 @router.post("/create_category")
 async def createCategory(db:Session = Depends(deps.get_db),
-                     title:str=Form(None),
-                     description:str=Form(None),
-                     img_alter:str=Form(None),
+                     title:str=Form(...),
+                     description:str=Form(...),
+                     img_alter:str=Form(...),
                      seo_url:str=Form(None),
-                     sort_order:int=Form(None),
+                     sort_order:int=Form(...),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
                      ):
@@ -69,11 +69,11 @@ async def createCategory(db:Session = Depends(deps.get_db),
 @router.post("/update_category")
 async def updateCategory(db:Session = Depends(deps.get_db),
                      category_id:int=Form(...),
-                    title:str=Form(None),
-                     description:str=Form(None),
-                     img_alter:str=Form(None),
+                    title:str=Form(...),
+                     description:str=Form(...),
+                     img_alter:str=Form(...),
                      seo_url:str=Form(None),
-                     sort_order:int=Form(None),
+                     sort_order:int=Form(...),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
                      

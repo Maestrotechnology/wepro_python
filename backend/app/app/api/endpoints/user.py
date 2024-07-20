@@ -14,9 +14,6 @@ from typing import List, Optional,Dict
 
 router = APIRouter()
 
-
-
-
 @router.post("/create_user")
 async def createUser(db:Session = Depends(deps.get_db),
                      token:str = Form(...),name:str = Form(...),
@@ -414,7 +411,8 @@ async def activeInactiveUser(db:Session=Depends(deps.get_db),
 @router.post("/change_journalist_request")
 async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                              token:str=Form(...),user_id:int=Form(...),
-                             approval_status:int=Form(...,description="1->Interview Process,2-Approved,-1->Rejected")):
+                             approval_status:int=Form(...,description="1->Interview Process,2-Approved,-1->Rejected"),
+                             comment:str=Form(None)):
     user = deps.get_user_token(db=db,token=token)
     if user:
         if user.user_type in [1,2,3]:
@@ -423,22 +421,39 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
             getUser.is_request=approval_status
             getUser.approved_by=user.id
             db.commit()
-            message ="Success."
-            if approval_status ==2:
-                message ="Journalist account creation request successfully approved."
 
-            if approval_status ==1:
-                message ="You're now in the interview process. Once it's complete, you'll be approved."
+            message =comment
 
-            if approval_status ==-1:
-                message ="Journalist account creation request successfully Rejected."
+            if approval_status ==2 and not comment:
+                
+                message = (
+                    "Congratulations! Your request for journalist account creation has been successfully approved. "
+                    "You can now proceed with accessing the platform and utilizing the available resources. "
+                    "If you have any questions or need further assistance, please don't hesitate to reach out."
+                )
+
+            if approval_status ==1 and not comment:
+
+                message = (
+                    "Your application is currently under review as part of the interview process. "
+                    "We will keep you updated on the progress and notify you once the review is complete. "
+                    "Thank you for your patience, and please feel free to contact us if you have any questions."
+                )
+
+            if approval_status ==-1 and not comment:
+                message = (
+                    "We regret to inform you that your request for journalist account creation has been rejected. "
+                    "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
+                    "please contact us for more details."
+                )
 
             approvalSts = ["-","Interview Process","Approved","Rejected"]
-            subject = f"Jouranl Account {approvalSts[approval_status]}"
-            sendNotifyEmail = await send_mail_req_approval(db=db,
-                receiver_email=getUser.email,subject=subject,
+            subject = f"Journalist Account {approvalSts[approval_status]}"
+            sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,ref_id=getUser.id,
+                receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
                 message=message,
             )
+            print(sendNotifyEmail)
 
             # if sendNotifyEmail["status"] != 1:
             #     return {"status": 1, "msg": "Failed to send email"}
@@ -458,6 +473,7 @@ async def listEmailHistory(db:Session =Depends(deps.get_db),
                    to_email:str=Form(None),
                    subject:str=Form(None),
                    article_id:int=Form(None),
+                   email_type:int=Form(None),
                    ):
     user = deps.get_user_token(db=db,token=token)
 
@@ -470,6 +486,9 @@ async def listEmailHistory(db:Session =Depends(deps.get_db),
                 getAllEmailHistory = getAllEmailHistory.filter(EmailHistory.subject.like("%"+subject+"%") )
             if article_id:
                 getAllEmailHistory = getAllEmailHistory.filter(EmailHistory.article_id == article_id)
+
+            if email_type:
+                getAllEmailHistory = getAllEmailHistory.filter(EmailHistory.email_type == email_type)
             
             getAllEmailHistory = getAllEmailHistory.order_by(EmailHistory.name.asc())
             

@@ -44,6 +44,7 @@ class User(Base):
     article_files=relationship("ArticleFiles",back_populates="user")
     cities=relationship("Cities",back_populates="user")
     states=relationship("States",back_populates="user")
+    email_history=relationship("EmailHistory",back_populates="user")
     journalist_approved_by = relationship('User', foreign_keys=[approved_by])
     user_acc_created_by = relationship('User', foreign_keys=[created_by])
     user_acc_updated_by = relationship('User', foreign_keys=[updated_by])

@@ -208,7 +208,7 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
                 otp_valid_upto) = deps.get_otp()
         
             otp="123456"
-            message = f'''Your OTP for Forget Password is : {otp}'''
+            message = f''' OTP for forgetting your password is: {otp}'''
             reset_key = f'{reset}{checkUser.id}DTEKRNSSHPT'
     
             user = user.update({'otp': otp,
@@ -217,7 +217,10 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
             db.commit()
 
             try:
-                send = await send_mail(db,receiver_email = checkUser.email,
+                send = await send_mail_req_approval(db,email_type=4,ref_id=checkUser.id,
+                                                    subject="Forget Password",
+                                                    journalistName=checkUser.name,
+                                                    receiver_email = checkUser.email,
                                        message = message)
                 return ({'status': 1,'reset_key': reset_key,
                         'msg': 
@@ -272,7 +275,7 @@ async def resendOtp(db:Session = Depends(deps.get_db),
             expire_time, expire_at,
                 otp_valid_upto) = deps.get_otp()
         otp="123456"
-        message = f'''Your OTP for Reset Password is : {otp}'''
+        message = f'''Your OTP for Reseting your Password is : {otp}'''
         reset_key = f'{reset}{getUser.id}DTEKRNSSHPT'
 
         getUser.otp = otp
@@ -282,8 +285,12 @@ async def resendOtp(db:Session = Depends(deps.get_db),
         db.commit()
 
         try:
-            send = await send_mail(db,receiver_email = getUser.email,
-                                    message = message)
+            send = await send_mail_req_approval(db,email_type=4,ref_id=getUser.id,
+                                                    subject="Reset Password",
+                                                    journalistName=getUser.name,
+                                                    receiver_email = getUser.email,
+                                       message = message)
+        
             return ({'status': 1,'reset_key': reset_key,
                     'msg': 
                     f'An OTP message has been sent to {getUser.email}.',

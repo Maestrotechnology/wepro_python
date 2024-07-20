@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #007bff;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 4px solid #0056b3;
+        }
+        .header img {
+            max-width: 120px;
+            height: auto;
+        }
+        .content {
+            padding: 20px 30px;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+        }
+        .content p {
+            margin: 0 0 20px;
+        }
+        .message {
+            text-indent: 20px;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            padding: 10px;
+            font-size: 12px;
+            background-color: #f4f4f4;
+            border-top: 1px solid #ddd;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+            }
+            .header, .content, .footer {
+                padding: 15px !important;
+            }
+            .content {
+                font-size: 14px !important;
+            }
+            .footer {
+                font-size: 10px !important;
+            }
+        }
+        @media only screen and (max-width: 400px) {
+            .content {
+                font-size: 12px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="http://35.154.143.177/rk.jpg" alt="WePRO">
+            <!-- <h1>{{ project_name }}</h1> -->
+        </div>
+        <div class="content">
+            <p>Hi {{ name }},</p>
+            <p class="message">{{ message }}</p>
+            <p>Regards,<br>WePRO Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{ current_year }} WePRO. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

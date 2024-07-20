@@ -12,13 +12,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-
+from jinja2 import Environment, FileSystemLoader
+from email.mime.image import MIMEImage
 import os
 import shutil
 import smtplib
 from email_validator import validate_email, EmailNotValidError
 import tracemalloc
-from email.mime.text import MIMEText
+from pathlib import Path
 
 tracemalloc.start()
 
@@ -80,56 +81,135 @@ def get_timer(data):
     # minutes = (time_diff.seconds % 3600) // 60
     return (f"{int(time_difference)}")
 
-async def send_mail_req_approval(db,subject,receiver_email, message):  # Demo
-
+def send_html_email(email_to: str, subject_template: str, html_template: str, environment: dict) -> None:
     from_email = "johnsonkoilraj53@gmail.com"
-    to_email = receiver_email
-    # to_email = receiver_email->set list method
+    
+    # Load the Jinja2 template
+    template_dir = Path("/home/john/Documents/wepro_python/backend/app/app/email_templates")  # Update to the directory containing your templates
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.from_string(html_template)
 
-    subject = subject
-    body = message
+    # Render the template with the environment variables
+    html_content = template.render(environment)
 
-
-    filename = "quotation.pdf"
-
-    addEmailHistory = EmailHistory(
-        from_email=from_email,
-        subject=subject,
-        to_email=receiver_email,
-        status=1,
-        created_at = datetime.now(settings.tz_IN),
-        message =message
-
-    )
-    db.add(addEmailHistory)
-    db.commit()
-
+    # Prepare the email message
     msg = MIMEMultipart()
     msg['From'] = from_email
-    msg['To'] = to_email
-    # msg['To'] = ", ".join(to_email) 
+    msg['To'] = email_to
+    msg['Subject'] = subject_template
 
-    msg['Subject'] = subject
-    html = """\
-    <html>
-    <head></head>
-    <body>
-        <p>The email was sent from Wepro <br>
-        ---  <b>{message}</b>  ---.
-        </p>
-    </body>
-    </html>
-    """
+    # Attach HTML content
+    msg.attach(MIMEText(html_content, 'html'))
 
-    html = html.format(message=body) 
-    msg.attach(MIMEText(html, 'html'))
+    # Send email using SMTP
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(from_email, "eelj txyx kive laag")  # Update with your email password
+            server.sendmail(from_email, email_to, msg.as_string())
+    except Exception as e:
+        print(f"Error sending email: {e}")
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(from_email, "eelj txyx kive laag")
-        server.sendmail(from_email, to_email, msg.as_string())
+async def send_mail_req_approval(db,email_type, ref_id, subject,journalistName, receiver_email, message):
+    from_email = "johnsonkoilraj53@gmail.com"
+
+    try:
+        # Save email history to database
+        addEmailHistory = EmailHistory(
+            article_id=ref_id if email_type==2 else None,
+            user_id=ref_id if email_type in [1,3,4] else None,
+            from_email=from_email,
+            subject=subject,
+            to_email=receiver_email,
+            email_type = email_type,
+            status=1,
+            created_at=datetime.now(),
+            message=message
+        )
+        db.add(addEmailHistory)
+        db.commit()
+
+        # Load the email template from the file
+        template_path = Path("/home/john/Documents/wepro_python/backend/app/app/email_templates/journalist_template.html")
+        with open(template_path) as f:
+            template_str = f.read()
+
+
+        # Send the email using the send_html_email function
+        send_html_email(
+            email_to=receiver_email,
+            subject_template=subject,
+            html_template=template_str,
+            environment={
+                "name":journalistName,
+                "message": message,
+                "subject": subject,
+                "current_year": datetime.now(settings.tz_IN).year,
+                # "project_name": "Your Project Name",  # Update with your project name
+                "email": receiver_email
+            }
+        )
+
+        addEmailHistory.response = "success"
+        db.commit()
+
+        return {"status": 1, "msg": "Success"}
+
+    except Exception as e:
+        addEmailHistory.response = f"Failed to send email: {str(e)}"
+        db.commit()
+        return {"status": 0, "msg": f"Failed to send email: {str(e)}"}
     
-    return {"status":1,"msg":"Success"}
+# async def send_mail_req_approval(db,subject,receiver_email, message):  # Demo
+
+#     from_email = "johnsonkoilraj53@gmail.com"
+#     to_email = receiver_email
+#     # to_email = receiver_email->set list method
+
+#     subject = subject
+#     body = message
+
+
+#     filename = "quotation.pdf"
+
+#     addEmailHistory = EmailHistory(
+#         from_email=from_email,
+#         subject=subject,
+#         to_email=receiver_email,
+#         status=1,
+#         created_at = datetime.now(settings.tz_IN),
+#         message =message
+
+#     )
+#     db.add(addEmailHistory)
+#     db.commit()
+
+#     msg = MIMEMultipart()
+#     msg['From'] = from_email
+#     msg['To'] = to_email
+#     # msg['To'] = ", ".join(to_email) 
+
+#     msg['Subject'] = subject
+#     html = """\
+#     <html>
+#     <head></head>
+#     <body>
+#         <p>The email was sent from Wepro <br>
+#         ---  <b>{message}</b>  ---.
+#         </p>
+#     </body>
+#     </html>
+#     """
+
+#     html = html.format(message=body) 
+#     msg.attach(MIMEText(html, 'html'))
+
+#     with smtplib.SMTP("smtp.gmail.com", 587) as server:
+#         server.starttls()
+#         server.login(from_email, "eelj txyx kive laag")
+#         server.sendmail(from_email, to_email, msg.as_string())
+    
+#     return {"status":1,"msg":"Success"}
 
 async def send_mail(db,receiver_email, message):  # Demo
     sender_email = "johnsonkoilraj53@gmail.com"

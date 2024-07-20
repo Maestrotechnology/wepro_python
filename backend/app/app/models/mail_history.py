@@ -13,10 +13,13 @@ class EmailHistory(Base):
     message = Column(String(255))
     response = Column(String(255))
     article_id = Column(Integer,ForeignKey("article.id"),comment="article tab id")
+    user_id = Column(Integer,ForeignKey("user.id"),comment="user tab id")
+    email_type=Column(TINYINT,comment="1->Journalist Account,2->Article,3->Forget Password,4->Reset Password")
+
 
     created_at=Column(DateTime)
 
 
     status=Column(TINYINT,comment="-1->delete,1->active,0->inactive")
     article=relationship("Article",back_populates="email_history")
-    # user=relationship("User",back_populates="email_history")
+    user=relationship("User",back_populates="email_history")

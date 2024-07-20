@@ -59,8 +59,8 @@ async def stateDropDown(db:Session = Depends(deps.get_db),
                            token:str=Form(...)):
     user = deps.get_user_token(db=db,token =token)
     if user:
-        statesList =[22,36,19,17,35]
-        getAllState = db.query(States).filter(States.status==1,States.id.in_(statesList)).order_by(States.name.asc()).all()
+        # statesList =[22,36,19,17,35]
+        getAllState = db.query(States).filter(States.status==1).order_by(States.name.asc()).all()
         dataList =[]
         if getAllState:
             for row in getAllState:
