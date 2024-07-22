@@ -44,6 +44,7 @@ async def CreateArticle(db:Session =Depends(deps.get_db),
                 meta_title=meta_title,
                 submition_date=submition_date,
                 meta_description=meta_description,
+                img_alter=img_alter,
                 meta_keywords=meta_keywords,
                 seo_url=seo_url,
                 category_id=category_id,
@@ -102,7 +103,7 @@ async def CreateArticle(db:Session =Depends(deps.get_db),
             #         print(f"Error during bulk insert: {str(e)}")
             #         return ({"status":0,"msg":"Error during article creation"})
 
-        return ({"status":1,"msg":"Successfully New Article Published. "})
+        return ({"status":1,"msg":"Successfully New Article Published. ","article_id":addArticle.id})
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
     
@@ -135,6 +136,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                 return {"status":0,"msg":"Article Not Found"}
             
             getArticle.topic=topic
+            getArticle.img_alter=img_alter
             getArticle.content=content
             getArticle.meta_title=meta_title
             getArticle.meta_description=meta_description
@@ -300,17 +302,23 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
             stsName = ["Not submitted","new","SE approved","CE Approved","Approved","On Hold"]
             if getDeadlineArticles:
                 for row in getDeadlineArticles:
-                    dataList.append({
+                        dataList.append({
                 "article_id":row.id,
+                "meta_title":row.meta_title,
+                "meta_description":row.meta_description,
+                "category_id":row.category_id,
+                "sub_category_id":row.sub_category_id,
                 "topic":row.topic,
+                "seo_url":row.seo_url,
+                "img_alter":row.img_alter,
                 "content":row.content,
-                "topic_approved":row.topic_approved,
-                "state_id":row.state_id,
+                 "state_id":row.state_id,
                 "state_name":row.states.name if row.state_id else None,
                 "city_id":row.city_id,
                 "is_journalist":row.is_journalist,
                 "city_name":row.cities.name if row.city_id else None,
                 "submition_date":row.submition_date,
+                "topic_approved":row.topic_approved,
                 "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
                 "content_approved":row.content_approved,
                 "content_approved_name":stsName[row.content_approved] if row.content_approved else None,
@@ -383,7 +391,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             approval_pending =approval_pending.count()
 
-            if article_status and not section_type:
+            if (article_status!=2 and article_status) and not section_type:
 
                 articleSts =[4 if article_status==3 else article_status ]
 
@@ -393,20 +401,23 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
                 getAllArticle = getAllArticle.filter(or_(Article.topic_approved.in_(articleSts),
                                                      Article.content_approved.in_(articleSts)))
-                
+            
             if article_status==2 and section_type:
 
                 
-                if section_type==1:
+                if section_type==2:
 
                     getAllArticle = getAllArticle.filter(and_(Article.topic_approved==3,
-                                                             Article.content_approved!=3) )
+                                                            #   Article.topic_approved!=4,
+                                                              Article.content_approved.not_in([3,4])) )
                     
                 if section_type==2:
                     getAllArticle = getAllArticle.filter(
-                                                        Article.content_approved==2)
+                                                        Article.topic_approved.in_([0,1,2]))
                 
-            
+                # if section_type==2:
+                #     getAllArticle = getAllArticle.filter(
+                #                                         Article.content_approved.in_([0,1]))
 
             # if topic_approval_status:
             #     getAllArticle = getAllArticle.filter(Article.topic_approved==topic_approval_status)
@@ -456,14 +467,20 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 for row in getAllArticle:
                     dataList.append({
                 "article_id":row.id,
+                "meta_title":row.meta_title,
+                "meta_description":row.meta_description,
+                "category_id":row.category_id,
+                "seo_url":row.seo_url,
+                "meta_keywords":row.meta_keywords,
+                "sub_category_id":row.sub_category_id,
                 "topic":row.topic,
+                "img_alter":row.img_alter,
                 "content":row.content,
                  "state_id":row.state_id,
                 "state_name":row.states.name if row.state_id else None,
                 "city_id":row.city_id,
                 "is_journalist":row.is_journalist,
                 "city_name":row.cities.name if row.city_id else None,
-            
                 "submition_date":row.submition_date,
                 "topic_approved":row.topic_approved,
                 "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,

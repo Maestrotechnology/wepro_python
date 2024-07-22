@@ -26,6 +26,8 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      img_alter:str=Form(None),
                      meta_keywords:str=Form(None),
                     #  seo_url:str=Form(None),
+                     media_file:Optional[UploadFile] = File(None),
+
                      token:str=Form(...),
                      content_type:int=Form(None,description="1->Ads,2->banners"),
                      media_type:int=Form(None,description="1->img,2-shorts,3->Video")
@@ -53,6 +55,15 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
             db.add(addCsmSettings)
             db.commit()
 
+            if media_file:
+
+                uploadedFile = media_file.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(media_file,fName)
+                addCsmSettings.img_path = returnFilePath
+
+                db.commit()
+
             return {"status":1,"msg":"Successfully Cms Settings Created"}
 
         else:
@@ -70,6 +81,8 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      img_alter:str=Form(None),
                      meta_description:str=Form(None),
                      meta_keywords:str=Form(None),
+                     media_file:Optional[UploadFile] = File(None),
+
                     #  seo_url:str=Form(None),
                      token:str=Form(...)
                      ):
@@ -97,6 +110,16 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
             getMediaFiles.updated_by = user.id
 
             db.commit()
+
+            if media_file:
+
+                uploadedFile = media_file.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(media_file,fName)
+                getMediaFiles.img_path = returnFilePath
+
+                db.commit()
+
 
             return {"status":1,"msg":"Successfully Cms Settings Updated"}
 
@@ -139,6 +162,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
                 "meta_description":row.meta_description,
                 # "seo_url":row.seo_url,
                 "img_alter":row.img_alter,
+                "img_path":row.img_path,
                 "media_type":row.media_type,
                 "content_type":row.content_type,
                 "meta_keywords":row.meta_keywords,
@@ -178,6 +202,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
             "media_files_id":getData.id,
             "media_url":getData.media_url,
             "title":getData.title,
+            "img_path":getData.img_path,
             "description":getData.description,
             "img_alter":getData.img_alter,
             "meta_title":getData.meta_title,

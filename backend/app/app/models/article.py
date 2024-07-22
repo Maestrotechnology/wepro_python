@@ -11,6 +11,7 @@ class Article(Base):
     topic=Column(String(250))
     description=Column(String(250))
     topics=Column(String(250))
+    img_alter = Column(String(250))
     meta_title = Column(String(250))
     meta_description = Column(String(250))
     meta_keywords = Column(String(250))

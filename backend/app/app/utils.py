@@ -249,7 +249,7 @@ async def send_mail(db,receiver_email, message):  # Demo
 
 def file_storage(file_name, f_name):
 
-    base_dir = settings.BASE_UPLOAD_FOLDER+"/file_rk"
+    base_dir = settings.BASE_UPLOAD_FOLDER+"/file_wepro"
 
     dt = str(int(datetime.utcnow().timestamp()))
 

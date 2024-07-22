@@ -126,9 +126,12 @@ def getFormattedData(fromMonth,endMonth,result_by_month,formatted_result):
             not_submitted = 0
             published = 0
             on_hold = 0
+        import calendar
         # totalCount = open + assigned + demo +  quotation + follow_up + close + order
         formatted_result.append({
-                "month": month,
+                # "month": month,
+                "month": calendar.month_name[month],
+
                 "Total":total,
                 "New":new,
                 "Not Submitted":not_submitted,
@@ -355,16 +358,25 @@ async def journalistPerformance(db:Session=Depends(deps.get_db),token:str=Form(.
             logo_center_side = workbook.add_format(
                 {"align": "center", "font_size": "10px"}
             )
-            worksheet.merge_range("B2:L2", f"JOURNALIST REPORT", header_change)
+
+            image_path =  os.path.realpath(
+                f"{settings.BASE_UPLOAD_FOLDER}/WePRO_Digital.jpg")
+
+            # Convert JPG to PNG
+            # Image.open(jpg_file).convert('RGB').save(png_file)
+            # worksheet.insert_image('B2:C2',image_path,{'x_offset': 0, 'y_offset': 0, 'x_scale': 0.40, 'y_scale': 0.3})
+            worksheet.insert_image('B2:C2',image_path,{'x_offset': 0, 'y_offset': 0, 'x_scale': 0.40, 'y_scale': 0.4})
+
+            worksheet.merge_range("D2:L2", f"JOURNALIST REPORT", header_change)
 
             lst = 0
 
             for i, l in enumerate(headers):
-                i += 2
+                i += 4
                 lst += i
                 for j, col in enumerate(l):
                     j += 1
-                    if i == 2:
+                    if i == 4:
                         worksheet.write(i, j, col, merge_format_head)
                     else:
                         worksheet.write(i, j, col, merge_format_row)
