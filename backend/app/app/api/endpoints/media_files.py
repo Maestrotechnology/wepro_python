@@ -36,7 +36,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,6]:
+        if user.user_type in [1,2,7]:
 
             addCsmSettings = MediaFiles(media_url = media_url,
             title = title,
@@ -90,7 +90,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,6]:
+        if user.user_type in [1,2,7]:
 
             getMediaFiles = db.query(MediaFiles).filter(MediaFiles.id==media_files_id).first()
 
@@ -162,7 +162,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
                 "meta_description":row.meta_description,
                 # "seo_url":row.seo_url,
                 "img_alter":row.img_alter,
-                "img_path":row.img_path,
+                "img_path":f"{settings.BASE_DOMAIN}{row.img_path}",
                 "media_type":row.media_type,
                 "content_type":row.content_type,
                 "meta_keywords":row.meta_keywords,

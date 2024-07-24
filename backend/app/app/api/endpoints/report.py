@@ -116,7 +116,7 @@ def getFormattedData(fromMonth,endMonth,result_by_month,formatted_result):
             data = result_by_month[month]
             total  = data["total"]
             new = data["new"]
-            not_submitted =data["not_submitted"]
+            not_submitted =data["not_submitted"]    
             published = data["published"]
             on_hold = data["on_hold"]
 
@@ -159,7 +159,7 @@ async def journalistPerformance(db:Session=Depends(deps.get_db),token:str=Form(.
         else:
             toDatetime = toDatetime.replace(hour=23,minute=59,second=59)
 
-        getAllJournalist =  db.query(User).filter(User.status==1,User.user_type == 7)
+        getAllJournalist =  db.query(User).filter(User.status==1,User.user_type == 8)
         if journalist_id:
             getAllJournalist = getAllJournalist.filter(User.id == journalist_id)
 

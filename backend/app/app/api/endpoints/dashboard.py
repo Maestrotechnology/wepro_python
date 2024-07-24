@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash,verify_password
 from datetime import datetime,date,timedelta
 from app.utils import *
-from sqlalchemy import or_,func,case
+from sqlalchemy import or_,func,case,extract
 from app.core import security
 
 import random
@@ -119,8 +119,9 @@ async def allDataCount(
         chief_data = get_user_type_stats(db, 4)  # Chief Editor user type
         sub_editor_data = get_user_type_stats(db, 5)  # Sub Editor user type
         dig_str_data = get_user_type_stats(db, 6)  # Digital Strategist user type
-        journalist_data = get_user_type_stats(db, 7)  # Journalist user type
-        member_data = get_user_type_stats(db, 8)  # Member user type
+        tl_str_data = get_user_type_stats(db, 7)  # Digital Strategist user type
+        journalist_data = get_user_type_stats(db, 8)  # Journalist user type
+        member_data = get_user_type_stats(db, 9)  # Member user type
 
         return {
             "status": 1,
@@ -149,6 +150,11 @@ async def allDataCount(
                     "active": sub_editor_data.active or 0,
                     "inactive": sub_editor_data.inactive or 0,
                 },
+                 "technical_lead": {
+                    "total": dig_str_data.total or 0,
+                    "active": dig_str_data.active or 0,
+                    "inactive": dig_str_data.inactive or 0,
+                },
                 "digital_strategist": {
                     "total": dig_str_data.total or 0,
                     "active": dig_str_data.active or 0,
@@ -168,7 +174,99 @@ async def allDataCount(
         }
     else:
         return {"status": -1, "msg": "Your login session expires. Please login again."}
+    
+
+
+@router.post("/new_journalist_monthwise_count")
+async def newJournalistPiechart(db:Session = Depends(deps.get_db),
+                        token:str = Form(...),
+                        year:int=Form(None)):
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        today = datetime.now(settings.tz_IN)
+
+
+        data=[]
+
+        today = datetime.now(settings.tz_IN)
+
+        month=today.month
+
+        yearFind=today.year
+
+        if year:
+            yearFind = year
+
+        if yearFind!=today.year:
+            month = 12
         
+        toDatetime = today.replace(year=yearFind,month=month,hour=23,minute=59,second=59)
+
+        fromDateTime = today.replace(year=yearFind,day=1,month=1,hour=0,minute=0,second=0)
+        
+        getAllUserCount = db.query(  
+             extract('month',User.created_at).label('month'),
+             func.sum(case((User.status == 1, 1), else_=0)).label("total"),
+                                       ).filter(User.status==1,User.user_type==8,User.created_at.between(fromDateTime,toDatetime))
+        
+
+        getAllUserCount = getAllUserCount.group_by(extract('month',User.created_at)).all()
+        
+        result_by_month={}
+        formatted_result =[]
+      
+        if getAllUserCount:
+            for month,total in getAllUserCount:
+
+                if month not in result_by_month:
+                    result_by_month[month] = {"total": 0}
+                        
+                result_by_month[month]["total"] = total
+        
+        endMonth = int(toDatetime.month ) + 1 #to get up to current month data
+        fromMonth = int(fromDateTime.month)
+        if toDatetime.year != fromDateTime.year:
+            if int(toDatetime.year) - int(fromDateTime.year) ==1:
+                if int(toDatetime.month ) < int(fromDateTime.month):
+                    fromMonth = fromDateTime.month
+                    endMonth =13
+                    formatted_result = getFormattedData(fromMonth,endMonth,result_by_month,formatted_result)
+
+                    fromMonth = 1
+                    endMonth = int(toDatetime.month ) +1
+                    formatted_result = getFormattedData(fromMonth,endMonth,result_by_month,formatted_result)
+                else:
+                    fromMonth=1
+                    endMonth =13
+                    formatted_result = getFormattedData(fromMonth,endMonth,result_by_month,formatted_result)
+            else:
+                fromMonth = 1
+                endMonth =13
+                formatted_result = getFormattedData(fromMonth,endMonth,result_by_month,formatted_result)
+        else:
+         
+            formatted_result = getFormattedData(fromMonth,endMonth,result_by_month,formatted_result)
+
+        return {"status":1,"msg":"Success","data":formatted_result}
+    else:
+        return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+
+
+def getFormattedData(fromMonth,endMonth,result_by_month,formatted_result):
+    for month in range(fromMonth,endMonth): # 12 Month
+        if month in result_by_month:
+            data = result_by_month[month]
+            total  = data["total"]
+        else:
+            total = 0
+        import calendar
+        # totalCount = open + assigned + demo +  quotation + follow_up + close + order
+        formatted_result.append({
+                "month": calendar.month_name[month],
+                "Total":total
+                })
+        
+    return formatted_result
 
     #     data = {
     #         "displayName":"Total Users",

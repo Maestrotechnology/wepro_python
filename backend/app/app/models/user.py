@@ -5,7 +5,7 @@ from app.db.base_class import Base
 
 class User(Base):
     id = Column(Integer,primary_key=True)
-    user_type =Column(TINYINT,comment="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6->Digital Marketing strategist,7-journalist,8-Member")
+    user_type =Column(TINYINT,comment="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-Member")
 
     name = Column(String(100))
     dob = Column(Date)

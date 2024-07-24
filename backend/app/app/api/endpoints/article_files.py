@@ -44,6 +44,7 @@ async def uploadFile(db:Session=Depends(deps.get_db),
                     })
                     # print(returnFilePath)
                     row += 1
+                
                 try:
                     with db as conn:
                         conn.execute(ArticleFiles.__table__.insert().values(imageData))

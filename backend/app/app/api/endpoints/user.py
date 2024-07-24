@@ -35,7 +35,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                     #  alt_img:str=Form(None),
                      city_id:int=Form(None),
                      password:str=Form(...),
-                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6->Digital Marketing strategist,7-journalist,8-Member")
+                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-technical lead,7->Digital Marketing strategist,8-journalist,9-Member")
                      ):
     
     user = deps.get_user_token(db=db,token=token)
@@ -87,7 +87,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                 address = address,
                 state_id = state_id,
                 city_id = city_id,
-                is_request =2 if user_type==7 else None,
+                is_request =2 if user_type==8 else None,
                 # approved_by =user.id if user_type==7 else None,
                 password =  get_password_hash(password),
                 is_active = 1,
@@ -244,7 +244,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
 async def listUser(db:Session =Depends(deps.get_db),
                    token:str=Form(...),page:int=1,
                    size:int=10,phone:str=Form(None),
-                   user_type:int=Form(...,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6->Digital Marketing strategist,7-journalist,8-Member"),
+                   user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-technical lead,7->Digital Marketing strategist,8-journalist,9-Member"),
                    email:str=Form(None),state_id:int=Form(None),city_id:int=Form(None),
                    name:str=Form(None),
                    application_status:int=Form(None,description="0->Request,1-interview process,-1 ->rejected")
@@ -254,9 +254,12 @@ async def listUser(db:Session =Depends(deps.get_db),
     if user:
         if user:
             
-            getAllUser = db.query(User).filter(User.user_type == user_type,User.status==1)
+            getAllUser = db.query(User).filter(User.status==1)
 
-            if user_type==7 and (application_status!=0 and not application_status):
+            if user_type:
+                getAllUser = getAllUser.filter(User.user_type == user_type)
+
+            if user_type==8 and (application_status!=0 and not application_status):
                 getAllUser = getAllUser.filter(User.is_request == 2)
 
             if phone:
@@ -273,11 +276,12 @@ async def listUser(db:Session =Depends(deps.get_db),
             journalistReq = 0
 
             if application_status==0 or application_status:
-                getAllUser = getAllUser.filter(User.is_request == application_status)
+                getAllUser = getAllUser.filter(User.user_type==8,User.is_request == application_status)
+                print(getAllUser.count())
       
 
             if user.user_type in [1,2,3]:
-                getJournalReq=db.query(User).filter(User.user_type == 7,User.status==1,User.is_request==0).count()
+                getJournalReq=db.query(User).filter(User.user_type == 8,User.status==1,User.is_request==0).count()
                 journalistReq = getJournalReq
 
             getAllUser = getAllUser.order_by(User.name.asc())
@@ -286,7 +290,7 @@ async def listUser(db:Session =Depends(deps.get_db),
             totalPages,offset,limit = get_pagination(userCount,page,size)
             getAllUser = getAllUser.limit(limit).offset(offset).all()
             
-            userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Digital Marketing strategist","Journalist","Member"]
+            userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","Member"]
             dataList = []
             if getAllUser:
                 for userData in getAllUser:
@@ -301,6 +305,7 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "email":userData.email,
                             "dob":userData.dob,
                             "city_id":userData.city_id,
+                            "is_request":userData.is_request,
                             "city_name":userData.cities.name if userData.city_id else None,
                             "state_id":userData.state_id,
                             "state_name":userData.states.name if userData.state_id else None,

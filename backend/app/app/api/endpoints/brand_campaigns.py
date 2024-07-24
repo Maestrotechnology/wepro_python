@@ -30,7 +30,7 @@ async def createBrandCampaigns(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,6]:
+        if user.user_type in [1,2,7]:
 
             addBrandCam = BrandCampaigns(
             title = title,
@@ -79,7 +79,7 @@ async def updateBrandCampaigns(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2]:
+        if user.user_type in [1,2,7]:
 
             getBrandCampaigns = db.query(BrandCampaigns).filter(BrandCampaigns.id==brand_campaigns_id).first()
 

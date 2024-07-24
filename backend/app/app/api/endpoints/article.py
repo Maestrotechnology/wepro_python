@@ -48,8 +48,8 @@ async def CreateArticle(db:Session =Depends(deps.get_db),
                 meta_keywords=meta_keywords,
                 seo_url=seo_url,
                 category_id=category_id,
-                content_approved=3 if user.user_type!=7 else 0,
-                topic_approved=3 if user.user_type!=7 else 0,
+                content_approved=3 if user.user_type!=8 else 0,
+                topic_approved=3 if user.user_type!=8 else 0,
                 sub_category_id=sub_category_id,
                 city_id=city_id,
                 state_id=state_id,
@@ -59,7 +59,7 @@ async def CreateArticle(db:Session =Depends(deps.get_db),
             )
             db.add(addArticle)
             db.commit()
-            if user.user_type==7:
+            if user.user_type==8:
 
                 addHistory = ArticleHistory(
                     article_id = addArticle.id,
@@ -106,7 +106,24 @@ async def CreateArticle(db:Session =Depends(deps.get_db),
         return ({"status":1,"msg":"Successfully New Article Published. ","article_id":addArticle.id})
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
-    
+
+@router.post("/delete_article")
+async def deleteArticle(db:Session=Depends(deps.get_db),
+                     token:str = Form(...),
+                     article_id:int=Form(...)):
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user.user_type in [1,2] :
+            getArticle = db.query(Article).filter(Article.id == article_id,
+                                            Article.status == 1)
+            
+            getArticle = getArticle.update({"status":-1})
+            db.commit()
+            return {"status":1,"msg":"Article successfully deleted."}
+        else:
+            return {'status':0,"msg":"You are not authenticated to delete any user"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
 @router.post("/update_article")
 async def updateArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
@@ -261,6 +278,7 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
                        city_id:int=Form(None),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
+                       journalist_id:int=Form(None),
                     #    topic_approval_status:int=Form(None,description="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold"),
                     #    contant_approval_status:int=Form(None,description="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold"),
                        page:int=1,size:int = 10):
@@ -273,10 +291,10 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
                     Article.content_approved==0,
                     Article.submition_date<=datetime.now(settings.tz_IN)
                 )
-
             if state_id:
                 getDeadlineArticles = getDeadlineArticles.filter(Article.state_id==state_id)
-
+            if journalist_id:
+                getDeadlineArticles = getDeadlineArticles.filter(Article.created_by==journalist_id)
             if city_id:
                 getDeadlineArticles = getDeadlineArticles.filter(Article.city_id==city_id)
 
@@ -348,6 +366,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        city_id:int=Form(None),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
+                       journalist_id:int=Form(None),
                        section_type:int=Form(None,description="1-Topic,2-Content"),
 
                        article_status:int=Form(None,description="1-new,2-waiting for approval,3-onhold"),
@@ -363,7 +382,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             if state_id:
                 getAllArticle = getAllArticle.filter(Article.state_id==state_id)
-
+            if journalist_id:
+                getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
             if city_id:
                 getAllArticle = getAllArticle.filter(Article.city_id==city_id)
 
@@ -386,7 +406,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                                                           Article.content_approved==4),
                 )
             
-            if user.user_type==7:
+            if user.user_type==8:
                 approval_pending =approval_pending.filter(Article.created_by==user.id)
 
             approval_pending =approval_pending.count()
@@ -411,7 +431,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                                                             #   Article.topic_approved!=4,
                                                               Article.content_approved.not_in([3,4])) )
                     
-                if section_type==2:
+                if section_type==1:
                     getAllArticle = getAllArticle.filter(
                                                         Article.topic_approved.in_([0,1,2]))
                 
@@ -440,16 +460,18 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 deadlineArtcileCount = getDeadlineArticles
 
             if user.user_type ==4:
-                getAllNotify = getAllNotify.filter(ArticleHistory.chief_editor_id==user.id,
+                getAllNotify = getAllNotify.filter(
+                    # ArticleHistory.chief_editor_id==user.id,
                                                    ArticleHistory.chief_editor_notify==1).count()
                 notifyCount = getAllNotify
 
             if user.user_type ==5:
-                getAllNotify = getAllNotify.filter(ArticleHistory.sub_editor_id==user.id,
+                getAllNotify = getAllNotify.filter(
+                    # ArticleHistory.sub_editor_id==user.id,
                                                    ArticleHistory.sub_editor_notify==1).count()
                 notifyCount = getAllNotify
 
-            if user.user_type ==7:
+            if user.user_type ==8:
                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
 
                 getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,

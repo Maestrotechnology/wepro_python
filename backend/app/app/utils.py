@@ -273,9 +273,10 @@ def file_storage(file_name, f_name):
 
     save_full_path = f'{output_dir}{files_name[0]}{dt}.{txt1}'
 
-    file_exe = f"file_rk/{f_name}{dt}.{txt1}"
+    file_exe = f"file_wepro/{f_name}{dt}.{txt1}"
     with open(save_full_path, "wb") as buffer:
         shutil.copyfileobj(file_name.file, buffer)
+    print(save_full_path)
 
     return save_full_path, file_exe
 

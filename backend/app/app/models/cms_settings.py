@@ -11,6 +11,7 @@ class CmsSettings(Base):
     app_store = Column(String(255))
     facebook = Column(String(255))
     threads = Column(String(255))
+    twitter = Column(String(255))
     linkedin = Column(String(255))
     instagram = Column(String(255))
     youtube = Column(String(255))
