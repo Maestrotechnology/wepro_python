@@ -36,7 +36,7 @@ async def CreateArticle(db:Session =Depends(deps.get_db),
     user = deps.get_user_token(db=db,token=token)
 
     if user:
-        if user.user_type !=8:
+        if user:
 
             addArticle = Article(
                 topic=topic,
@@ -124,6 +124,7 @@ async def deleteArticle(db:Session=Depends(deps.get_db),
             return {'status':0,"msg":"You are not authenticated to delete any user"}
     else:
         return {'status':-1,"msg":"Your login session expires.Please login again."}
+    
 @router.post("/update_article")
 async def updateArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
@@ -144,7 +145,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
     user = deps.get_user_token(db=db,token=token)
 
     if user:
-        if user.user_type !=8:
+        if user.user_type :
 
             getArticle = db.query(Article).filter(Article.id==article_id,
                                             Article.status==1).first()
@@ -434,6 +435,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 if section_type==1:
                     getAllArticle = getAllArticle.filter(
                                                         Article.topic_approved.in_([0,1,2]))
+                    # print(getAllArticle.count())
                 
                 # if section_type==2:
                 #     getAllArticle = getAllArticle.filter(
@@ -549,61 +551,48 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"This article is not available."}
             
-            topicApproved = 0
-            approvedStatus =["not submitted","new","SE approved","CE Approved","On Hold"]
+            approvedStatus =["-","new","Review","comment","SE approved","CE Approved/Published",]
             
             journalistEmail = getArticle.createdBy.email if getArticle.created_by else None
             journalistName = getArticle.createdBy.name if getArticle.created_by else None
 
-            approvedSts=0
 
-            # msgForCmt = [
-            #     "-",  # Placeholder for index 0, not used
-            #     "We are pleased to inform you that your topic has been approved. We will proceed with the next steps and provide you with further details shortly.",
-            #     "We wanted to let you know that your topic has been put on hold for further review. We will update you once we have more information and are ready to proceed."
-            # ]
             msgForCmt = [
-                "-",  # Placeholder for index 0, not used
-                "We are pleased to inform you that your topic has been approved. We will proceed with the next steps and provide you with further details shortly. Please feel free to reach out if you have any questions.",
-                "We wanted to let you know that your topic has been put on hold for further review. We will update you once we have more information and are ready to proceed. Thank you for your patience and understanding."
-            ]
+                "-",
+                "-"
+                "Your article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
+               "We wanted to inform you that the publication of your article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation."
+                "We are delighted to inform you that your article topic has been approved by our Sub Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                "We are delighted to inform you that your article topic has been approved by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+
+                    ]
 
             if user.user_type==4:
 
-                approvedSts =3 if approved_status==1 else 4
 
-                getArticle.topic_approved = approvedSts
+                getArticle.topic_approved = approved_status
                 getArticle.chief_editor_id =user.id
 
 
                 comment = f"{msgForCmt[approved_status]}" if not comment else comment
 
-                subject ="Artcle Update"
-                mailForArticleUpdate = await send_mail_req_approval(
-                db,2,getArticle.id,subject,journalistName,journalistEmail,comment
-                )
 
             if user.user_type==5:
 
-                approvedSts =3 if approved_status==1 else 4
-
-                getArticle.topic_approved = approvedSts
+                getArticle.topic_approved = approved_status
                 getArticle.sub_editor_id =user.id
-
-
                 comment = f"{msgForCmt[approved_status]}" if not comment else comment
                 
-                if approved_status==2:
-                    subject ="Artcle Update"
-                    mailForArticleUpdate = await send_mail_req_approval(
-                    db,2,getArticle.id,subject,journalistName,journalistEmail,comment
-                    )
+            if approved_status==2:
+                subject ="Artcle Update"
+                mailForArticleUpdate = await send_mail_req_approval(
+                db,2,getArticle.id,getArticle.created_by,subject,journalistName,journalistEmail,comment
+                )
 
 
             if user.user_type in [1,2]:
-                approvedSts =3 if approved_status==1 else 4
 
-                getArticle.topic_approved = approvedSts
+                getArticle.topic_approved = approved_status
 
             db.commit()
 
@@ -613,7 +602,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
             addHistory = ArticleHistory(
                 article_id = article_id,
-                comment = f"{approvedStatus[approvedSts]}" if not comment else comment,
+                comment = f"{approvedStatus[approved_status]}" if not comment else comment,
                 sub_editor_id = user.id if user.user_type==5 else getArticle.sub_editor_id,
                 chief_editor_id = user.id if user.user_type==4 else getArticle.chief_editor_id,
                 journalist_id = getArticle.created_by ,
@@ -682,7 +671,8 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                      token:str=Form(...),
                      comment : str=Form(None),
                      article_id:int=Form(...),
-                     approved_status:int=Form(None,description="1->approved,2-On Hold"),
+                     approved_status:int=Form(None,description="2-Review,3-comment,4-SE approved,5-CE Approved"),
+
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -696,61 +686,51 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"This article is not available."}
             
-            approvedStatus =["not submitted","new","SE approved","CE Approved","On Hold"]
-            # msgForCmt = [
-            #     "-",  # Placeholder for index 0, not used
-            #     "We are pleased to inform you that the publication of your article content has been approved! Your hard work and effort have paid off, and we are excited to move forward with publishing your article. \n\nThe next steps involve finalizing the publication details and preparing for the article’s release. We will provide you with further information and any actions needed from your end shortly. \n\nThank you for your contribution and dedication. If you have any questions or need further assistance, please do not hesitate to contact us.\n",
-            #     "We wanted to inform you that the publication of your article content has been put on hold. This decision was made to ensure that all necessary details are reviewed thoroughly before proceeding. We understand the importance of this content and want to ensure that it meets our high standards.\n\nWe appreciate your patience and understanding during this process. We will keep you updated on any further developments and let you know once the review is complete. If you have any questions or need additional information, please feel free to reach out.\n\nThank you for your cooperation."
-            # ]
+            approvedStatus =["-","new","Review","comment","SE approved","CE Approved/Published",]
+            getArticle.content_approved = approved_status
+
+
             msgForCmt = [
-                "-",  # Placeholder for index 0, not used
-                "We are pleased to inform you that your article has been approved for publication! Your dedication and effort have been recognized, and we’re excited to move forward with the release. \n\nNext, we will finalize the publication details and prepare for the article’s release. You will receive further information and instructions shortly. \n\nThank you for your hard work and commitment. If you have any questions or need assistance, please feel free to reach out to us.",
-                "We wanted to inform you that the publication of your article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation."
-            ]
+                "-",
+                "-"
+                "Your article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
+               "We wanted to inform you that the publication of your article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation."
+                "We are delighted to inform you that your article has been approved by our Sub Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                "We are delighted to inform you that your article has been approved and Published by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+
+                    ]
 
             
             journalistEmail = getArticle.createdBy.email if getArticle.created_by else None
             journalistName = getArticle.createdBy.name if getArticle.created_by else None
-            approvedSts=0
             if user.user_type==4:
 
-                approvedSts =3 if approved_status==1 else 4
 
-                getArticle.content_approved = approvedSts
                 getArticle.chief_editor_id =user.id
 
 
                 comment = f" {msgForCmt[approved_status]}" if not comment else comment
                 
 
-                subject ="Artcle Update"
-                mailForArticleUpdate = await send_mail_req_approval(
-                db,2,getArticle.id,subject,journalistName,journalistEmail,comment
-                )
-                
+
 
             if user.user_type==5:
 
-                approvedSts =3 if approved_status==1 else 4
 
-                getArticle.content_approved = approvedSts
                 getArticle.sub_editor_id =user.id
 
                 comment = f" {msgForCmt[approved_status]} " if not comment else comment
 
 
-                if approved_status==2:
 
-                    subject ="Artcle Update"
-                    mailForArticleUpdate = await send_mail_req_approval(
-                    db,2,getArticle.id,subject,journalistName,journalistEmail,comment
-                    )
-                
+            subject ="Artcle Update"
+            mailForArticleUpdate = await send_mail_req_approval(
+            db,2,getArticle.id,getArticle.created_by,subject,journalistName,journalistEmail,comment
+            )
+        
 
             if user.user_type in [1,2]:
-                approvedSts =3 if approved_status==1 else 4
-
-                getArticle.content_approved = approvedSts
+                getArticle.content_approved = approved_status
 
             db.commit()
 
@@ -760,7 +740,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
 
             addHistory = ArticleHistory(
                 article_id = article_id,
-                comment = f" {approvedStatus[approvedSts]}" if not comment else comment,
+                comment = f" {approvedStatus[approved_status]}" if not comment else comment,
                 sub_editor_id = user.id if user.user_type==5 else getArticle.sub_editor_id,
                 chief_editor_id = user.id if user.user_type==4 else getArticle.chief_editor_id,
                 journalist_id = getArticle.created_by ,
@@ -784,6 +764,70 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
         return {"status":-1,"msg":"Your login session expires.Please login again."}
 
 
+
+@router.post("/change_payment_status")
+async def changePaymentStatus(db:Session=Depends(deps.get_db),
+                             token:str=Form(...),article_id:int=Form(...),
+                             payment_status:int=Form(...,description="2-paid"),
+                             comment:str=Form(None)):
+    
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getArticle = db.query(Article).filter(Article.id == article_id,
+                                            Article.status == 1).first()
+            
+            if not getArticle:
+                return {"status":0,"msg":"Not found"}
+
+            getUser =db.query(User).filter(User.id==getArticle.created_by).first()
+
+            name =getUser.name if getUser else None
+            email =getUser.email if getUser else None
+
+
+            if payment_status ==2 :
+                getArticle.is_paid=payment_status
+                db.commit()
+
+                
+                message = (
+                       f"We are pleased to inform you that your payment for the article '{getArticle.topic}' has been successfully processed and paid. "
+                        f"Thank you for your valuable contribution.<br><br>"
+                        f"If you have any questions or require further assistance, please do not hesitate to reach out to our support team.<br><br>"
+                    
+                    )
+
+                if comment:
+                    message = comment
+            
+            subject = "Payment Status"
+
+
+            addHistory = ArticleHistory(
+                article_id = article_id,
+                comment = f"Payment Paid" if not comment else comment,
+                journalist_id = getArticle.created_by ,
+                journalist_notify = 1,
+                status=1,
+                created_at =datetime.now(settings.tz_IN),
+                created_by = user.id
+            )
+            db.add(addHistory)
+            db.commit()
+
+            sendNotifyEmail = await send_mail_req_approval(db=db,email_type=6,article_id=getArticle.id,user_id=getUser.id or None,
+                receiver_email=email,subject=subject,journalistName=name,
+                message=message,
+            )
+            print(sendNotifyEmail)
+
+
+            return {"status":1,"msg":"success"}
+        else:
+            return {'status':0,"msg":"You are not authenticated to change status of any user"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
 
 @router.post("/list_article_history")
 async def listArticleHistoryHistory(db:Session =Depends(deps.get_db),

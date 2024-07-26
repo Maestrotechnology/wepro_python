@@ -11,3 +11,5 @@ from .article import Article
 from .article_files import ArticleFiles
 from .mail_history import EmailHistory
 from .article_history import ArticleHistory
+from .article_topic import ArticleTopic
+from .careers import Careers

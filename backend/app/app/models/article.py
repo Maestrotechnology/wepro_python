@@ -10,7 +10,9 @@ class Article(Base):
     content=Column(String(250))
     topic=Column(String(250))
     description=Column(String(250))
-    topics=Column(String(250))
+    content = Column(String(2500))
+    is_paid = Column(TINYINT,default=1,comment="1-pending,2-Paid")
+
     img_alter = Column(String(250))
     meta_title = Column(String(250))
     meta_description = Column(String(250))
@@ -18,12 +20,13 @@ class Article(Base):
     submition_date = Column(Date)
     seo_url = Column(String(250))
     state_id = Column(Integer,ForeignKey("states.id")) 
+    article_topic_id = Column(Integer,ForeignKey("article_topic.id")) 
     city_id = Column(Integer,ForeignKey("cities.id")) 
     category_id = Column(Integer,ForeignKey("category.id")) 
     sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
     comment = Column(String(500))
-    topic_approved = Column(TINYINT,default=0,comment="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold")
-    content_approved = Column(TINYINT,default=0,comment="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold")
+    topic_approved = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved,5-CE Approved")
+    content_approved = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved,5-Published(CE Approved)")
     is_journalist = Column(TINYINT,comment="1-yes")
     sub_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
     chief_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
@@ -46,6 +49,7 @@ class Article(Base):
     article_history=relationship("ArticleHistory",back_populates="article")
     category=relationship("Category",back_populates="article")
     sub_category=relationship("SubCategory",back_populates="article")
+    article_topic=relationship("ArticleTopic",back_populates="article")
 
 
 

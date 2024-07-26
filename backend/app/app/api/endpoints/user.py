@@ -14,10 +14,11 @@ from typing import List, Optional,Dict
 
 router = APIRouter()
 
-@router.post("/create_user")
-async def createUser(db:Session = Depends(deps.get_db),
-                     token:str = Form(...),name:str = Form(...),
-                     user_name:str=Form(...),
+
+@router.post("/sign_up")
+async def signUp(db:Session = Depends(deps.get_db),
+                 name:str = Form(...),
+                    #  user_name:str=Form(...),
                      phone:str=Form(...),
                      address:str=Form(...),
                      pincode:str=Form(...),
@@ -26,6 +27,132 @@ async def createUser(db:Session = Depends(deps.get_db),
                      whatsapp_no:str=Form(None),
                      account_number:str=Form(None),
                      bank:str=Form(None),
+                     pan_number:str=Form(None),
+                     aadhaar_number:str=Form(None),
+                     educational_qualification:str=Form(None),
+                     previous_experience:str=Form(None),
+                     experience_in_relevent_field:str=Form(None),
+                     area_of_interest:str=Form(None),
+                     ifsc_code:str=Form(None),
+                     branch:str=Form(None),
+                     state_id:int=Form(None),
+                     alternative_no:str=Form(None),
+                     resume_file:Optional[UploadFile] = File(None),
+                     img_path:Optional[UploadFile] = File(None),
+
+                    #  alt_img:str=Form(None),
+                     city_id:int=Form(None),
+                    #  password:str=Form(...),
+                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-technical lead,7->Digital Marketing strategist,8-journalist,9-Member")
+                     ):
+    
+   
+    getUser = db.query(User).filter(User.status == 1)
+        
+    if deps.contains_emoji(name):
+        return {"status":0,"msg":"Emojis are not allowed to use."}
+    # if user_name:
+    #     if deps.contains_emoji(user_name):
+    #         return {"status":0,"msg":"Emojis are not allowed to use."}
+    #     checkUserName = getUser.filter(or_(User.user_name == user_name,User.email==user_name,User.phone==user_name) ).first()
+    #     if checkUserName:
+    #         return {"status": 0,"msg": "user_name already exists. "}
+    if deps.contains_emoji(email):
+        return {"status":0,"msg":"Emojis are not allowed to use in email"}
+    checkEmail = getUser.filter(User.email == email ).first()
+    if checkEmail:
+        return {"status":0,"msg":"Email already exists."}
+    
+    checkMobileNumber = getUser.filter(User.phone == phone).first()
+    if checkMobileNumber:
+        return {"status":0,"msg":"Mobile already in use."}
+    if state_id:
+        checkState = db.query(States).filter(States.id == state_id,States.status==1).first()
+        if not checkState:
+            return {"status" : 0 , "msg" : "Invalid state."}
+    if  city_id:
+        checkCity = db.query(Cities).filter(Cities.id == city_id).first()
+        if not checkCity:
+            return {"status":0,"msg":"Invalid city."}
+    
+    createUsers = User(
+        user_type = user_type,
+        name = name,
+        pan_number = pan_number,
+        aadhaar_number = aadhaar_number,
+        educational_qualification = educational_qualification,
+        area_of_interest = area_of_interest,
+        previous_experience = previous_experience,
+        experience_in_relevent_field=experience_in_relevent_field,
+        whatsapp_no=whatsapp_no,
+        email = email,
+        phone = phone,
+        alternative_no = alternative_no,
+        account_number = account_number,
+        bank = bank,
+        ifsc_code = ifsc_code,
+        branch = branch,
+        pincode = pincode,
+        dob = dob,
+        address = address,
+        state_id = state_id,
+        city_id = city_id,
+        is_request =1,
+        is_active = 1,
+        requested_at = datetime.now(settings.tz_IN),
+        # created_at = datetime.now(settings.tz_IN),
+        # updated_at = datetime.now(settings.tz_IN),
+        status =1)
+    
+    db.add(createUsers)
+    db.commit()
+
+    if resume_file:
+
+        uploadedFile = resume_file.filename
+        fName,*etn = uploadedFile.split(".")
+        filePath,returnFilePath = file_storage(resume_file,fName)
+        createUsers.resume_path = returnFilePath
+
+        db.commit()
+
+    if img_path:
+
+        uploadedFile = img_path.filename
+        fName,*etn = uploadedFile.split(".")
+        filePath,returnFilePath = file_storage(img_path,fName)
+        createUsers.img_path = returnFilePath
+
+        db.commit()
+    
+
+    subject ="Sign-Up Confirmed"
+    comment=" THANK YOU FOR YOUR INTEREST,OUR TEAM WILL CONTACT YOU SOON”. "
+    mailForArticleUpdate = await send_mail_req_approval(
+    db,5,None,createUsers.id,subject,name,email,comment
+    )
+    return {"status":1,"msg":"Success."}
+
+
+@router.post("/create_user")
+async def createUser(db:Session = Depends(deps.get_db),
+                     token:str = Form(...),name:str = Form(...),
+                     user_name:str=Form(...),
+                     phone:str=Form(...),
+                     address:str=Form(...),
+                     pincode:str=Form(...),
+                     dob:date=Form(...),
+                     joining_date:date=Form(None),
+                     email:str=Form(...),
+                     whatsapp_no:str=Form(None),
+                     account_number:str=Form(None),
+                     bank:str=Form(None),
+                      pan_number:str=Form(None),
+                     aadhaar_number:str=Form(None),
+                     educational_qualification:str=Form(None),
+                     previous_experience:str=Form(None),
+                     experience_in_relevent_field:str=Form(None),
+                     area_of_interest:str=Form(None),
                      ifsc_code:str=Form(None),
                      branch:str=Form(None),
                      state_id:int=Form(None),
@@ -35,7 +162,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                     #  alt_img:str=Form(None),
                      city_id:int=Form(None),
                      password:str=Form(...),
-                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-technical lead,7->Digital Marketing strategist,8-journalist,9-Member")
+                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-SEO-Google Strategist,10-Marketing,11-Web designer,12-Graphic Designer")
                      ):
     
     user = deps.get_user_token(db=db,token=token)
@@ -76,6 +203,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                 whatsapp_no=whatsapp_no,
                 user_name = user_name,
                 email = email,
+                joining_date = joining_date,
                 phone = phone,
                 alternative_no = alternative_no,
                 account_number = account_number,
@@ -83,11 +211,17 @@ async def createUser(db:Session = Depends(deps.get_db),
                 ifsc_code = ifsc_code,
                 branch = branch,
                 pincode = pincode,
+                pan_number = pan_number,
+                aadhaar_number = aadhaar_number,
+                educational_qualification = educational_qualification,
+                area_of_interest = area_of_interest,
+                previous_experience = previous_experience,
+                experience_in_relevent_field=experience_in_relevent_field,
                 dob = dob,
                 address = address,
                 state_id = state_id,
                 city_id = city_id,
-                is_request =2 if user_type==8 else None,
+                is_request =2,
                 # approved_by =user.id if user_type==7 else None,
                 password =  get_password_hash(password),
                 is_active = 1,
@@ -136,6 +270,12 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      email:str=Form(...),
                      whatsapp_no:str=Form(None),
                      img_path:Optional[UploadFile] = File(None),
+                       pan_number:str=Form(None),
+                     aadhaar_number:str=Form(None),
+                     educational_qualification:str=Form(None),
+                     previous_experience:str=Form(None),
+                     experience_in_relevent_field:str=Form(None),
+                     area_of_interest:str=Form(None),
 
                      account_number:str=Form(None),
                      bank:str=Form(None),
@@ -208,6 +348,13 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 checkUserId.branch = branch
                 checkUserId.pincode = pincode
                 checkUserId.dob = dob
+
+                checkUserId.pan_number = pan_number,
+                checkUserId.aadhaar_number = aadhaar_number,
+                checkUserId.educational_qualification = educational_qualification,
+                checkUserId.area_of_interest = area_of_interest,
+                checkUserId.previous_experience = previous_experience,
+                checkUserId.experience_in_relevent_field=experience_in_relevent_field,
                 checkUserId.address = address
                 checkUserId.state_id = state_id
                 checkUserId.city_id = city_id
@@ -244,10 +391,10 @@ async def updateUser (db:Session=Depends(deps.get_db),
 async def listUser(db:Session =Depends(deps.get_db),
                    token:str=Form(...),page:int=1,
                    size:int=10,phone:str=Form(None),
-                   user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-technical lead,7->Digital Marketing strategist,8-journalist,9-Member"),
+                   user_type:int=Form(None,description="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-Member,10-SEO-Google Strategist,11-Marketing,12-Web designer,13-Graphic Designer"),
                    email:str=Form(None),state_id:int=Form(None),city_id:int=Form(None),
                    name:str=Form(None),
-                   application_status:int=Form(None,description="0->Request,1-interview process,-1 ->rejected")
+                   application_status:int=Form(None,description="1->Request,2-Accepted,3-interview process,-1 ->rejected")
                    ):
     user = deps.get_user_token(db=db,token=token)
 
@@ -275,13 +422,12 @@ async def listUser(db:Session =Depends(deps.get_db),
 
             journalistReq = 0
 
-            if application_status==0 or application_status:
+            if application_status:
                 getAllUser = getAllUser.filter(User.user_type==8,User.is_request == application_status)
-                print(getAllUser.count())
       
 
             if user.user_type in [1,2,3]:
-                getJournalReq=db.query(User).filter(User.user_type == 8,User.status==1,User.is_request==0).count()
+                getJournalReq=db.query(User).filter(User.user_type == 8,User.status==1,User.is_request==1).count()
                 journalistReq = getJournalReq
 
             getAllUser = getAllUser.order_by(User.name.asc())
@@ -290,7 +436,7 @@ async def listUser(db:Session =Depends(deps.get_db),
             totalPages,offset,limit = get_pagination(userCount,page,size)
             getAllUser = getAllUser.limit(limit).offset(offset).all()
             
-            userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","Member"]
+            userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
             dataList = []
             if getAllUser:
                 for userData in getAllUser:
@@ -303,6 +449,9 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "phone":userData.phone,
                             "whatsapp_no":userData.whatsapp_no,
                             "email":userData.email,
+                            "resume_file":f'{settings.BASE_DOMAIN}{userData.resume_path}',
+
+                            "joining_date":userData.joining_date,
                             "dob":userData.dob,
                             "city_id":userData.city_id,
                             "is_request":userData.is_request,
@@ -361,9 +510,10 @@ async def viewUser(db:Session=Depends(deps.get_db),
                 "bank":getUser.bank,
                 "ifsc_code":getUser.ifsc_code,
                 "branch":getUser.branch,
+                "joining_date":getUser.joining_date,
                 "user_status":getUser.is_active,
                 "user_type":getUser.user_type,
-                "resume_path":f'{settings.BASE_DOMAIN}{getUser.resume_path}',
+                "resume_file":f'{settings.BASE_DOMAIN}{getUser.resume_path}',
                 "img_path":f'{settings.BASE_DOMAIN}{getUser.img_path}'
 
             }
@@ -416,28 +566,49 @@ async def activeInactiveUser(db:Session=Depends(deps.get_db),
 @router.post("/change_journalist_request")
 async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                              token:str=Form(...),user_id:int=Form(...),
-                             approval_status:int=Form(...,description="1->Interview Process,2-Approved,-1->Rejected"),
+                           
+                             approval_status:int=Form(...,description="2-Accpted,3-Interview Process,-1 ->rejected"),
+                            user_name:str=Form(None),
+                            password:str=Form(None),
                              comment:str=Form(None)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2,3]:
+        if user:
             getUser = db.query(User).filter(User.id == user_id,
                                             User.status == 1).first()
             getUser.is_request=approval_status
-            getUser.approved_by=user.id
             db.commit()
 
             message =comment
 
-            if approval_status ==2 and not comment:
+            if approval_status ==2 :
+                getUser.approved_by=user.id
+
+                getUser.user_name = user_name
+                getUser.approved_at = datetime.now(settings.tz_IN)
+
+
+                if password:
+                    getUser.password =  get_password_hash(password)
+
+                db.commit()
                 
                 message = (
-                    "Congratulations! Your request for journalist account creation has been successfully approved. "
-                    "You can now proceed with accessing the platform and utilizing the available resources. "
-                    "If you have any questions or need further assistance, please don't hesitate to reach out."
-                )
+                    f"Congratulations! Your request for journalist account creation has been successfully approved. "
+                    f"You can now proceed with accessing the platform and utilizing the available resources. "
+                    f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+                    "<div style='padding-left: 15px;'>"
+                    "<p style='margin: 0;'>Login Credentials:</p>"
+                    "<p style='margin: 0;'>User Name: {user_name}</p>"
+                    "<p style='margin: 0;'>Password: {password}</p>"
+                    "</div>")
 
-            if approval_status ==1 and not comment:
+                if comment:
+                    message = (f"{comment}"
+                               f"    User Name: {user_name}\n"
+                    f"    Password: {password}\n")
+ 
+            if approval_status ==3 and not comment:
 
                 message = (
                     "Your application is currently under review as part of the interview process. "
@@ -446,22 +617,22 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                 )
 
             if approval_status ==-1 and not comment:
+                getUser.rejected_by=user.id
+                getUser.rejected_at = datetime.now(settings.tz_IN)
+                db.commit()
                 message = (
                     "We regret to inform you that your request for journalist account creation has been rejected. "
                     "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
                     "please contact us for more details."
                 )
 
-            approvalSts = ["-","Interview Process","Approved","Rejected"]
+            approvalSts = ["-","-","Accpted","Interview Process","Rejected"]
             subject = f"Journalist Account {approvalSts[approval_status]}"
-            sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,ref_id=getUser.id,
+            sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
                 receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
                 message=message,
             )
             print(sendNotifyEmail)
-
-            # if sendNotifyEmail["status"] != 1:
-            #     return {"status": 1, "msg": "Failed to send email"}
 
             return {"status":1,"msg":"success"}
         else:

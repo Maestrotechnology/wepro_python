@@ -41,13 +41,14 @@ def get_user_token(db: Session, *, token: str) :
 def get_by_user(db: Session, *, username: str):
         
         userTypeData = [1,2,3,4,6]
+        print(username)
         getUser=db.query(User).\
             filter( or_(User.user_name == username,
                        
                         User.phone == username,
                         User.email == username,
                         User.alternative_no == username) ,User.status == 1).first()
-        # print(getUser)
+        print(getUser)
         return getUser
 
 
@@ -55,7 +56,7 @@ def authenticate(db: Session, *, username: str, password: str ,
                   authcode:str ,
                     auth_text:str) -> Optional[models.User]:
     
-        user = get_by_user(db, username=username) 
+        user = get_by_user(db, username=username)
         if not user or user.password == None:
             return None
 

@@ -217,7 +217,7 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
             db.commit()
 
             try:
-                send = await send_mail_req_approval(db,email_type=4,ref_id=checkUser.id,
+                send = await send_mail_req_approval(db,email_type=4,article_id=None,user_id=checkUser.id,
                                                     subject="Forget Password",
                                                     journalistName=checkUser.name,
                                                     receiver_email = checkUser.email,
@@ -285,7 +285,7 @@ async def resendOtp(db:Session = Depends(deps.get_db),
         db.commit()
 
         try:
-            send = await send_mail_req_approval(db,email_type=4,ref_id=getUser.id,
+            send = await send_mail_req_approval(db,email_type=4,article_id=None,ref_id=getUser.id,
                                                     subject="Reset Password",
                                                     journalistName=getUser.name,
                                                     receiver_email = getUser.email,

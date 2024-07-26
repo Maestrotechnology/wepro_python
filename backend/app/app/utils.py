@@ -110,14 +110,14 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
     except Exception as e:
         print(f"Error sending email: {e}")
 
-async def send_mail_req_approval(db,email_type, ref_id, subject,journalistName, receiver_email, message):
+async def send_mail_req_approval(db,email_type,article_id, user_id, subject,journalistName, receiver_email, message):
     from_email = "johnsonkoilraj53@gmail.com"
 
     try:
         # Save email history to database
         addEmailHistory = EmailHistory(
-            article_id=ref_id if email_type==2 else None,
-            user_id=ref_id if email_type in [1,3,4] else None,
+            article_id=article_id ,
+            user_id=user_id ,
             from_email=from_email,
             subject=subject,
             to_email=receiver_email,

@@ -151,7 +151,7 @@ async def listCategory(db:Session =Depends(deps.get_db),
                 "title":row.title,
                 "seo_url":row.seo_url,
                 "description":row.description,
-                "img_path":f"{settings.BASE_DOMAIN}{row.img_path}",
+                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
                 "img_alter":row.img_alter,
                 "sort_order":row.sort_order,
                 "created_at":row.created_at,                  
@@ -193,7 +193,7 @@ async def viewCategory(db:Session =Depends(deps.get_db),
             "description":getCategory.description,
             "img_alter":getCategory.img_alter,
             "sort_order":getCategory.sort_order,
-            "img_path":f"{settings.BASE_DOMAIN}{getCategory.img_path}",
+            "media_file":f"{settings.BASE_DOMAIN}{getCategory.img_path}",
             "created_at":getCategory.created_at,                  
             "updated_at":getCategory.updated_at,                  
             "created_by":getCategory.createdBy.user_name if getCategory.created_by else None,                  
@@ -364,7 +364,7 @@ async def listSubCategory(db:Session =Depends(deps.get_db),
                 "description":row.description,
                 "category_id":row.category_id,
                 "category_title": row.category.title if row.category_id else None,
-                "img_path":f"{settings.BASE_DOMAIN}{row.img_path}",
+                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
                 "sort_order":row.sort_order,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at,                  
@@ -406,7 +406,7 @@ async def viewSubCategory(db:Session =Depends(deps.get_db),
             "img_alter":getSubCategory.img_alter,
             "description":getSubCategory.description,
             "sort_order":getSubCategory.sort_order,
-            "img_path":f"{settings.BASE_DOMAIN}{getSubCategory.img_path}",
+            "media_file":f"{settings.BASE_DOMAIN}{getSubCategory.img_path}",
             "created_at":getSubCategory.created_at,                  
             "updated_at":getSubCategory.updated_at,                  
             "created_by":getSubCategory.createdBy.user_name if getSubCategory.created_by else None,                  
@@ -431,6 +431,183 @@ async def deleteSubCategory(db:Session=Depends(deps.get_db),
             getSubCategory = getSubCategory.update({"status":-1})
             db.commit()
             return {"status":1,"msg":"SubCategory successfully deleted."}
+        else:
+            return {'status':0,"msg":"You are not authenticated to delete sub category"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
+    
+
+#--Article topic
+
+
+@router.post("/add_topic")
+async def addTopic(db:Session = Depends(deps.get_db),
+                     topic:str=Form(...),
+                     description:str=Form(None),
+                     category_id:int=Form(...),
+                     token:str=Form(...),
+                     ):
+    
+    user=deps.get_user_token(db=db,token=token)
+    
+    if user:
+        if user:
+
+            existTopic = db.query(Category).filter(ArticleTopic.id!=category_id,
+                                                   ArticleTopic.topic==topic,ArticleTopic.status==1).first()
+
+            if existTopic:
+                return {"status":0,"msg":"This Topic already Created."}
+
+            addArticleTopic = ArticleTopic(
+            topic = topic,
+            description = description,
+            category_id = category_id,
+            status=1,
+            created_at = datetime.now(settings.tz_IN),
+            created_by = user.id)
+
+            db.add(addArticleTopic)
+            db.commit()
+
+
+            return {"status":1,"msg":"Successfully ArticleTopic Added"}
+
+        else:
+            return {'status':0,"msg":"You are not authenticated to update ArticleTopic."}
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+
+@router.post("/update_article_topic")
+async def updateArticleTopic(db:Session = Depends(deps.get_db),
+                     article_topic_id:int=Form(...),
+                    topic:str=Form(None),
+                     description:str=Form(None),
+                     token:str=Form(...),
+                     
+                     ):
+    
+    user=deps.get_user_token(db=db,token=token)
+    
+    if user:
+        if user.user_type in [1,2]:
+
+            existTopic = db.query(ArticleTopic).filter(ArticleTopic.id!=article_topic_id,
+                                                   ArticleTopic.topic==topic,ArticleTopic.status==1).first()
+
+            if existTopic:
+                return {"status":0,"msg":"This topic already used."}
+
+            getArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.id==article_topic_id).first()
+
+            if not getArticleTopic:
+                return{"status":0,"msg":"Not Found"}
+            
+
+            getArticleTopic.topic = topic
+            getArticleTopic.description = description
+            getArticleTopic.updated_at = datetime.now(settings.tz_IN)
+            getArticleTopic.updated_by = user.id
+
+            db.commit()
+
+            return {"status":1,"msg":"Successfully ArticleTopic Updated"}
+
+        else:
+            return {'status':0,"msg":"You are not authenticated to update ArticleTopic."}
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+
+
+
+@router.post("/list_article_topic")
+async def listArticleTopic(db:Session =Depends(deps.get_db),
+                       token:str = Form(...),
+                       topic:str=Form(None),
+                       page:int=1,size:int = 10):
+    user=deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1)
+
+
+            if topic:
+                getAllArticleTopic =  getAllArticleTopic.filter(ArticleTopic.topic.like("%"+topic+"%"))
+
+
+            totalCount = getAllArticleTopic.count()
+            totalPages,offset,limit = get_pagination(totalCount,page,size)
+            getAllArticleTopic = getAllArticleTopic.limit(limit).offset(offset).all()
+
+            dataList=[]
+            if getAllArticleTopic:
+                for row in getAllArticleTopic:
+                    dataList.append({
+                "topic":row.topic,
+                "description":row.description,
+                "category_id":row.category_id,
+                "category_title": row.category.title if row.category_id else None,
+                "created_at":row.created_at,                  
+                "updated_at":row.updated_at,                  
+                "created_by":row.createdBy.user_name if row.created_by else None,                  
+                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                      }  )
+            
+            data=({"page":page,"size":size,
+                   "total_page":totalPages,
+                   "total_count":totalCount,
+                   "items":dataList})
+        
+            return ({"status":1,"msg":"Success","data":data})
+        else:
+            return {'status':0,"msg":"You are not authenticated to view ArticleTopic."}
+    else:
+        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+    
+@router.post("/view_article_topic")
+async def viewArticleTopic(db:Session =Depends(deps.get_db),
+                   token:str=Form(...),
+                   article_topic_id:int=Form(...),
+                   ):
+    user = deps.get_user_token(db=db,token=token)
+
+    if user:
+            
+        getArticleTopic = db.query(ArticleTopic).filter(
+            ArticleTopic.status==1,ArticleTopic.id==article_topic_id).first()
+        
+        if not getArticleTopic:
+            return {"status":0,"msg":"No Record Found"}
+
+        data={
+            "article_topic_id":getArticleTopic.id,
+            "category_title": getArticleTopic.category.title if getArticleTopic.category_id else None,
+            "topic":getArticleTopic.topic,
+            "description":getArticleTopic.description,
+            "created_at":getArticleTopic.created_at,                  
+            "updated_at":getArticleTopic.updated_at,                  
+            "created_by":getArticleTopic.createdBy.user_name if getArticleTopic.created_by else None,                  
+            "updated_by":getArticleTopic.updatedBy.user_name if getArticleTopic.updated_by else None,                  
+            }
+
+        return ({"status":1,"msg":"Success.","data":data})
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+    
+
+@router.post("/delete_article_topic")
+async def deleteArticleTopic(db:Session=Depends(deps.get_db),
+                     token:str = Form(...),
+                     article_topic_id:int=Form(...)):
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user :
+            getArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.id == article_topic_id,
+                                            ArticleTopic.status == 1)
+            
+            getArticleTopic = getArticleTopic.update({"status":-1})
+            db.commit()
+            return {"status":1,"msg":"ArticleTopic successfully deleted."}
         else:
             return {'status':0,"msg":"You are not authenticated to delete sub category"}
     else:
