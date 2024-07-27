@@ -229,7 +229,7 @@ async def journalistbarchart(
         return {
             "status": 1,
             "msg": "Success",
-            "pagination": {
+            "data": {
                 "page": page,
                 "size": size,
                 "total_pages": total_pages,

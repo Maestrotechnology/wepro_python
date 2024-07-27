@@ -30,6 +30,7 @@ class Article(Base):
     is_journalist = Column(TINYINT,comment="1-yes")
     sub_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
     chief_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
+    editors_choice = Column(TINYINT,default=1,comment="1->No,2->yes")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
     created_at=Column(DateTime)

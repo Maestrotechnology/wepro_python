@@ -95,6 +95,39 @@ async def cityDropDown(db:Session = Depends(deps.get_db),
     return {'status':-1,"msg":"Your login session expires.Please login later."}
 
 
+@router.post("/topic_dropdown")
+async def topicDropDown(db:Session=Depends(deps.get_db),
+                       token:str=Form(...),
+                       category_id:int=Form(None)):
+    user = deps.get_user_token(db=db,token =token)
+    if user:
+        if user:
+
+            getArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status == 1)
+
+            count = getArticleTopic.count()
+
+            if category_id:
+                getArticleTopic =getArticleTopic.filter(ArticleTopic.category_id==category_id)
+                
+            getArticleTopic = getArticleTopic.order_by(ArticleTopic.topic.asc()).all()
+            
+            dataList =[]
+
+            if getArticleTopic:
+                for topic in getArticleTopic:
+                    dataList.append({
+                        "topic_id":topic.id,
+                        "category_id":topic.category_id,
+                        "topic":topic.topic
+                    })
+
+            return {"status":1,"msg":"Success","data":dataList}
+        else:
+            return {"status":0,"msg":"You are not authenticated to see the Category details."}
+    return {'status':-1,"msg":"Your login session expires.Please login later."}
+
+
 @router.post("/category_dropdown")
 async def categoryDropDown(db:Session=Depends(deps.get_db),
                        token:str=Form(...)):

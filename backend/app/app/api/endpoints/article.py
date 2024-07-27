@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.post("/create_article")
-async def CreateArticle(db:Session =Depends(deps.get_db),
+async def createArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
                    topic:str=Form(...),
                    content:str=Form(None),
