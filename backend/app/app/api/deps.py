@@ -41,14 +41,12 @@ def get_user_token(db: Session, *, token: str) :
 def get_by_user(db: Session, *, username: str):
         
         userTypeData = [1,2,3,4,6]
-        print(username)
         getUser=db.query(User).\
             filter( or_(User.user_name == username,
                        
                         User.phone == username,
                         User.email == username,
                         User.alternative_no == username) ,User.status == 1).first()
-        print(getUser)
         return getUser
 
 

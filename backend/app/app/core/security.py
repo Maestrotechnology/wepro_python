@@ -35,7 +35,7 @@ def check_authcode(authcode: str, auth_text: str):
     auth_text = salt+auth_text
     
     result = hashlib.sha1(auth_text.encode())
-    print(result.hexdigest())
+    # print(result.hexdigest())
     
     if authcode == result.hexdigest():
         return True

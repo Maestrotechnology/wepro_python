@@ -16,7 +16,10 @@ class ArticleHistory(Base):
     sub_editor_notify = Column(TINYINT,comment="1->Notify,2->Read")
     chief_editor_notify = Column(TINYINT,comment="1->Notify,2->Read")
     journalist_notify = Column(TINYINT,comment="1->Notify,2->Read")
+    is_topic=Column(TINYINT,comment="1->yes")
+    is_content=Column(TINYINT,comment="1->yes")
     status=Column(TINYINT,comment="1->active,-1->deleted")
+
     created_at=Column(DateTime)
 
     created_by = Column(Integer,ForeignKey("user.id"),comment="user id")

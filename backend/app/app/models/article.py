@@ -9,7 +9,9 @@ class Article(Base):
     id=Column(Integer,primary_key=True)
     content=Column(String(250))
     topic=Column(String(250))
+    article_title=Column(String(500))
     description=Column(String(250))
+
     content = Column(String(2500))
     is_paid = Column(TINYINT,default=1,comment="1-pending,2-Paid")
 
@@ -34,6 +36,7 @@ class Article(Base):
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
     created_at=Column(DateTime)
+    published_at=Column(DateTime)
     updated_at=Column(DateTime)
 
     created_by = Column(Integer,ForeignKey("user.id"),comment="user id")

@@ -178,6 +178,67 @@ import calendar
     
 
 
+
+@router.post("/article_barchart")
+async def articleBarchart(db:Session=Depends(deps.get_db),
+                     token:str = Form(...),
+                     journalist_id:int=Form(None),
+                     fromdate: date = Form(None),
+                      page:int=1,size:int=10,
+                    todate: date = Form(None)):
+    
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        data = []
+        current_date = fromdate
+        offset = (page - 1) * size
+        days = (todate - fromdate).days + 1
+        dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
+
+        paginated_dates = dates_to_query[offset:offset + size]
+
+        for current_date in paginated_dates:
+            next_date = current_date + timedelta(days=1)
+
+            totalArticle = db.query(Article).filter(
+                cast(Article.created_at, Date) == current_date,
+                Article.status == 1,
+            ).count()
+
+            published = db.query(Article).filter(
+                cast(Article.published_at, Date) == current_date,
+                Article.status == 1,
+            ).count()
+
+            # getRejected = db.query(Article).filter(
+            #     cast(Article.rejected_at, Date) == current_date,
+            #     Article.status == 1,
+            # ).count()
+
+            data.append({
+                "date": current_date.strftime("%Y-%m-%d"),
+                "total_article": totalArticle,
+                "published": published,
+                # "rejected": getRejected,
+            })
+
+        total_pages = (days + size - 1) // size  # Calculate total pages
+
+        return {
+            "status": 1,
+            "msg": "Success",
+            "data": {
+                "page": page,
+                "size": size,
+                "total_pages": total_pages,
+                "total_count": days,
+                "items": data,
+            }
+        }
+    else:
+        return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
+
+    
 @router.post("/journalist_barchart")
 async def journalistbarchart(
     db: Session = Depends(deps.get_db),

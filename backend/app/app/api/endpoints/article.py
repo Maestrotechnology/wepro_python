@@ -14,6 +14,66 @@ from sqlalchemy import func
 
 router = APIRouter()
 
+@router.post("/send_topic_request")
+async def sendTopicReq(db:Session=Depends(deps.get_db),
+                       token:str=Form(...),
+                       topic_id:int=Form(None),
+                       topic:str=Form(None),
+                       category_id:int=Form(None),
+                       description:str=Form(...),
+                       submition_date:date=Form(None),
+                       ):
+    
+    user=deps.get_user_token(db=db,token=token)
+    
+    if user:
+        if user:
+
+            getTopic = None
+
+            if topic_id:
+                getTopic = db.query(ArticleTopic).\
+                filter(ArticleTopic.status==1,Article.id==topic_id).first()
+
+                if not getTopic :
+                    return {"status":0,"msg":"This Topic is Not available"}
+                
+            addArticle = Article(
+                created_at = datetime.now(settings.tz_IN),
+                article_topic_id = topic_id,
+                topic = topic if not getTopic else getTopic.topic,
+                category_id = category_id,
+                description = description if not getTopic else getTopic.description,
+                submition_date = submition_date,
+                created_by = user.id,
+                is_journalist = 1,
+                editors_choice = 2 if getTopic else 1,
+                status=1,
+                topic_approved = 5 if getTopic else 1,
+            )
+
+            db.add(addArticle)
+            db.commit()
+
+            addHistory = ArticleHistory(
+                    article_id = addArticle.id,
+                    comment = "The Article Topic is Send for Approval",
+                    journalist_id = addArticle.created_by ,
+                    sub_editor_notify = 1,
+                    chief_editor_notify =0,
+                    journalist_notify = 0,
+                    status=1,
+                    created_at =datetime.now(settings.tz_IN),
+                    created_by = user.id
+                )
+            db.add(addHistory)
+            db.commit()
+            return {"status":1,"msg":"Article Topic Request send Sucessfully"}
+        
+        return ({"status":1,"msg":"Successfully New Article Published. ","article_id":addArticle.id})
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+
 
 @router.post("/create_article")
 async def createArticle(db:Session =Depends(deps.get_db),
@@ -29,7 +89,6 @@ async def createArticle(db:Session =Depends(deps.get_db),
                    sub_category_id:int=Form(...),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
-                #    article_files: Optional[List[UploadFile]] = File(None),
                    img_alter:str=Form(None),
                    ):
     
@@ -37,6 +96,7 @@ async def createArticle(db:Session =Depends(deps.get_db),
 
     if user:
         if user:
+
 
             addArticle = Article(
                 topic=topic,
@@ -52,6 +112,7 @@ async def createArticle(db:Session =Depends(deps.get_db),
                 topic_approved=3 if user.user_type!=8 else 0,
                 sub_category_id=sub_category_id,
                 city_id=city_id,
+                is_journalist = 1 if user.user_type==8 else None,
                 state_id=state_id,
                 status=1,
                 created_by = user.id,
@@ -74,34 +135,6 @@ async def createArticle(db:Session =Depends(deps.get_db),
                 )
                 db.add(addHistory)
                 db.commit()
-
-            # if article_files :
-            #     row = 0
-            #     imageData =[]
-            #     for file in article_files:
-            #         uploadedFile = file.filename
-            #         fName,*etn = uploadedFile.split(".")
-            #         filePath,returnFilePath = file_storage(file,fName)
-
-            #         imageData.append({
-            #             "img_path" : returnFilePath,
-            #             "img_alter" : img_alter,
-            #             "created_at" : datetime.now(settings.tz_IN),
-            #             "status" : 1,
-            #             "article_id":addArticle.id,
-            #             "created_by":user.id
-            #         })
-            #         row += 1
-                
-            #     try:
-            #         with db as conn:
-            #             conn.execute(ArticleFiles.__table__.insert().values(imageData))
-            #             conn.commit()
-            #     except Exception as e:
-            #         addArticle.status=-1
-            #         db.commit()
-            #         print(f"Error during bulk insert: {str(e)}")
-            #         return ({"status":0,"msg":"Error during article creation"})
 
         return ({"status":1,"msg":"Successfully New Article Published. ","article_id":addArticle.id})
     else:
@@ -129,7 +162,8 @@ async def deleteArticle(db:Session=Depends(deps.get_db),
 async def updateArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
                    article_id:int=Form(...),
-                   topic:str=Form(...),
+                   sub_category_id:int=Form(...),
+                   article_title:str=Form(...),
                    content:str=Form(...),
                    meta_title:str=Form(None),
                    submition_date:date=Form(None),
@@ -153,16 +187,16 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"Article Not Found"}
             
-            getArticle.topic=topic
+            getArticle.article_title=article_title
             getArticle.img_alter=img_alter
             getArticle.content=content
+            getArticle.sub_category_id=sub_category_id
+
             getArticle.meta_title=meta_title
             getArticle.meta_description=meta_description
             getArticle.meta_keywords=meta_keywords
             getArticle.seo_url=seo_url
             getArticle.submition_date=submition_date
-            # getArticle.content_approved=2
-            # getArticle.topic_approved=2
             getArticle.city_id=city_id
             getArticle.state_id=state_id
             getArticle.status=1
@@ -170,39 +204,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.updated_at = datetime.now(settings.tz_IN)
             db.commit()
 
-            # if article_files :
-
-            #     delFiles = db.query(ArticleFiles).\
-            #         filter(ArticleFiles.article_id==getArticle.id).update({"status":-1})
-                
-            #     db.commit()
-
-            #     row = 0
-            #     imageData =[]
-            #     for file in article_files:
-            #         uploadedFile = file.filename
-            #         fName,*etn = uploadedFile.split(".")
-            #         filePath,returnFilePath = file_storage(file,fName)
-
-            #         imageData.append({
-            #             "img_path" : returnFilePath,
-            #             "img_alter" : img_alter,
-            #             "created_at" : datetime.now(settings.tz_IN),
-            #             "status" : 1,
-            #             "article_id":getArticle.id,
-            #             "created_by":user.id
-            #         })
-            #         row += 1
-                
-            #     try:
-            #         with db as conn:
-            #             conn.execute(ArticleFiles.__table__.insert().values(imageData))
-            #             conn.commit()
-            #     except Exception as e:
-
-            #         print(f"Error during bulk insert: {str(e)}")
-                    # return ({"status":0,"msg":"Error during article Update"})
-
+         
         return ({"status":1,"msg":"Successfully Article Updated. "})
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
@@ -237,11 +239,15 @@ async def viewArticle(db:Session =Depends(deps.get_db),
                 "img_alter":eachFile.img_alter,
             })
         
-        approvedStatus =["New","Sub Edior Approved","Chief Editor Approved","On Hold"]
+        approvedStatus =["-","New","review","comment","Sub Edior Approved","Chief Editor Approved"]
+        contentApprovedStatus =["-","New","review","comment","Sub Edior Approved","Chief Editor Approved/Published"]
 
         data={
             "article_id":getArticle.id,
             "topic":getArticle.topic,
+            "editors_choice":getArticle.editors_choice,
+            "is_paid":getArticle.is_paid,
+            "article_title":getArticle.article_title,
             "content":getArticle.content,
             "submition_date":getArticle.submition_date,
             "meta_title":getArticle.meta_title,
@@ -254,7 +260,7 @@ async def viewArticle(db:Session =Depends(deps.get_db),
             "is_journalist":getArticle.is_journalist,
             "city_name":getArticle.cities.name if getArticle.city_id else None,
             "topic_approved": approvedStatus[getArticle.topic_approved] if getArticle.topic_approved else None,
-            "content_approved": approvedStatus[getArticle.content_approved] if getArticle.content_approved else None,
+            "content_approved": contentApprovedStatus[getArticle.content_approved] if getArticle.content_approved else None,
             "approval_chief_editor":getArticle.chief_editor_id,
             "chief_editor_name":getArticle.chiefEditerUser.user_name if getArticle.chief_editor_id else None, 
             "sub_editor_name":getArticle.subEditerUser.user_name if getArticle.sub_editor_id else None, 
@@ -289,7 +295,7 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
         if user.user_type in [1,2,3]:
             getDeadlineArticles = db.query(Article).filter(
                     Article.status==1,
-                    Article.content_approved==0,
+                    Article.content_approved==1,
                     Article.submition_date<=datetime.now(settings.tz_IN)
                 )
             if state_id:
@@ -370,8 +376,9 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        journalist_id:int=Form(None),
                        section_type:int=Form(None,description="1-Topic,2-Content"),
 
-                       article_status:int=Form(None,description="1-new,2-waiting for approval,3-onhold"),
-
+                       article_status:int=Form(None,description="1-new,2-review,3-comment,4-pending all,5-published"),
+                       editors_choice:int=Form(None,description="1-no,2-yes"),
+                       is_paid :int =Form(None,description="1-pending,2-paid"),
                     #    topic_approval_status:int=Form(None,description="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold"),
                     #    contant_approval_status:int=Form(None,description="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold"),
                        page:int=1,size:int = 10):
@@ -383,6 +390,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             if state_id:
                 getAllArticle = getAllArticle.filter(Article.state_id==state_id)
+            if is_paid:
+                getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
+            if editors_choice:
+                getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
             if journalist_id:
                 getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
             if city_id:
@@ -394,59 +405,38 @@ async def listArticle(db:Session =Depends(deps.get_db),
             if sub_category_id:
                 getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
 
-            if not article_status:
-                getAllArticle = getAllArticle.filter(and_(Article.topic_approved==3,
-                                                          Article.content_approved==3,
-                ))
+            if article_status==4:
+                getAllArticle = getAllArticle.filter(Article.content_approved!=5)
 
-            # approval_pending = db.query(Article).filter(Article.status==1,or_(Article.topic_approved!=3,
-            #                                               Article.content_approved.not_in([0,3]),
-            #     ))
-            
-            approval_pending = db.query(Article).filter(Article.status==1,or_(Article.topic_approved==4,
-                                                          Article.content_approved==4),
-                )
+   
+            approval_pending = db.query(Article).filter(Article.status==1,
+                                                          Article.content_approved!=5)
             
             if user.user_type==8:
                 approval_pending =approval_pending.filter(Article.created_by==user.id)
+                getAllArticle = getAllArticle.filter(Article.created_by==user.id)
 
             approval_pending =approval_pending.count()
 
-            if (article_status!=2 and article_status) and not section_type:
+            if article_status and article_status not in [4,5]:
 
-                articleSts =[4 if article_status==3 else article_status ]
-
-                if article_status==1:
-                    articleSts = [0,1,2]
-
-
-                getAllArticle = getAllArticle.filter(or_(Article.topic_approved.in_(articleSts),
-                                                     Article.content_approved.in_(articleSts)))
+                getAllArticle = getAllArticle.filter(or_(Article.topic_approved==article_status,
+                                                     Article.content_approved==article_status))
             
-            if article_status==2 and section_type:
-
                 
-                if section_type==2:
+            if section_type==2:
 
-                    getAllArticle = getAllArticle.filter(and_(Article.topic_approved==3,
-                                                            #   Article.topic_approved!=4,
-                                                              Article.content_approved.not_in([3,4])) )
+                getAllArticle = getAllArticle.filter(and_(Article.topic_approved==5,
+                                                        #   Article.topic_approved!=4,
+                                                            Article.content_approved.not_in([4,5])) )
                     
-                if section_type==1:
-                    getAllArticle = getAllArticle.filter(
-                                                        Article.topic_approved.in_([0,1,2]))
-                    # print(getAllArticle.count())
+            if article_status==5:
+                getAllArticle = getAllArticle.filter(
+                                                    Article.content_approved==5)
                 
-                # if section_type==2:
-                #     getAllArticle = getAllArticle.filter(
-                #                                         Article.content_approved.in_([0,1]))
-
-            # if topic_approval_status:
-            #     getAllArticle = getAllArticle.filter(Article.topic_approved==topic_approval_status)
-
-            # if contant_approval_status:
-                
-            #     getAllArticle = getAllArticle.filter(Article.content_approved==contant_approval_status)
+            if section_type==3:
+                getAllArticle = getAllArticle.filter(
+                                                    Article.topic_approved.in_([1,2,3,4]))
 
             notifyCount = 0
             deadlineArtcileCount = 0
@@ -456,7 +446,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
             if user.user_type in [1,2,3]:
                 getDeadlineArticles = db.query(Article).filter(
                     Article.status==1,
-                    Article.content_approved==0,
+                    Article.content_approved==1,
                     Article.submition_date<=datetime.now(settings.tz_IN)
                 ).count()
                 deadlineArtcileCount = getDeadlineArticles
@@ -486,12 +476,17 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             dataList=[]
 
-            stsName = ["Not submitted","new","SE approved","CE Approved","Approved","On Hold"]
+            stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+            contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+            paymentStatus = ["-","Pending","Paid"]
             if getAllArticle:
                 for row in getAllArticle:
                     dataList.append({
                 "article_id":row.id,
                 "meta_title":row.meta_title,
+                "editors_choice":row.editors_choice,
+                "is_paid":row.is_paid,
+
                 "meta_description":row.meta_description,
                 "category_id":row.category_id,
                 "seo_url":row.seo_url,
@@ -509,7 +504,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "topic_approved":row.topic_approved,
                 "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
                 "content_approved":row.content_approved,
-                "content_approved_name":stsName[row.content_approved] if row.content_approved else None,
+                "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at, 
                 "journalist_id":row.created_by,                 
@@ -611,6 +606,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
                                        if user.user_type in [1,2,3,5] else None)),
                 journalist_notify = 1,
                 status=1,
+                is_topic=1,
                 created_at =datetime.now(settings.tz_IN),
                 created_by = user.id
             )
@@ -634,7 +630,7 @@ async def journalist_artical_update(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type==7:
+        if user.user_type==8:
             getArticle = db.query(Article).filter(Article.status==1,
                                 Article.id==article_id).first()
             
@@ -671,7 +667,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                      token:str=Form(...),
                      comment : str=Form(None),
                      article_id:int=Form(...),
-                     approved_status:int=Form(None,description="2-Review,3-comment,4-SE approved,5-CE Approved"),
+                     approved_status:int=Form(None,description="2-Review,3-comment,4-SE approved,5-CE Approved/Published"),
 
                      ):
     
@@ -688,6 +684,9 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             
             approvedStatus =["-","new","Review","comment","SE approved","CE Approved/Published",]
             getArticle.content_approved = approved_status
+
+            if approved_status==5:
+                getArticle.published_at =datetime.now(settings.tz_IN)
 
 
             msgForCmt = [
@@ -729,7 +728,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             )
         
 
-            if user.user_type in [1,2]:
+            if user.user_type in [1,2,3]:
                 getArticle.content_approved = approved_status
 
             db.commit()
@@ -749,6 +748,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                                        if user.user_type in [1,2,3,5] else None)),
                 journalist_notify = 1,
                 status=1,
+                is_content=1,
                 created_at =datetime.now(settings.tz_IN),
                 created_by = user.id
             )

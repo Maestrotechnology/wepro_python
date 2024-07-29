@@ -127,8 +127,8 @@ async def signUp(db:Session = Depends(deps.get_db),
     
 
     subject ="Sign-Up Confirmed"
-    comment=" THANK YOU FOR YOUR INTEREST,OUR TEAM WILL CONTACT YOU SOON”. "
-    mailForArticleUpdate = await send_mail_req_approval(
+    comment="Thank you for signing up! We appreciate your interest and look forward to connecting with you soon. Our team will reach out to you shortly. "
+    mailForSignupUpdate = await send_mail_req_approval(
     db,5,None,createUsers.id,subject,name,email,comment
     )
     return {"status":1,"msg":"Success."}
@@ -222,7 +222,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                 state_id = state_id,
                 city_id = city_id,
                 is_request =2,
-                # approved_by =user.id if user_type==7 else None,
+                approved_by =user.id,
                 password =  get_password_hash(password),
                 is_active = 1,
                 created_at = datetime.now(settings.tz_IN),
@@ -232,6 +232,22 @@ async def createUser(db:Session = Depends(deps.get_db),
             
             db.add(createUsers)
             db.commit()
+
+            message = (
+                    f"Congratulations! Your account has been successfully created."
+                    f"You can now proceed with accessing the platform and utilizing the available resources. "
+                    f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+                    "<div style='padding-left: 15px;'>"
+                    "<p style='margin: 0;'>Login Credentials:</p>"
+                    "<p style='margin: 0;'>User Name: {user_name}</p>"
+                    "<p style='margin: 0;'>Password: {password}</p>"
+                    "</div>")
+
+            subject = f"Account Creation"
+            sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=createUsers.id,
+                receiver_email=createUsers.email,subject=subject,journalistName=createUsers.name,
+                message=message,
+            )
 
             if resume_file:
 
@@ -406,8 +422,8 @@ async def listUser(db:Session =Depends(deps.get_db),
             if user_type:
                 getAllUser = getAllUser.filter(User.user_type == user_type)
 
-            if user_type==8 and (application_status!=0 and not application_status):
-                getAllUser = getAllUser.filter(User.is_request == 2)
+            if application_status:
+                getAllUser = getAllUser.filter(User.is_request == application_status)
 
             if phone:
                 getAllUser = getAllUser.filter(User.phone== phone )
@@ -422,12 +438,8 @@ async def listUser(db:Session =Depends(deps.get_db),
 
             journalistReq = 0
 
-            if application_status:
-                getAllUser = getAllUser.filter(User.user_type==8,User.is_request == application_status)
-      
-
             if user.user_type in [1,2,3]:
-                getJournalReq=db.query(User).filter(User.user_type == 8,User.status==1,User.is_request==1).count()
+                getJournalReq=db.query(User).filter(User.status==1,User.is_request==1).count()
                 journalistReq = getJournalReq
 
             getAllUser = getAllUser.order_by(User.name.asc())
@@ -450,7 +462,6 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "whatsapp_no":userData.whatsapp_no,
                             "email":userData.email,
                             "resume_file":f'{settings.BASE_DOMAIN}{userData.resume_path}',
-
                             "joining_date":userData.joining_date,
                             "dob":userData.dob,
                             "city_id":userData.city_id,
@@ -594,10 +605,10 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                 db.commit()
                 
                 message = (
-                    f"Congratulations! Your request for journalist account creation has been successfully approved. "
+                    f"Congratulations! Your request for account creation has been successfully approved. "
                     f"You can now proceed with accessing the platform and utilizing the available resources. "
                     f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
-                    "<div style='padding-left: 15px;'>"
+                    "<div>"
                     "<p style='margin: 0;'>Login Credentials:</p>"
                     "<p style='margin: 0;'>User Name: {user_name}</p>"
                     "<p style='margin: 0;'>Password: {password}</p>"
@@ -621,12 +632,12 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                 getUser.rejected_at = datetime.now(settings.tz_IN)
                 db.commit()
                 message = (
-                    "We regret to inform you that your request for journalist account creation has been rejected. "
+                    "We regret to inform you that your request for account creation has been rejected. "
                     "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
                     "please contact us for more details."
                 )
 
-            approvalSts = ["-","-","Accpted","Interview Process","Rejected"]
+            approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
             subject = f"Journalist Account {approvalSts[approval_status]}"
             sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
                 receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
