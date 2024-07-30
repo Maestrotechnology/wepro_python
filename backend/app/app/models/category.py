@@ -10,6 +10,8 @@ class Category(Base):
     description=Column(String(250))
     title=Column(String(250))
     seo_url = Column(String(250))
+    is_active = Column(TINYINT,comment = "1->active,0->inactive")
+
 
     img_alter=Column(String(250))
     img_path = Column(Text)

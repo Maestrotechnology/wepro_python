@@ -10,6 +10,7 @@ class SubCategory(Base):
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
     seo_url = Column(String(250))
+    is_active = Column(TINYINT,comment = "1->active,0->inactive")
 
     title=Column(String(250))
     img_alter=Column(String(250))

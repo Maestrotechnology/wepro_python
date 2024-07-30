@@ -16,6 +16,9 @@ class ArticleHistory(Base):
     sub_editor_notify = Column(TINYINT,comment="1->Notify,2->Read")
     chief_editor_notify = Column(TINYINT,comment="1->Notify,2->Read")
     journalist_notify = Column(TINYINT,comment="1->Notify,2->Read")
+    topic_status = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved,5-CE Approved")
+    content_status = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved,5-Published(CE Approved)")
+  
     is_topic=Column(TINYINT,comment="1->yes")
     is_content=Column(TINYINT,comment="1->yes")
     status=Column(TINYINT,comment="1->active,-1->deleted")

@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash,verify_password
 from datetime import datetime,date,timedelta
 from app.utils import *
-from sqlalchemy import or_,func,case,extract,cast,Date
+from sqlalchemy import or_,func,case,extract,cast,Date,distinct
 from app.core import security
 
 import random
@@ -175,14 +175,11 @@ import calendar
 #         }
 #     else:
 #         return {"status": -1, "msg": "Your login session expires. Please login again."}
-    
 
 
-
-@router.post("/article_barchart")
-async def articleBarchart(db:Session=Depends(deps.get_db),
+@router.post("/content_barchart")
+async def contentBarchart(db:Session=Depends(deps.get_db),
                      token:str = Form(...),
-                     journalist_id:int=Form(None),
                      fromdate: date = Form(None),
                       page:int=1,size:int=10,
                     todate: date = Form(None)):
@@ -200,26 +197,151 @@ async def articleBarchart(db:Session=Depends(deps.get_db),
         for current_date in paginated_dates:
             next_date = current_date + timedelta(days=1)
 
-            totalArticle = db.query(Article).filter(
-                cast(Article.created_at, Date) == current_date,
-                Article.status == 1,
-            ).count()
+            totalArticle = db.query(func.count(distinct(ArticleHistory.article_id))).filter(
+                cast(ArticleHistory.created_at, Date) == current_date,
+                ArticleHistory.status == 1,
+                ArticleHistory.is_content==1,
+                Article.status==1
+            ).join(Article,ArticleHistory.article_id==Article.id)
+         
+            topicReview = db.query(ArticleHistory).filter(
+                cast(ArticleHistory.created_at, Date) == current_date,
+                ArticleHistory.status == 1,
+                ArticleHistory.is_content==1,
+                Article.status==1
+            ).join(Article,ArticleHistory.article_id==Article.id)
+         
+            topicComment = db.query(ArticleHistory).filter(
+                cast(ArticleHistory.created_at, Date) == current_date,
+                ArticleHistory.status == 1,
+                ArticleHistory.is_content==1,
+                Article.status==1
+            ).join(Article,ArticleHistory.article_id==Article.id)
 
-            published = db.query(Article).filter(
-                cast(Article.published_at, Date) == current_date,
-                Article.status == 1,
-            ).count()
+            topicApproved = db.query(ArticleHistory).filter(
+                cast(ArticleHistory.created_at, Date) == current_date,
+                ArticleHistory.status == 1,
+                ArticleHistory.is_content==1,
+                Article.status==1
+            ).join(Article,ArticleHistory.article_id==Article.id)
+            
+            
+            if user.user_type==4:
 
-            # getRejected = db.query(Article).filter(
-            #     cast(Article.rejected_at, Date) == current_date,
-            #     Article.status == 1,
-            # ).count()
+                totalArticle=totalArticle.filter(
+                ArticleHistory.chief_editor_id==user.id,
+                                               )
+                topicReview=topicReview.filter(ArticleHistory.content_status==2,
+                ArticleHistory.chief_editor_id==user.id,
+                                               )
+                
+                topicComment=topicComment.filter(ArticleHistory.content_status==3,
+                ArticleHistory.chief_editor_id==user.id,
+                                               )
+                topicApproved=topicApproved.filter(ArticleHistory.content_status==5,
+                ArticleHistory.chief_editor_id==user.id,
+                                               )
+                
+            if user.user_type==5:
 
+                totalArticle=totalArticle.filter(
+                ArticleHistory.sub_editor_id==user.id,
+                                               )
+                topicReview=topicReview.filter(ArticleHistory.content_status==2,
+                ArticleHistory.sub_editor_id==user.id,
+                                               )
+                
+                topicComment=topicComment.filter(ArticleHistory.content_status==3,
+                ArticleHistory.sub_editor_id==user.id,
+                                               )
+                topicApproved=topicApproved.filter(ArticleHistory.content_status==4,
+                ArticleHistory.sub_editor_id==user.id,
+                                               )
+            totalArticle = totalArticle.scalar()
+            topicReview = topicReview.count()
+            topicComment = topicComment.count()
+            topicApproved = topicApproved.count()
+           
             data.append({
                 "date": current_date.strftime("%Y-%m-%d"),
                 "total_article": totalArticle,
-                "published": published,
+                "review": topicReview,
+                "comment": topicComment,
+                "approved":topicApproved
                 # "rejected": getRejected,
+            })
+
+        total_pages = (days + size - 1) // size  # Calculate total pages
+
+        return {
+            "status": 1,
+            "msg": "Success",
+            "data": {
+                "page": page,
+                "size": size,
+                "total_pages": total_pages,
+                "total_count": days,
+                "items": data,
+            }
+        }
+    else:
+        return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
+
+
+
+@router.post("/topic_barchart")
+async def topicBarchart(db:Session=Depends(deps.get_db),
+                     token:str = Form(...),
+                     fromdate: date = Form(None),
+                      page:int=1,size:int=10,
+                    todate: date = Form(None)):
+    
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        data = []
+        current_date = fromdate
+        offset = (page - 1) * size
+        days = (todate - fromdate).days + 1
+        dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
+
+        paginated_dates = dates_to_query[offset:offset + size]
+
+        for current_date in paginated_dates:
+            baseQuery = db.query(ArticleHistory).filter(
+                cast(ArticleHistory.created_at, Date) == current_date,
+                ArticleHistory.status == 1,
+                ArticleHistory.is_topic == 1,
+                Article.status == 1
+            ).join(Article, ArticleHistory.article_id == Article.id)
+            
+            totalArticleQ = baseQuery.with_entities(func.count(distinct(ArticleHistory.article_id)))
+
+            if user.user_type == 4:
+                totalArticleQ = totalArticleQ.filter(ArticleHistory.chief_editor_id == user.id)
+                topicReview = baseQuery.filter(ArticleHistory.topic_status == 2, ArticleHistory.chief_editor_id == user.id)
+                topicComment = baseQuery.filter(ArticleHistory.topic_status == 3, ArticleHistory.chief_editor_id == user.id)
+                topicApproved = baseQuery.filter(ArticleHistory.topic_status == 5, ArticleHistory.chief_editor_id == user.id)
+            elif user.user_type == 5:
+                totalArticleQ = totalArticleQ.filter(ArticleHistory.sub_editor_id == user.id)
+                topicReview = baseQuery.filter(ArticleHistory.topic_status == 2, ArticleHistory.sub_editor_id == user.id)
+                topicComment = baseQuery.filter(ArticleHistory.topic_status == 3, ArticleHistory.sub_editor_id == user.id)
+                topicApproved = baseQuery.filter(ArticleHistory.topic_status == 4, ArticleHistory.sub_editor_id == user.id)
+            else:
+                topicReview = baseQuery.filter(ArticleHistory.topic_status == 2)
+                topicComment = baseQuery.filter(ArticleHistory.topic_status == 3)
+                topicApproved = baseQuery.filter(ArticleHistory.topic_status == 5)
+
+            total_article = totalArticleQ.scalar()
+            topic_review = topicReview.count()
+            topic_comment = topicComment.count()
+            topic_approved = topicApproved.count()
+
+            data.append({
+                "date": current_date.strftime("%Y-%m-%d"),
+                "total_article": total_article,
+                "review": topic_review,
+                "comment": topic_comment,
+                "approved": topic_approved
             })
 
         total_pages = (days + size - 1) // size  # Calculate total pages

@@ -44,6 +44,7 @@ async def createCategory(db:Session = Depends(deps.get_db),
             description = description,
             sort_order = sort_order,
             status=1,
+            is_active=1,
             created_at = datetime.now(settings.tz_IN),
             created_by = user.id)
 
@@ -150,6 +151,7 @@ async def listCategory(db:Session =Depends(deps.get_db),
                 "category_id":row.id,
                 "title":row.title,
                 "seo_url":row.seo_url,
+                "is_active":row.is_active,
                 "description":row.description,
                 "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
                 "img_alter":row.img_alter,
@@ -191,6 +193,7 @@ async def viewCategory(db:Session =Depends(deps.get_db),
             "title":getCategory.title,
             "seo_url":getCategory.seo_url,
             "description":getCategory.description,
+            "is_active":getCategory.is_active,
             "img_alter":getCategory.img_alter,
             "sort_order":getCategory.sort_order,
             "media_file":f"{settings.BASE_DOMAIN}{getCategory.img_path}",
@@ -203,7 +206,29 @@ async def viewCategory(db:Session =Depends(deps.get_db),
         return ({"status":1,"msg":"Success.","data":data})
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
-    
+
+@router.post("/active_inactive_category")
+async def activeInactiveCategory(db:Session=Depends(deps.get_db),
+                             token:str=Form(...),category_id:int=Form(...),
+                             activeStatus:int=Form(...,description="1->active,2->inactive")):
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getCategory = db.query(Category).filter(Category.id == category_id,
+                                            Category.status == 1)
+            getCategory = getCategory.update({"is_active":activeStatus})
+            db.commit()
+            message ="Success."
+            if activeStatus ==1:
+                message ="Category successfully activated."
+            else:
+                message ="Category successfully deactivated."
+
+            return {"status":1,"msg":message}
+        else:
+            return {'status':0,"msg":"You are not authenticated to change status of any category"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
 
 @router.post("/delete_category")
 async def deleteCategory(db:Session=Depends(deps.get_db),
@@ -437,6 +462,29 @@ async def deleteSubCategory(db:Session=Depends(deps.get_db),
         return {'status':-1,"msg":"Your login session expires.Please login again."}
     
 
+@router.post("/active_inactive_sub_category")
+async def activeInactiveSubCategory(db:Session=Depends(deps.get_db),
+                             token:str=Form(...),sub_category_id:int=Form(...),
+                             activeStatus:int=Form(...,description="1->active,2->inactive")):
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getSubCategory = db.query(SubCategory).filter(SubCategory.id == sub_category_id,
+                                            SubCategory.status == 1)
+            getSubCategory = getSubCategory.update({"is_active":activeStatus})
+            db.commit()
+            message ="Success."
+            if activeStatus ==1:
+                message ="SubCategory successfully activated."
+            else:
+                message ="SubCategory successfully deactivated."
+
+            return {"status":1,"msg":message}
+        else:
+            return {'status':0,"msg":"You are not authenticated to change status of any sub category"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
+
 #--Article topic
 
 
@@ -453,7 +501,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
     if user:
         if user:
 
-            existTopic = db.query(Category).filter(ArticleTopic.id!=category_id,
+            existTopic = db.query(ArticleTopic).filter(ArticleTopic.id!=category_id,
                                                    ArticleTopic.topic==topic,ArticleTopic.status==1).first()
 
             if existTopic:
@@ -483,6 +531,8 @@ async def updateArticleTopic(db:Session = Depends(deps.get_db),
                      article_topic_id:int=Form(...),
                     topic:str=Form(None),
                      description:str=Form(None),
+                     category_id:int=Form(...),
+
                      token:str=Form(...),
                      
                      ):
@@ -490,8 +540,7 @@ async def updateArticleTopic(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2]:
-
+        if user:
             existTopic = db.query(ArticleTopic).filter(ArticleTopic.id!=article_topic_id,
                                                    ArticleTopic.topic==topic,ArticleTopic.status==1).first()
 
@@ -505,6 +554,8 @@ async def updateArticleTopic(db:Session = Depends(deps.get_db),
             
 
             getArticleTopic.topic = topic
+            getArticleTopic.category_id = category_id
+
             getArticleTopic.description = description
             getArticleTopic.updated_at = datetime.now(settings.tz_IN)
             getArticleTopic.updated_by = user.id

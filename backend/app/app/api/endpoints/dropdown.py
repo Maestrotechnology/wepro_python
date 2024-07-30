@@ -130,12 +130,17 @@ async def topicDropDown(db:Session=Depends(deps.get_db),
 
 @router.post("/category_dropdown")
 async def categoryDropDown(db:Session=Depends(deps.get_db),
-                       token:str=Form(...)):
+                       token:str=Form(...),
+                       is_report:int=Form(None)):
     user = deps.get_user_token(db=db,token =token)
     if user:
         if user:
 
             getCategory = db.query(Category).filter(Category.status == 1)
+
+
+            if not is_report:
+                getCategory = getCategory.filter(Category.is_active==1)
 
             count = getCategory.count()
             getCategory = getCategory.order_by(Category.title.asc()).all()
@@ -158,15 +163,20 @@ async def categoryDropDown(db:Session=Depends(deps.get_db),
 
 @router.post("/sub_category_dropdown")
 async def subCtegoryDropDown(db:Session=Depends(deps.get_db),
-                       token:str=Form(...)):
+                       token:str=Form(...),
+                       is_report:int=Form(None)):
     user = deps.get_user_token(db=db,token =token)
     if user:
         if user:
 
-            getSubCategory = db.query(Category).filter(Category.status == 1)
+            getSubCategory = db.query(SubCategory).filter(SubCategory.status == 1)
+
+            if not is_report:
+                getSubCategory = getSubCategory.filter(SubCategory.is_active==1)
+
 
             count = getSubCategory.count()
-            getSubCategory = getSubCategory.order_by(Category.title.asc()).all()
+            getSubCategory = getSubCategory.order_by(SubCategory.title.asc()).all()
             
 
             dataList =[]
