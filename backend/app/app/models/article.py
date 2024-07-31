@@ -10,9 +10,12 @@ class Article(Base):
     content=Column(String(250))
     topic=Column(String(250))
     article_title=Column(String(500))
+    img_path = Column(String(500))
     description=Column(String(250))
 
-    content = Column(String(2500))
+    footer_content = Column(Text)
+    header_content = Column(Text)
+    middle_content = Column(Text)
     is_paid = Column(TINYINT,default=1,comment="1-pending,2-Paid")
 
     img_alter = Column(String(250))

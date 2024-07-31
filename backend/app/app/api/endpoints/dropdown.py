@@ -1,24 +1,11 @@
-from fastapi import APIRouter, Depends, Form,requests
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from app.models import *
 from app.api import deps
-from app.core.config import settings
-from app.core.security import get_password_hash,verify_password
-from datetime import datetime
 from app.utils import *
-from sqlalchemy import or_,and_
-from app.core import security
-from sqlalchemy import func
-
-import random
-
 
 router = APIRouter()
-
-
     
-
-
 @router.post("/user_dropdown")
 async def userDropdown(db:Session=Depends(deps.get_db),
                        token:str=Form(...),

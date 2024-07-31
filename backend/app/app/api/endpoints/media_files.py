@@ -1,15 +1,12 @@
-from fastapi import APIRouter, Depends, Form,requests,UploadFile,File
+from fastapi import APIRouter, Depends, Form,UploadFile,File
 from sqlalchemy.orm import Session
-from app.models import ApiTokens,User
+from app.models import *
 from app.api import deps
 from app.core.config import settings
-from app.core.security import get_password_hash,verify_password
 from datetime import datetime
 from app.utils import *
-from sqlalchemy import or_,and_
-from app.core import security
-from datetime import datetime,timedelta,date
-from typing import List, Optional,Dict
+from datetime import datetime
+from typing import Optional
 
 
 
@@ -18,7 +15,7 @@ router = APIRouter()
 
 @router.post("/create_media_files")
 async def createMediaFiles(db:Session = Depends(deps.get_db),
-                     media_url:str=Form(None),
+                     media_url:str=Form(...),
                      title:str=Form(None),
                      description:str=Form(None),
                      meta_title:str=Form(None),
@@ -29,7 +26,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      media_file:Optional[UploadFile] = File(None),
 
                      token:str=Form(...),
-                     content_type:int=Form(None,description="1->Ads,2->banners"),
+                     content_type:int=Form(None,description="1->Ads,2->banners,3-youtube"),
                      media_type:int=Form(None,description="1->img,2-shorts,3->Video")
                      ):
     
@@ -74,7 +71,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
 @router.post("/update_media_files")
 async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      media_files_id:int=Form(...),
-                     media_url:str=Form(None),
+                     media_url:str=Form(...),
                      title:str=Form(None),
                      description:str=Form(None),
                      meta_title:str=Form(None),

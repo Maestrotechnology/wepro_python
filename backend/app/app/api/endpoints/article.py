@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Depends, Form,requests,UploadFile,File
 from sqlalchemy.orm import Session
 from app.models import *
 from app.api import deps
 from app.core.config import settings
-from app.core.security import get_password_hash,verify_password
 from datetime import datetime,date
 from app.utils import *
-from sqlalchemy import or_,and_
-from app.core import security
-from typing import List, Optional,Dict
+from sqlalchemy import or_
+from fastapi import APIRouter, Depends, Form,UploadFile,File
+from typing import Optional
 
-from sqlalchemy import func
 
 router = APIRouter()
 
@@ -20,8 +17,8 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
                        topic_id:int=Form(None),
                        topic:str=Form(None),
                        category_id:int=Form(None),
-                       description:str=Form(...),
-                       submition_date:date=Form(None),
+                       description:str=Form(None),
+                    #    submition_date:date=Form(None),
                        ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -44,7 +41,7 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
                 topic = topic if not getTopic else getTopic.topic,
                 category_id = category_id,
                 description = description if not getTopic else getTopic.description,
-                submition_date = submition_date,
+                # submition_date = submition_date,
                 created_by = user.id,
                 is_journalist = 1,
                 editors_choice = 2 if getTopic else 1,
@@ -104,17 +101,22 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
 async def createArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
                    topic:str=Form(...),
-                   content:str=Form(None),
+                   middle_content:str=Form(None),
+                   footer_content:str=Form(None),
+                   header_content:str=Form(None),
+                   article_title:str=Form(...),
                    meta_title:str=Form(None),
-                   submition_date:date=Form(None),
+                #    submition_date:date=Form(None),
                    meta_description:str=Form(None),
                    meta_keywords:str=Form(None),
                    seo_url:str=Form(None),
                    category_id:int=Form(...),
-                   sub_category_id:int=Form(...),
+                   sub_category_id:int=Form(None),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
                    img_alter:str=Form(None),
+                     media_file:Optional[UploadFile] = File(None),
+
                    ):
     
     user = deps.get_user_token(db=db,token=token)
@@ -122,19 +124,28 @@ async def createArticle(db:Session =Depends(deps.get_db),
     if user:
         if user:
 
+            existSeo = db.query(Article).filter(Article.status==1,
+                                                Article.seo_url==seo_url).first()
+            
+            if existSeo:
+                return {"status":0,"msg":"The SEO url must be unique"}
+
 
             addArticle = Article(
                 topic=topic,
-                content=content,
+                middle_content=middle_content,
+                header_content=header_content,
+                footer_content=footer_content,
+                article_title=article_title,
                 meta_title=meta_title,
-                submition_date=submition_date,
+                # submition_date=submition_date,
                 meta_description=meta_description,
                 img_alter=img_alter,
                 meta_keywords=meta_keywords,
                 seo_url=seo_url,
                 category_id=category_id,
-                content_approved=3 if user.user_type!=8 else 0,
-                topic_approved=3 if user.user_type!=8 else 0,
+                content_approved=5 if user.user_type!=8 else 0,
+                topic_approved=5 if user.user_type!=8 else 0,
                 sub_category_id=sub_category_id,
                 city_id=city_id,
                 is_journalist = 1 if user.user_type==8 else None,
@@ -145,6 +156,16 @@ async def createArticle(db:Session =Depends(deps.get_db),
             )
             db.add(addArticle)
             db.commit()
+
+
+            if media_file:
+
+                uploadedFile = media_file.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(media_file,fName)
+                addArticle.img_path = returnFilePath
+
+                db.commit()
             if user.user_type==8:
 
                 addHistory = ArticleHistory(
@@ -187,9 +208,11 @@ async def deleteArticle(db:Session=Depends(deps.get_db),
 async def updateArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
                    article_id:int=Form(...),
-                   sub_category_id:int=Form(...),
+                   sub_category_id:int=Form(None),
                    article_title:str=Form(...),
-                   content:str=Form(...),
+                   middle_content:str=Form(None),
+                   footer_content:str=Form(None),
+                   header_content:str=Form(None),
                    meta_title:str=Form(None),
                    submition_date:date=Form(None),
                    meta_description:str=Form(None),
@@ -197,6 +220,8 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    seo_url:str=Form(None),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
+                     media_file:Optional[UploadFile] = File(None),
+
                 #    article_files: Optional[List[UploadFile]] = File(None),
                    img_alter:str=Form(None),
                    ):
@@ -206,6 +231,13 @@ async def updateArticle(db:Session =Depends(deps.get_db),
     if user:
         if user.user_type :
 
+            existSeo = db.query(Article).filter(Article.status==1,
+                                                Article.id!=article_id,
+                                                Article.seo_url==seo_url).first()
+            
+            if existSeo:
+                return {"status":0,"msg":"The SEO url must be unique"}
+
             getArticle = db.query(Article).filter(Article.id==article_id,
                                             Article.status==1).first()
 
@@ -214,7 +246,9 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             
             getArticle.article_title=article_title
             getArticle.img_alter=img_alter
-            getArticle.content=content
+            getArticle.header_content=header_content
+            getArticle.middle_content=middle_content
+            getArticle.footer_content=footer_content
             getArticle.sub_category_id=sub_category_id
 
             getArticle.meta_title=meta_title
@@ -228,6 +262,15 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.updated_by = user.id
             getArticle.updated_at = datetime.now(settings.tz_IN)
             db.commit()
+
+            if media_file:
+
+                uploadedFile = media_file.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(media_file,fName)
+                getArticle.img_path = returnFilePath
+
+                db.commit()
 
          
         return ({"status":1,"msg":"Successfully Article Updated. "})
@@ -272,8 +315,14 @@ async def viewArticle(db:Session =Depends(deps.get_db),
             "topic":getArticle.topic,
             "editors_choice":getArticle.editors_choice,
             "is_paid":getArticle.is_paid,
+            "media_file":f'{settings.BASE_DOMAIN}{getArticle.img_path}',
+
             "article_title":getArticle.article_title,
-            "content":getArticle.content,
+            "header_content":getArticle.header_content,
+            "footer_content":getArticle.footer_content,
+            "middle_content":getArticle.middle_content,
+            "article_title":getArticle.article_title,
+
             "submition_date":getArticle.submition_date,
             "meta_title":getArticle.meta_title,
             "meta_description":getArticle.meta_description,
@@ -390,6 +439,137 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
     else:
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     
+
+@router.post("/journalist_article")
+async def journalistArticle(db:Session =Depends(deps.get_db),
+                       token:str = Form(...),
+                       category_id:int=Form(None),
+                       city_id:int=Form(None),
+                       state_id:int=Form(None),
+                       sub_category_id:int=Form(None),
+                       section_type:int=Form(None,description="1-Topic,2-Content,3-published"),
+                       article_status:int=Form(None,description="1-new,2-review,3-comment"),
+                       editors_choice:int=Form(None,description="1-no,2-yes"),
+                       is_paid :int =Form(None,description="1-pending,2-paid"),\
+                       page:int=1,size:int = 10):
+    
+    user=deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getAllArticle = db.query(Article).filter(Article.status ==1)
+
+            if state_id:
+                getAllArticle = getAllArticle.filter(Article.state_id==state_id)
+            if is_paid:
+                getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
+            if editors_choice:
+                getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
+            if city_id:
+                getAllArticle = getAllArticle.filter(Article.city_id==city_id)
+
+            if category_id:
+                getAllArticle = getAllArticle.filter(Article.category_id==category_id)
+
+            if sub_category_id:
+                getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
+
+
+            approval_pending = db.query(Article).filter(Article.status==1,
+                                                          Article.content_approved!=5)
+            
+            approval_pending =approval_pending.filter(Article.created_by==user.id)
+            getAllArticle = getAllArticle.filter(Article.created_by==user.id)
+
+            approval_pending =approval_pending.count()
+
+               
+                
+            if section_type==2 and article_status:
+
+                getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
+                                                            )
+                
+            if section_type==1 and article_status:
+
+                getAllArticle = getAllArticle.filter(Article.content_approved==article_status )
+
+            if section_type==3 :
+
+                getAllArticle = getAllArticle.filter(Article.content_approved==5 )
+
+    
+            notifyCount = 0
+            deadlineArtcileCount = 0
+
+            getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
+
+          
+            getAllArticle = getAllArticle.filter(Article.created_by==user.id)
+
+            getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
+                                                ArticleHistory.journalist_notify==1).count()
+            notifyCount = getAllNotify
+
+            totalCount = getAllArticle.count()
+            totalPages,offset,limit = get_pagination(totalCount,page,size)
+            getAllArticle = getAllArticle.limit(limit).offset(offset).all()
+
+            dataList=[]
+
+            stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+            contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+            paymentStatus = ["-","Pending","Paid"]
+
+            if getAllArticle:
+                for row in getAllArticle:
+                    dataList.append({
+                "article_id":row.id,
+                "meta_title":row.meta_title,
+                "article_title":row.article_title,
+                "editors_choice":row.editors_choice,
+                "is_paid":row.is_paid,
+                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
+
+                "meta_description":row.meta_description,
+                "category_id":row.category_id,
+                "category_title":row.category.title if row.category_id else None,
+                "seo_url":row.seo_url,
+                "meta_keywords":row.meta_keywords,
+                "sub_category_id":row.sub_category_id,
+                "topic":row.topic,
+                "img_alter":row.img_alter,
+                "header_content":row.header_content,
+                "footer_content":row.footer_content,
+                "middle_content":row.middle_content,
+                 "state_id":row.state_id,
+                "state_name":row.states.name if row.state_id else None,
+                "city_id":row.city_id,
+                "is_journalist":row.is_journalist,
+                "city_name":row.cities.name if row.city_id else None,
+                "submition_date":row.submition_date,
+                "topic_approved":row.topic_approved,
+                "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
+                "content_approved":row.content_approved,
+                "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
+                "created_at":row.created_at,                  
+                "updated_at":row.updated_at, 
+                "journalist_id":row.created_by,                 
+                "journalist_name":row.createdBy.user_name if row.created_by else None,                  
+                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                      }  )
+            
+            data=({"approval_pending":approval_pending,
+                   "deadline_article_count":deadlineArtcileCount,
+                   "notification_count":notifyCount,"page":page,"size":size,
+                   "total_page":totalPages,
+                   "total_count":totalCount,
+                   "items":dataList})
+        
+            return ({"status":1,"msg":"Success","data":data})
+        else:
+            return {'status':0,"msg":"You are not authenticated to view Article."}
+    else:
+        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     
 @router.post("/list_article")
 async def listArticle(db:Session =Depends(deps.get_db),
@@ -401,7 +581,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        journalist_id:int=Form(None),
                        section_type:int=Form(None,description="1-Topic,2-Content"),
 
-                       article_status:int=Form(None,description="1-new,2-review,3-comment,4-pending all,5-published"),
+                       article_status:int=Form(None,description="1-new,2-review,3-comment,5-published"),
                        editors_choice:int=Form(None,description="1-no,2-yes"),
                        is_paid :int =Form(None,description="1-pending,2-paid"),\
                        page:int=1,size:int = 10):
@@ -441,7 +621,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             approval_pending =approval_pending.count()
 
-            if article_status ==5:
+
+            if article_status ==5 and not section_type:
 
                 getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
                                                      Article.content_approved==article_status)
@@ -451,7 +632,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
             #     getAllArticle = getAllArticle.filter(or_(Article.topic_approved==article_status,
             #                                          Article.content_approved==article_status))
 
-            if article_status==1:
+            if article_status==1 and not section_type:
                  getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
                                                          Article.content_approved==1))
             
@@ -519,8 +700,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     dataList.append({
                 "article_id":row.id,
                 "meta_title":row.meta_title,
+                "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,
+                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
 
                 "meta_description":row.meta_description,
                 "category_id":row.category_id,
@@ -530,7 +713,9 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "sub_category_id":row.sub_category_id,
                 "topic":row.topic,
                 "img_alter":row.img_alter,
-                "content":row.content,
+                "header_content":row.header_content,
+                "footer_content":row.footer_content,
+                "middle_content":row.middle_content,
                  "state_id":row.state_id,
                 "state_name":row.states.name if row.state_id else None,
                 "city_id":row.city_id,
@@ -591,7 +776,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
             msgForCmt = [
                 "-",
-                "-"
+                "-",
                 "Your article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
                "We wanted to inform you that the publication of your article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
                 "We are delighted to inform you that your article topic has been approved by our Sub Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
@@ -737,35 +922,23 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
 
                     ]
 
-            
             journalistEmail = getArticle.createdBy.email if getArticle.created_by else None
             journalistName = getArticle.createdBy.name if getArticle.created_by else None
             if user.user_type==4:
 
-
                 getArticle.chief_editor_id =user.id
-
-
                 comment = f" {msgForCmt[approved_status]}" if not comment else comment
-                
-
-
 
             if user.user_type==5:
 
-
                 getArticle.sub_editor_id =user.id
-
                 comment = f" {msgForCmt[approved_status]} " if not comment else comment
-
-
 
             subject ="Artcle Update"
             mailForArticleUpdate = await send_mail_req_approval(
             db,2,getArticle.id,getArticle.created_by,subject,journalistName,journalistEmail,comment
             )
         
-
             if user.user_type in [1,2,3]:
                 getArticle.content_approved = approved_status
 

@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, Form,requests
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
-from app.models import ApiTokens,User
+from app.models import *
 from app.api import deps
-from app.core.config import settings
-from app.core.security import get_password_hash,verify_password
-from datetime import datetime,date,timedelta
+from datetime import date,timedelta
 from app.utils import *
 from sqlalchemy import or_,func,case,extract,cast,Date,distinct
-from app.core import security
 
 import random
 
@@ -16,6 +13,302 @@ router = APIRouter()
 
 
 import calendar
+
+# @router.post("/add_sub_category")
+# async def subCat(db:Session = Depends(deps.get_db),):
+#     all_categories = [
+#     {
+#         "category": "BUSINESS",
+#         "subcategories": [
+#             "Entrepreneurship",
+#             "Ownership",
+#             "Female Founders",
+#             "Finance",
+#             "Financial Independence",
+#             "Human Resources",
+#             "Leadership",
+#             "Innovation",
+#             "Business Women",
+#             "Business Trends",
+#             "Small Business",
+#             "Online Business",
+#             "Business Development",
+#             "Skills Development",
+#             "Business Planning",
+#             "Digital Marketing",
+#             "Workplace",
+#             "Women Empowerment",
+#             "Gender Equality",
+#             "Women in charge"
+#         ]
+#     },
+#     {
+#         "category": "SCI-TECH",
+#         "subcategories": [
+#             "Women in Tech",
+#             "Women in STEM",
+#             "Artificial Intelligence",
+#             "Women in AI",
+#             "Cybersecurity",
+#             "Science and Technology",
+#             "Environment",
+#             "Future Women",
+#             "Innovation",
+#             "Women and Healthcare",
+#             "Tech and Body positivity",
+#             "STEM Education",
+#             "Scientific Breakthroughs",
+#             "Female Scientists",
+#             "Inclusive Tech",
+#             "Women Led Tech-startups",
+#             "Technology Business",
+#             "Tech Trends"
+#         ]
+#     },
+#     {
+#         "category": "START UPS",
+#         "subcategories": [
+#             "Women Start-ups",
+#             "Start-up Ecosystem",
+#             "Start-up Advice",
+#             "Tech Start-ups",
+#             "Health Start-ups",
+#             "Start-up Resources",
+#             "Success Stories",
+#             "Small Business",
+#             "Affordability",
+#             "Innovation & Creativity",
+#             "Growth",
+#             "Social Impact",
+#             "Women in Finance",
+#             "Sustainability",
+#             "E-commerce",
+#             "Women Entrepreneurs",
+#             "Networking"
+#         ]
+#     },
+#     {
+#         "category": "LIFESTYLE",
+#         "subcategories": [
+#             "Clean Living",
+#             "Sustainable Living",
+#             "Sustainability",
+#             "Environmental Choices",
+#             "Eco-friendly Living",
+#             "DIYs",
+#             "Tips & Hacks",
+#             "Personal Care",
+#             "Budget Planning",
+#             "Saving Strategies",
+#             "Relationships",
+#             "Parenting",
+#             "Communication Skills",
+#             "Holistic Lifestyle",
+#             "Fashion",
+#             "Makeup and Skincare",
+#             "Sustainable Fashion",
+#             "Travel",
+#             "Travel Tips and Guides",
+#             "Home Organization",
+#             "Home Essentials",
+#             "Work-Life Balance"
+#         ]
+#     },
+#     {
+#         "category": "EDUCATION",
+#         "subcategories": [
+#             "Education and Women",
+#             "Women in STEM",
+#             "Career-Oriented Education",
+#             "Continuing Education",
+#             "Mentorship and Coaching",
+#             "Self-Improvement",
+#             "Learning Opportunities",
+#             "Online Learning",
+#             "Awareness",
+#             "Media Literacy",
+#             "Finance Literacy",
+#             "Scholarships for Women",
+#             "Gender Studies",
+#             "Women’s Issues",
+#             "Educating Women’s Issues",
+#             "Community Development",
+#             "Teaching Profession",
+#             "Advocacy for Women in Education",
+#             "Access and Equity",
+#             "Educational Rights for Women"
+#         ]
+#     },
+#     {
+#         "category": "HEALTH",
+#         "subcategories": [
+#             "Mental Health",
+#             "Stress Management",
+#             "Anxiety Management",
+#             "Emotional Well-being",
+#             "Work-Life balance",
+#             "Self-Care",
+#             "Mindfulness",
+#             "Meditation",
+#             "Resilience Building",
+#             "Physical Health",
+#             "Exercise for Women",
+#             "Home Workouts",
+#             "Fitness for Different Life Stages",
+#             "Menstruation",
+#             "Menstrual Health",
+#             "Sexual Health and Wellness",
+#             "Pregnancy",
+#             "Reproductive Health",
+#             "Lifestyle Modification",
+#             "Nutrition",
+#             "Balanced Diet Choices",
+#             "Cooking for Health"
+#         ]
+#     },
+#     {
+#         "category": "NATURE",
+#         "subcategories": [
+#             "Sustainable Products",
+#             "Sustainable practices",
+#             "Sustainable Fashion",
+#             "Waste Reduction",
+#             "Recycling",
+#             "Zero-waste Practices",
+#             "Energy Conservation",
+#             "Nature Retreats for Women",
+#             "Gardening",
+#             "Home Gardening",
+#             "Gardening for Mental Health",
+#             "Women and Environment",
+#             "Women-led Conservation Projects",
+#             "Women’s Impact on Environment",
+#             "Benefits of Nature",
+#             "Ecofeminism",
+#             "Environmental Activism",
+#             "Climate Change"
+#         ]
+#     },
+#     {
+#         "category": "SPORTS",
+#         "subcategories": [
+#             "Outdoor Sports",
+#             "Indoor Sports",
+#             "Women Athletes",
+#             "Women in Sports",
+#             "Women achievers in Sports",
+#             "Sports News and Events",
+#             "Women’s Cricket",
+#             "Women’s Sports",
+#             "Nutrition for Sports",
+#             "Senior Athletes",
+#             "Rising Athletes",
+#             "Book of Record"
+#         ]
+#     },
+#     {
+#         "category": "WORLD",
+#         "subcategories": [
+#             "Global Women’s Rights",
+#             "Women and Culture",
+#             "World News on Women",
+#             "Inspirational Women",
+#             "World News",
+#             "World Leaders",
+#             "Cultural Events",
+#             "World Entertainment",
+#             "Pop culture",
+#             "Infotainment",
+#             "Feminism",
+#             "Women Empowerment",
+#             "Women in Media",
+#             "World Economy",
+#             "International Law for Women",
+#             "Women in Cinema",
+#             "Women in History",
+#             "Global Trends",
+#             "Human Rights",
+#             "Global Health"
+#         ]
+#     },
+#     {
+#         "category": "ENTERTAINMENT",
+#         "subcategories": [
+#             "Movies and TV",
+#             "Female Characters",
+#             "Women in Cinema",
+#             "TV shows",
+#             "Web Series",
+#             "Documentaries",
+#             "Music",
+#             "Music Therapy",
+#             "Women in Music",
+#             "Indie Music",
+#             "Books and Literature",
+#             "Women Authors",
+#             "Social Media",
+#             "Social Media Trends",
+#             "Celebrity style",
+#             "Influencer Culture",
+#             "Events",
+#             "Women’s Events",
+#             "Women and Art",
+#             "Podcasts"
+#         ]
+#     },
+#     {
+#         "category": "HISTORY",
+#         "subcategories": [
+#             "Trailblazers",
+#             "Hidden figures",
+#             "Women’s Suffrage Movement",
+#             "Freedom Struggle",
+#             "Ancient History",
+#             "Modern History",
+#             "Women in World Wars",
+#             "History of Women",
+#             "Social History",
+#             "Economic History",
+#             "Women and Ancestry",
+#             "Women in Literature",
+#             "Women’s History Month",
+#             "Women’s Rights",
+#             "Gender Equality",
+#             "Women and Civil Rights",
+#             "Women in Music",
+#             "Historical Women",
+#             "Fight for Women",
+#             "Feminism Movement",
+#             "Women in Medicine"
+#         ]
+#     }
+# ]
+#     for row in all_categories:
+#         print(row["category"])
+
+#         addCategory = Category(
+#             title = row["category"],
+#             status=1,
+#             is_active=1,
+#             created_at = datetime.now(settings.tz_IN),
+#             created_by =1)
+
+#         db.add(addCategory)
+#         db.commit()
+
+#         for ij in row["subcategories"]:
+#             print(ij)
+#             addSubCategory = SubCategory(
+#             title = ij,
+#             category_id = addCategory.id,
+#             status=1,
+#             created_at = datetime.now(settings.tz_IN),
+#             created_by = 1)
+
+#             db.add(addSubCategory)
+#             db.commit()
+
+
 
 
 # @router.post("/pie_chart")
@@ -176,6 +469,7 @@ import calendar
 #     else:
 #         return {"status": -1, "msg": "Your login session expires. Please login again."}
 
+    
 
 @router.post("/content_barchart")
 async def contentBarchart(db:Session=Depends(deps.get_db),
@@ -199,31 +493,25 @@ async def contentBarchart(db:Session=Depends(deps.get_db),
 
             totalArticle = db.query(func.count(distinct(ArticleHistory.article_id))).filter(
                 cast(ArticleHistory.created_at, Date) == current_date,
-                ArticleHistory.status == 1,
-                ArticleHistory.is_content==1,
                 Article.status==1
-            ).join(Article,ArticleHistory.article_id==Article.id)
-         
-            topicReview = db.query(ArticleHistory).filter(
-                cast(ArticleHistory.created_at, Date) == current_date,
-                ArticleHistory.status == 1,
-                ArticleHistory.is_content==1,
-                Article.status==1
-            ).join(Article,ArticleHistory.article_id==Article.id)
-         
-            topicComment = db.query(ArticleHistory).filter(
-                cast(ArticleHistory.created_at, Date) == current_date,
-                ArticleHistory.status == 1,
-                ArticleHistory.is_content==1,
-                Article.status==1
-            ).join(Article,ArticleHistory.article_id==Article.id)
+            )
 
-            topicApproved = db.query(ArticleHistory).filter(
-                cast(ArticleHistory.created_at, Date) == current_date,
-                ArticleHistory.status == 1,
-                ArticleHistory.is_content==1,
-                Article.status==1
-            ).join(Article,ArticleHistory.article_id==Article.id)
+            articleAction = (
+                    db.query(
+                        func.sum(case((ArticleHistory.content_status == 1, 1), else_=0)).label("new"),
+                        func.sum(case((ArticleHistory.content_status == 2, 1), else_=0)).label("review"),
+                        func.sum(case((ArticleHistory.content_status == 3, 1), else_=0)).label("comment"),
+                        func.sum(case((ArticleHistory.content_status == 4, 1), else_=0)).label("se_approved"),
+                        func.sum(case((ArticleHistory.content_status == 5, 1), else_=0)).label("ce_approved")
+                    )
+                    .join(
+                        Article,ArticleHistory.article_id == Article.id
+                    )
+                    .filter(
+                        Article.status==1,
+                        cast(ArticleHistory.created_at, Date) == current_date,
+                        ArticleHistory.status == 1,
+                ))
             
             
             if user.user_type==4:
@@ -231,43 +519,33 @@ async def contentBarchart(db:Session=Depends(deps.get_db),
                 totalArticle=totalArticle.filter(
                 ArticleHistory.chief_editor_id==user.id,
                                                )
-                topicReview=topicReview.filter(ArticleHistory.content_status==2,
-                ArticleHistory.chief_editor_id==user.id,
-                                               )
-                
-                topicComment=topicComment.filter(ArticleHistory.content_status==3,
-                ArticleHistory.chief_editor_id==user.id,
-                                               )
-                topicApproved=topicApproved.filter(ArticleHistory.content_status==5,
-                ArticleHistory.chief_editor_id==user.id,
-                                               )
+                articleAction = articleAction.filter(ArticleHistory.chief_editor_id==user.id)
                 
             if user.user_type==5:
 
                 totalArticle=totalArticle.filter(
                 ArticleHistory.sub_editor_id==user.id,
                                                )
-                topicReview=topicReview.filter(ArticleHistory.content_status==2,
-                ArticleHistory.sub_editor_id==user.id,
-                                               )
+                articleAction = articleAction.filter(ArticleHistory.chief_editor_id==user.id)
+
                 
-                topicComment=topicComment.filter(ArticleHistory.content_status==3,
-                ArticleHistory.sub_editor_id==user.id,
+            if user.user_type==8:
+
+                totalArticle=totalArticle.filter(
+                Article.created_by==user.id,
                                                )
-                topicApproved=topicApproved.filter(ArticleHistory.content_status==4,
-                ArticleHistory.sub_editor_id==user.id,
-                                               )
+                articleAction = articleAction.filter(ArticleHistory.journalist_id==user.id)
+
+                
             totalArticle = totalArticle.scalar()
-            topicReview = topicReview.count()
-            topicComment = topicComment.count()
-            topicApproved = topicApproved.count()
+            artcileDet = articleAction.first()
            
             data.append({
                 "date": current_date.strftime("%Y-%m-%d"),
                 "total_article": totalArticle,
-                "review": topicReview,
-                "comment": topicComment,
-                "approved":topicApproved
+                "review": artcileDet.review or 0,
+                "comment": artcileDet.comment or 0,
+                "approved":artcileDet.ce_approved or 0 if user.user_type!=5 else artcileDet.se_approved or 0
                 # "rejected": getRejected,
             })
 
@@ -307,41 +585,66 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
         paginated_dates = dates_to_query[offset:offset + size]
 
         for current_date in paginated_dates:
-            baseQuery = db.query(ArticleHistory).filter(
+            next_date = current_date + timedelta(days=1)
+
+            totalArticle = db.query(func.count(distinct(ArticleHistory.article_id))).filter(
                 cast(ArticleHistory.created_at, Date) == current_date,
-                ArticleHistory.status == 1,
-                ArticleHistory.is_topic == 1,
-                Article.status == 1
-            ).join(Article, ArticleHistory.article_id == Article.id)
+                Article.status==1
+            )
+
+            articleAction = (
+                    db.query(
+                        func.sum(case((ArticleHistory.topic_status == 1, 1), else_=0)).label("new"),
+                        func.sum(case((ArticleHistory.topic_status == 2, 1), else_=0)).label("review"),
+                        func.sum(case((ArticleHistory.topic_status == 3, 1), else_=0)).label("comment"),
+                        func.sum(case((ArticleHistory.topic_status == 4, 1), else_=0)).label("se_approved"),
+                        func.sum(case((ArticleHistory.topic_status == 5, 1), else_=0)).label("ce_approved")
+                    )
+                    .join(
+                        Article,ArticleHistory.article_id == Article.id
+                    )
+                    .filter(
+                        Article.status==1,
+                        cast(ArticleHistory.created_at, Date) == current_date,
+                        ArticleHistory.status == 1,
+                ))
             
-            totalArticleQ = baseQuery.with_entities(func.count(distinct(ArticleHistory.article_id)))
+            
+            if user.user_type==4:
 
-            if user.user_type == 4:
-                totalArticleQ = totalArticleQ.filter(ArticleHistory.chief_editor_id == user.id)
-                topicReview = baseQuery.filter(ArticleHistory.topic_status == 2, ArticleHistory.chief_editor_id == user.id)
-                topicComment = baseQuery.filter(ArticleHistory.topic_status == 3, ArticleHistory.chief_editor_id == user.id)
-                topicApproved = baseQuery.filter(ArticleHistory.topic_status == 5, ArticleHistory.chief_editor_id == user.id)
-            elif user.user_type == 5:
-                totalArticleQ = totalArticleQ.filter(ArticleHistory.sub_editor_id == user.id)
-                topicReview = baseQuery.filter(ArticleHistory.topic_status == 2, ArticleHistory.sub_editor_id == user.id)
-                topicComment = baseQuery.filter(ArticleHistory.topic_status == 3, ArticleHistory.sub_editor_id == user.id)
-                topicApproved = baseQuery.filter(ArticleHistory.topic_status == 4, ArticleHistory.sub_editor_id == user.id)
-            else:
-                topicReview = baseQuery.filter(ArticleHistory.topic_status == 2)
-                topicComment = baseQuery.filter(ArticleHistory.topic_status == 3)
-                topicApproved = baseQuery.filter(ArticleHistory.topic_status == 5)
+                totalArticle=totalArticle.filter(
+                ArticleHistory.chief_editor_id==user.id,
+                                               )
+                
+                articleAction = articleAction.filter(ArticleHistory.chief_editor_id==user.id)
 
-            total_article = totalArticleQ.scalar()
-            topic_review = topicReview.count()
-            topic_comment = topicComment.count()
-            topic_approved = topicApproved.count()
+                
+            if user.user_type==5:
 
+                totalArticle=totalArticle.filter(
+                ArticleHistory.sub_editor_id==user.id,
+                                               )
+                articleAction = articleAction.filter(ArticleHistory.chief_editor_id==user.id)
+
+                
+            if user.user_type==8:
+
+                totalArticle=totalArticle.filter(
+                Article.created_by==user.id,
+                                               )
+                articleAction = articleAction.filter(ArticleHistory.journalist_id==user.id)
+
+                
+            totalArticle = totalArticle.scalar()
+            artcileDet = articleAction.first()
+           
             data.append({
                 "date": current_date.strftime("%Y-%m-%d"),
-                "total_article": total_article,
-                "review": topic_review,
-                "comment": topic_comment,
-                "approved": topic_approved
+                "total_article": totalArticle,
+                "review": artcileDet.review or 0,
+                "comment": artcileDet.comment or 0,
+                "approved":artcileDet.ce_approved or 0 if user.user_type!=5 else artcileDet.se_approved or 0
+                # "rejected": getRejected,
             })
 
         total_pages = (days + size - 1) // size  # Calculate total pages
@@ -402,9 +705,9 @@ async def journalistbarchart(
 
             data.append({
                 "date": current_date.strftime("%Y-%m-%d"),
-                "requested": getReq,
-                "accepted": getApproved,
-                "rejected": getRejected,
+                "requested": getReq or 0,
+                "accepted": getApproved or 0,
+                "rejected": getRejected or 0,
             })
 
         total_pages = (days + size - 1) // size  # Calculate total pages

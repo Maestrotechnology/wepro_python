@@ -85,8 +85,10 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
     from_email = "johnsonkoilraj53@gmail.com"
     
     # Load the Jinja2 template
+    # template_dir = Path("/home/john/Documents/wepro_python/backend/app/app/email_templates")  # Update to the directory containing your templates
+    # env = Environment(loader=FileSystemLoader(template_dir))
     template_dir = Path("/home/john/Documents/wepro_python/backend/app/app/email_templates")  # Update to the directory containing your templates
-    env = Environment(loader=FileSystemLoader(template_dir))
+    env = Environment(loader=FileSystemLoader("/"))
     template = env.from_string(html_template)
 
     # Render the template with the environment variables
@@ -130,16 +132,153 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
         db.commit()
 
         # Load the email template from the file
-        template_path = Path("/home/john/Documents/wepro_python/backend/app/app/email_templates/journalist_template.html")
-        with open(template_path) as f:
-            template_str = f.read()
+        html_template = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{{ subject }}</title>
+            <style>
+                body {
+                    font-family: 'Helvetica Neue', Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    -webkit-text-size-adjust: 100%;
+                    -ms-text-size-adjust: 100%;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background-color: #fff;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                    overflow: hidden;
+                }
+                .header {
+                    text-align: center;
+                    padding: 20px;
+                    border-bottom: 1px solid #ddd;
+                    background: url('http://35.154.143.177/WePRO_Digital.jpg') no-repeat center center;
+                    background-size: cover;
+                    height: 100px; /* Adjust based on your image height */
+                }
+                .header img {
+                    max-width: 100%;
+                    height: 80%;
+                    pointer-events: none; /* Prevents image from being clickable */
+                    user-select: none; /* Prevents text selection */
+                }
+                .content {
+                    padding: 20px;
+                    color: #333;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    background-color: #f9f9f9;
+                }
+                .content p {
+                    margin: 0 0 20px;
+                }
+                .message {
+                    text-indent: 20px;
+                }
+                .footer {
+                    text-align: center;
+                    color: #666;
+                    padding: 10px;
+                    font-size: 12px;
+                    background-color: #f4f4f4;
+                    border-top: 1px solid #ddd;
+                }
+                a {
+                    color: #007bff;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+
+                /* Responsive adjustments */
+                @media only screen and (max-width: 600px) {
+                    .container {
+                        width: 100% !important;
+                        box-shadow: none;
+                    }
+                    .header {
+                        padding: 10px;
+                        font-size: 14px;
+                        height: 80px; /* Adjust based on your image height */
+                    }
+                    .header img {
+                        max-width: 100%;
+                        height: auto;
+                    }
+                    .content {
+                        padding: 15px;
+                        font-size: 14px;
+                    }
+                    .footer {
+                        padding: 10px;
+                        font-size: 10px;
+                    }
+                }
+
+                @media only screen and (max-width: 400px) {
+                    .header {
+                        padding: 8px;
+                        height: 60px; /* Adjust based on your image height */
+                    }
+                    .header img {
+                        max-width: 100%;
+                        height: auto;
+                    }
+                    .content {
+                        font-size: 12px;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <!-- Uncomment the following line if you want to use an image instead of background -->
+                    <!-- <img src="http://stgtal.jpg" alt="WePRO"> -->
+                </div>
+                <div class="content">
+                    <p>Hi {{ name }},</p>
+                    <p class="message">{{ message }}</p>
+                    <p>Regards,<br>WePRO Team</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; {{ current_year }} WePRO. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Send the email using the send_html_email function
+        send_html_email(
+            email_to=receiver_email,
+            subject_template=subject,
+            html_template=html_template,
+            environment={
+                "name": journalistName,
+                "message": message,
+                "subject": subject,
+                "current_year": datetime.now().year,
+                "email": receiver_email
+            }
+        )
 
 
         # Send the email using the send_html_email function
         send_html_email(
             email_to=receiver_email,
             subject_template=subject,
-            html_template=template_str,
+            html_template=html_template,
             environment={
                 "name":journalistName,
                 "message": message,
