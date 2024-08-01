@@ -106,7 +106,8 @@ async def createArticle(db:Session =Depends(deps.get_db),
                    header_content:str=Form(None),
                    article_title:str=Form(...),
                    meta_title:str=Form(None),
-                #    submition_date:date=Form(None),
+                   youtube_link:str=Form(None),
+                   submition_date:date=Form(None),
                    meta_description:str=Form(None),
                    meta_keywords:str=Form(None),
                    seo_url:str=Form(None),
@@ -133,12 +134,13 @@ async def createArticle(db:Session =Depends(deps.get_db),
 
             addArticle = Article(
                 topic=topic,
+                youtube_link=youtube_link,
                 middle_content=middle_content,
                 header_content=header_content,
                 footer_content=footer_content,
                 article_title=article_title,
                 meta_title=meta_title,
-                # submition_date=submition_date,
+                submition_date=submition_date,
                 meta_description=meta_description,
                 img_alter=img_alter,
                 meta_keywords=meta_keywords,
@@ -185,6 +187,10 @@ async def createArticle(db:Session =Depends(deps.get_db),
         return ({"status":1,"msg":"Successfully New Article Published. ","article_id":addArticle.id})
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
+    
+
+
+
 
 @router.post("/delete_article")
 async def deleteArticle(db:Session=Depends(deps.get_db),
@@ -211,6 +217,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    sub_category_id:int=Form(None),
                    article_title:str=Form(...),
                    middle_content:str=Form(None),
+                   youtube_link:str=Form(None),
                    footer_content:str=Form(None),
                    header_content:str=Form(None),
                    meta_title:str=Form(None),
@@ -237,6 +244,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             
             if existSeo:
                 return {"status":0,"msg":"The SEO url must be unique"}
+            
 
             getArticle = db.query(Article).filter(Article.id==article_id,
                                             Article.status==1).first()
@@ -244,7 +252,12 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"Article Not Found"}
             
+            if user.user_type==8 and (getArticle.topic_approved not in [1,3] or getArticle.content_approved not in [1,3]):
+                return {"status":0,",msg":"You are not allowed to update during the article review period."}
+
+            
             getArticle.article_title=article_title
+            getArticle.youtube_link=youtube_link
             getArticle.img_alter=img_alter
             getArticle.header_content=header_content
             getArticle.middle_content=middle_content
@@ -277,8 +290,6 @@ async def updateArticle(db:Session =Depends(deps.get_db),
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
 
-
-
  
 @router.post("/view_article")
 async def viewArticle(db:Session =Depends(deps.get_db),
@@ -305,6 +316,7 @@ async def viewArticle(db:Session =Depends(deps.get_db),
                 "image_id":eachFile.id,
                 "img_path":f'{settings.BASE_DOMAIN}{eachFile.img_path}',
                 "img_alter":eachFile.img_alter,
+                "file_type":eachFile.file_type,
             })
         
         approvedStatus =["-","New","review","comment","Sub Edior Approved","Chief Editor Approved"]
@@ -322,6 +334,11 @@ async def viewArticle(db:Session =Depends(deps.get_db),
             "footer_content":getArticle.footer_content,
             "middle_content":getArticle.middle_content,
             "article_title":getArticle.article_title,
+            "sub_category_title":getArticle.sub_category.title if getArticle.sub_category_id else None,
+            "sub_category_id":getArticle.sub_category_id,
+            "category_id":getArticle.category_id,
+            "category_title":getArticle.category.title if getArticle.category_id else None,
+
 
             "submition_date":getArticle.submition_date,
             "meta_title":getArticle.meta_title,
@@ -440,312 +457,6 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     
 
-@router.post("/journalist_article")
-async def journalistArticle(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
-                       category_id:int=Form(None),
-                       city_id:int=Form(None),
-                       state_id:int=Form(None),
-                       sub_category_id:int=Form(None),
-                       section_type:int=Form(None,description="1-Topic,2-Content,3-published"),
-                       article_status:int=Form(None,description="1-new,2-review,3-comment"),
-                       editors_choice:int=Form(None,description="1-no,2-yes"),
-                       is_paid :int =Form(None,description="1-pending,2-paid"),\
-                       page:int=1,size:int = 10):
-    
-    user=deps.get_user_token(db=db,token=token)
-    if user:
-        if user:
-            getAllArticle = db.query(Article).filter(Article.status ==1)
-
-            if state_id:
-                getAllArticle = getAllArticle.filter(Article.state_id==state_id)
-            if is_paid:
-                getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
-            if editors_choice:
-                getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
-            if city_id:
-                getAllArticle = getAllArticle.filter(Article.city_id==city_id)
-
-            if category_id:
-                getAllArticle = getAllArticle.filter(Article.category_id==category_id)
-
-            if sub_category_id:
-                getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
-
-
-            approval_pending = db.query(Article).filter(Article.status==1,
-                                                          Article.content_approved!=5)
-            
-            approval_pending =approval_pending.filter(Article.created_by==user.id)
-            getAllArticle = getAllArticle.filter(Article.created_by==user.id)
-
-            approval_pending =approval_pending.count()
-
-               
-                
-            if section_type==2 and article_status:
-
-                getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
-                                                            )
-                
-            if section_type==1 and article_status:
-
-                getAllArticle = getAllArticle.filter(Article.content_approved==article_status )
-
-            if section_type==3 :
-
-                getAllArticle = getAllArticle.filter(Article.content_approved==5 )
-
-    
-            notifyCount = 0
-            deadlineArtcileCount = 0
-
-            getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
-
-          
-            getAllArticle = getAllArticle.filter(Article.created_by==user.id)
-
-            getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
-                                                ArticleHistory.journalist_notify==1).count()
-            notifyCount = getAllNotify
-
-            totalCount = getAllArticle.count()
-            totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllArticle = getAllArticle.limit(limit).offset(offset).all()
-
-            dataList=[]
-
-            stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
-            contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
-            paymentStatus = ["-","Pending","Paid"]
-
-            if getAllArticle:
-                for row in getAllArticle:
-                    dataList.append({
-                "article_id":row.id,
-                "meta_title":row.meta_title,
-                "article_title":row.article_title,
-                "editors_choice":row.editors_choice,
-                "is_paid":row.is_paid,
-                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
-
-                "meta_description":row.meta_description,
-                "category_id":row.category_id,
-                "category_title":row.category.title if row.category_id else None,
-                "seo_url":row.seo_url,
-                "meta_keywords":row.meta_keywords,
-                "sub_category_id":row.sub_category_id,
-                "topic":row.topic,
-                "img_alter":row.img_alter,
-                "header_content":row.header_content,
-                "footer_content":row.footer_content,
-                "middle_content":row.middle_content,
-                 "state_id":row.state_id,
-                "state_name":row.states.name if row.state_id else None,
-                "city_id":row.city_id,
-                "is_journalist":row.is_journalist,
-                "city_name":row.cities.name if row.city_id else None,
-                "submition_date":row.submition_date,
-                "topic_approved":row.topic_approved,
-                "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
-                "content_approved":row.content_approved,
-                "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
-                "created_at":row.created_at,                  
-                "updated_at":row.updated_at, 
-                "journalist_id":row.created_by,                 
-                "journalist_name":row.createdBy.user_name if row.created_by else None,                  
-                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-                      }  )
-            
-            data=({"approval_pending":approval_pending,
-                   "deadline_article_count":deadlineArtcileCount,
-                   "notification_count":notifyCount,"page":page,"size":size,
-                   "total_page":totalPages,
-                   "total_count":totalCount,
-                   "items":dataList})
-        
-            return ({"status":1,"msg":"Success","data":data})
-        else:
-            return {'status':0,"msg":"You are not authenticated to view Article."}
-    else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
-    
-@router.post("/list_article")
-async def listArticle(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
-                       category_id:int=Form(None),
-                       city_id:int=Form(None),
-                       state_id:int=Form(None),
-                       sub_category_id:int=Form(None),
-                       journalist_id:int=Form(None),
-                       section_type:int=Form(None,description="1-Topic,2-Content"),
-
-                       article_status:int=Form(None,description="1-new,2-review,3-comment,5-published"),
-                       editors_choice:int=Form(None,description="1-no,2-yes"),
-                       is_paid :int =Form(None,description="1-pending,2-paid"),\
-                       page:int=1,size:int = 10):
-    
-    user=deps.get_user_token(db=db,token=token)
-    if user:
-        if user:
-            getAllArticle = db.query(Article).filter(Article.status ==1)
-
-            if state_id:
-                getAllArticle = getAllArticle.filter(Article.state_id==state_id)
-            if is_paid:
-                getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
-            if editors_choice:
-                getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
-            if journalist_id:
-                getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
-            if city_id:
-                getAllArticle = getAllArticle.filter(Article.city_id==city_id)
-
-            if category_id:
-                getAllArticle = getAllArticle.filter(Article.category_id==category_id)
-
-            if sub_category_id:
-                getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
-
-            # if article_status==4:
-            #     getAllArticle = getAllArticle.filter(Article.content_approved!=5)
-
-   
-            approval_pending = db.query(Article).filter(Article.status==1,
-                                                          Article.content_approved!=5)
-            
-            if user.user_type==8:
-                approval_pending =approval_pending.filter(Article.created_by==user.id)
-                getAllArticle = getAllArticle.filter(Article.created_by==user.id)
-
-            approval_pending =approval_pending.count()
-
-
-            if article_status ==5 and not section_type:
-
-                getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
-                                                     Article.content_approved==article_status)
-                
-            # if article_status and article_status not in [4,5]:
-
-            #     getAllArticle = getAllArticle.filter(or_(Article.topic_approved==article_status,
-            #                                          Article.content_approved==article_status))
-
-            if article_status==1 and not section_type:
-                 getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
-                                                         Article.content_approved==1))
-            
-                
-            if section_type==2 and user.user_type==4:
-
-                getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-                                                            Article.content_approved==4)
-                
-            if section_type==2 and user.user_type==5:
-                getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-                                                     Article.content_approved.not_in([4,5]))
-
-            if section_type==1 and user.user_type==4:
-
-                getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
-                
-            if section_type==1 and user.user_type==5:
-                getAllArticle = getAllArticle.filter(Article.topic_approved.not_in([4,5]))
-
-    
-            notifyCount = 0
-            deadlineArtcileCount = 0
-
-            getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
-
-            if user.user_type in [1,2,3]:
-                getDeadlineArticles = db.query(Article).filter(
-                    Article.status==1,
-                    Article.content_approved==1,
-                    Article.submition_date<=datetime.now(settings.tz_IN)
-                ).count()
-                deadlineArtcileCount = getDeadlineArticles
-
-            if user.user_type ==4:
-                getAllNotify = getAllNotify.filter(
-                    ArticleHistory.chief_editor_id==user.id,
-                                                   ArticleHistory.chief_editor_notify==1).count()
-                notifyCount = getAllNotify
-
-            if user.user_type ==5:
-                getAllNotify = getAllNotify.filter(
-                    ArticleHistory.sub_editor_id==user.id,
-                                                   ArticleHistory.sub_editor_notify==1).count()
-                notifyCount = getAllNotify
-
-            if user.user_type ==8:
-                getAllArticle = getAllArticle.filter(Article.created_by==user.id)
-
-                getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
-                                                   ArticleHistory.journalist_notify==1).count()
-                notifyCount = getAllNotify
-
-            totalCount = getAllArticle.count()
-            totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllArticle = getAllArticle.limit(limit).offset(offset).all()
-
-            dataList=[]
-
-            stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
-            contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
-            paymentStatus = ["-","Pending","Paid"]
-            if getAllArticle:
-                for row in getAllArticle:
-                    dataList.append({
-                "article_id":row.id,
-                "meta_title":row.meta_title,
-                "article_title":row.article_title,
-                "editors_choice":row.editors_choice,
-                "is_paid":row.is_paid,
-                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
-
-                "meta_description":row.meta_description,
-                "category_id":row.category_id,
-                "category_title":row.category.title if row.category_id else None,
-                "seo_url":row.seo_url,
-                "meta_keywords":row.meta_keywords,
-                "sub_category_id":row.sub_category_id,
-                "topic":row.topic,
-                "img_alter":row.img_alter,
-                "header_content":row.header_content,
-                "footer_content":row.footer_content,
-                "middle_content":row.middle_content,
-                 "state_id":row.state_id,
-                "state_name":row.states.name if row.state_id else None,
-                "city_id":row.city_id,
-                "is_journalist":row.is_journalist,
-                "city_name":row.cities.name if row.city_id else None,
-                "submition_date":row.submition_date,
-                "topic_approved":row.topic_approved,
-                "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
-                "content_approved":row.content_approved,
-                "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
-                "created_at":row.created_at,                  
-                "updated_at":row.updated_at, 
-                "journalist_id":row.created_by,                 
-                "journalist_name":row.createdBy.user_name if row.created_by else None,                  
-                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-                      }  )
-            
-            data=({"approval_pending":approval_pending,
-                   "deadline_article_count":deadlineArtcileCount,
-                   "notification_count":notifyCount,"page":page,"size":size,
-                   "total_page":totalPages,
-                   "total_count":totalCount,
-                   "items":dataList})
-        
-            return ({"status":1,"msg":"Success","data":data})
-        else:
-            return {'status':0,"msg":"You are not authenticated to view Article."}
-    else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
-
 
     
 @router.post("/article_topic_approve")
@@ -789,7 +500,6 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
                 getArticle.topic_approved = approved_status
                 getArticle.chief_editor_id =user.id
-                print(approved_status)
 
 
                 comment = f"{msgForCmt[approved_status]}" if not comment else comment
@@ -798,7 +508,6 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
                 getArticle.topic_approved = approved_status
                 getArticle.sub_editor_id =user.id
-                print(approved_status)
                 comment = f"{msgForCmt[approved_status]}" if not comment else comment
                 
             if approved_status==2:
@@ -860,7 +569,6 @@ async def journalist_artical_update(db:Session = Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"This article is not available."}
             
-
             addHistory = ArticleHistory(
                 article_id = article_id,
                 comment =  comment,
@@ -1100,3 +808,382 @@ async def listArticleHistoryHistory(db:Session =Depends(deps.get_db),
             return {'status':0,"msg":"You are not authenticated to view ArticleHistory."}
     else:
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+    
+
+@router.post("/list_article")
+async def listArticle(db:Session =Depends(deps.get_db),
+                       token:str = Form(...),
+                       category_id:int=Form(None),
+                       city_id:int=Form(None),
+                       state_id:int=Form(None),
+                       sub_category_id:int=Form(None),
+                       journalist_id:int=Form(None),
+                       section_type:int=Form(None,description="1-Topic,2-Content,3-published"),
+
+                       article_status:int=Form(None,description="1-new,2-review,3-comment,4-se approved,5-ce approved"),
+                       editors_choice:int=Form(None,description="1-no,2-yes"),
+                       is_paid :int =Form(None,description="1-pending,2-paid"),\
+                       page:int=1,size:int = 10):
+    
+    user=deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getAllArticle = db.query(Article).filter(Article.status ==1)
+
+            if state_id:
+                getAllArticle = getAllArticle.filter(Article.state_id==state_id)
+            if is_paid:
+                getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
+            if editors_choice:
+                getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
+            if journalist_id:
+                getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
+            if city_id:
+                getAllArticle = getAllArticle.filter(Article.city_id==city_id)
+
+            if category_id:
+                getAllArticle = getAllArticle.filter(Article.category_id==category_id)
+
+            if sub_category_id:
+                getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
+
+   
+            # approval_pending = db.query(Article).filter(Article.status==1,
+            #                                               Article.content_approved!=5)
+            # approval_pending =approval_pending.filter(Article.created_by==user.id)
+
+            # approval_pending =approval_pending.count()
+
+            notifyCount = 0
+            deadlineArtcileCount = 0
+            getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
+
+            if section_type==3:
+
+                getAllArticle = getAllArticle.filter(Article.content_approved==5 )
+            
+
+            if article_status ==5 and not section_type:
+
+                getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
+                                                     Article.content_approved==article_status)
+                
+
+            if article_status==1 and not section_type:
+                 getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
+                                                         Article.content_approved==1))
+            if user.user_type==4:
+                
+                if section_type==2 and not article_status:
+
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+                                                            Article.content_approved==4)
+                if section_type==1 and not article_status:
+
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
+
+
+                getAllNotify = getAllNotify.filter(
+                    ArticleHistory.chief_editor_id==user.id,
+                                                   ArticleHistory.chief_editor_notify==1).count()
+                notifyCount = getAllNotify
+
+
+            if user.user_type==5:
+                
+                if section_type==2 and not article_status:
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+                                                        Article.content_approved.not_in([4,5]))
+                    
+                if section_type==1 and not article_status:
+                    getAllArticle = getAllArticle.filter(Article.topic_approved.not_in([4,5]))
+                
+                getAllNotify = getAllNotify.filter(
+                    ArticleHistory.sub_editor_id==user.id,
+                                                ArticleHistory.sub_editor_notify==1).count()
+                notifyCount = getAllNotify
+
+
+            if user.user_type in [1,2,3]:
+                getDeadlineArticles = db.query(Article).filter(
+                    Article.status==1,
+                    Article.content_approved==1,
+                    Article.submition_date<=datetime.now(settings.tz_IN)
+                ).count()
+                deadlineArtcileCount = getDeadlineArticles
+
+            if user.user_type ==8:
+                getAllArticle = getAllArticle.filter(Article.created_by==user.id)
+
+                if section_type==2 and not article_status:
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+                                                         Article.content_approved!=5
+                                                                )
+
+                if section_type==1 and not article_status:
+                    getAllArticle = getAllArticle.filter(Article.topic_approved!=5,
+                                                                )
+                    
+                
+                getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
+                                                ArticleHistory.journalist_notify==1).count()
+                notifyCount = getAllNotify
+
+            if section_type==2 and article_status:
+
+
+                getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+                                                     Article.content_approved==article_status,
+                                                            )
+                
+
+            
+            if section_type==1 and article_status:
+
+                getAllArticle = getAllArticle.filter(Article.topic_approved==article_status )
+
+
+            totalCount = getAllArticle.count()
+            totalPages,offset,limit = get_pagination(totalCount,page,size)
+            getAllArticle = getAllArticle.limit(limit).offset(offset).all()
+
+            dataList=[]
+
+            stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+            contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+            paymentStatus = ["-","Pending","Paid"]
+            if getAllArticle:
+                for row in getAllArticle:
+                    dataList.append({
+                "article_id":row.id,
+                "meta_title":row.meta_title,
+                "article_title":row.article_title,
+                "editors_choice":row.editors_choice,
+                "is_paid":row.is_paid,
+                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
+
+                "meta_description":row.meta_description,
+                "category_id":row.category_id,
+                "category_title":row.category.title if row.category_id else None,
+                "seo_url":row.seo_url,
+                "meta_keywords":row.meta_keywords,
+                "sub_category_id":row.sub_category_id,
+                "sub_category_title":row.sub_category.title if row.sub_category_id else None,
+
+                "topic":row.topic,
+                "img_alter":row.img_alter,
+                "header_content":row.header_content,
+                "footer_content":row.footer_content,
+                "middle_content":row.middle_content,
+                 "state_id":row.state_id,
+                "state_name":row.states.name if row.state_id else None,
+                "city_id":row.city_id,
+                "is_journalist":row.is_journalist,
+                "city_name":row.cities.name if row.city_id else None,
+                "submition_date":row.submition_date,
+                "topic_approved":row.topic_approved,
+                "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
+                "content_approved":row.content_approved,
+                "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
+                "created_at":row.created_at,                  
+                "updated_at":row.updated_at, 
+                "journalist_id":row.created_by,                 
+                "journalist_name":row.createdBy.user_name if row.created_by else None,                  
+                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                      }  )
+            
+            data=({
+                # "approval_pending":approval_pending,
+                   "deadline_article_count":deadlineArtcileCount,
+                   "notification_count":notifyCount,
+                   "page":page,"size":size,
+                   "total_page":totalPages,
+                   "total_count":totalCount,
+                   "items":dataList})
+        
+            return ({"status":1,"msg":"Success","data":data})
+        else:
+            return {'status':0,"msg":"You are not authenticated to view Article."}
+    else:
+        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+    
+
+
+
+# @router.post("/test_list_article")
+# async def test_listArticle(db:Session =Depends(deps.get_db),
+#                        token:str = Form(...),
+#                        category_id:int=Form(None),
+#                        city_id:int=Form(None),
+#                        state_id:int=Form(None),
+#                        sub_category_id:int=Form(None),
+#                        journalist_id:int=Form(None),
+#                        section_type:int=Form(None,description="1-Topic,2-Content"),
+
+#                        article_status:int=Form(None,description="1-new,2-review,3-comment,5-published"),
+#                        editors_choice:int=Form(None,description="1-no,2-yes"),
+#                        is_paid :int =Form(None,description="1-pending,2-paid"),\
+#                        page:int=1,size:int = 10):
+    
+#     user=deps.get_user_token(db=db,token=token)
+#     if user:
+#         if user:
+#             getAllArticle = db.query(Article).filter(Article.status ==1)
+
+#             if state_id:
+#                 getAllArticle = getAllArticle.filter(Article.state_id==state_id)
+#             if is_paid:
+#                 getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
+#             if editors_choice:
+#                 getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
+#             if journalist_id:
+#                 getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
+#             if city_id:
+#                 getAllArticle = getAllArticle.filter(Article.city_id==city_id)
+
+#             if category_id:
+#                 getAllArticle = getAllArticle.filter(Article.category_id==category_id)
+
+#             if sub_category_id:
+#                 getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
+
+#             # if article_status==4:
+#             #     getAllArticle = getAllArticle.filter(Article.content_approved!=5)
+
+   
+#             approval_pending = db.query(Article).filter(Article.status==1,
+#                                                           Article.content_approved!=5)
+            
+#             if user.user_type==8:
+#                 approval_pending =approval_pending.filter(Article.created_by==user.id)
+#                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
+
+#             approval_pending =approval_pending.count()
+
+
+#             if article_status ==5 and not section_type:
+
+#                 getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
+#                                                      Article.content_approved==article_status)
+                
+#             # if article_status and article_status not in [4,5]:
+
+#             #     getAllArticle = getAllArticle.filter(or_(Article.topic_approved==article_status,
+#             #                                          Article.content_approved==article_status))
+
+#             if article_status==1 and not section_type:
+#                  getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
+#                                                          Article.content_approved==1))
+#             if user.user_type==4:
+                
+#                 if section_type==2 and user.user_type==4:
+
+#                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+#                                                             Article.content_approved==4)
+#                 if section_type==1 and user.user_type==4:
+
+#                     getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
+
+#             if user.user_type==5:
+                
+#                 if section_type==2 and user.user_type==5:
+#                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+#                                                         Article.content_approved.not_in([4,5]))
+                    
+#                 if section_type==1 and user.user_type==5:
+#                     getAllArticle = getAllArticle.filter(Article.topic_approved.not_in([4,5]))
+
+                
+
+    
+#             notifyCount = 0
+#             deadlineArtcileCount = 0
+
+#             getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
+
+#             if user.user_type in [1,2,3]:
+#                 getDeadlineArticles = db.query(Article).filter(
+#                     Article.status==1,
+#                     Article.content_approved==1,
+#                     Article.submition_date<=datetime.now(settings.tz_IN)
+#                 ).count()
+#                 deadlineArtcileCount = getDeadlineArticles
+
+#             if user.user_type ==4:
+#                 getAllNotify = getAllNotify.filter(
+#                     ArticleHistory.chief_editor_id==user.id,
+#                                                    ArticleHistory.chief_editor_notify==1).count()
+#                 notifyCount = getAllNotify
+
+#             if user.user_type ==5:
+#                 getAllNotify = getAllNotify.filter(
+#                     ArticleHistory.sub_editor_id==user.id,
+#                                                    ArticleHistory.sub_editor_notify==1).count()
+#                 notifyCount = getAllNotify
+
+#             if user.user_type ==8:
+#                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
+
+#                 getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
+#                                                    ArticleHistory.journalist_notify==1).count()
+#                 notifyCount = getAllNotify
+
+#             totalCount = getAllArticle.count()
+#             totalPages,offset,limit = get_pagination(totalCount,page,size)
+#             getAllArticle = getAllArticle.limit(limit).offset(offset).all()
+
+#             dataList=[]
+
+#             stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+#             contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
+#             paymentStatus = ["-","Pending","Paid"]
+#             if getAllArticle:
+#                 for row in getAllArticle:
+#                     dataList.append({
+#                 "article_id":row.id,
+#                 "meta_title":row.meta_title,
+#                 "article_title":row.article_title,
+#                 "editors_choice":row.editors_choice,
+#                 "is_paid":row.is_paid,
+#                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
+
+#                 "meta_description":row.meta_description,
+#                 "category_id":row.category_id,
+#                 "category_title":row.category.title if row.category_id else None,
+#                 "seo_url":row.seo_url,
+#                 "meta_keywords":row.meta_keywords,
+#                 "sub_category_id":row.sub_category_id,
+#                 "topic":row.topic,
+#                 "img_alter":row.img_alter,
+#                 "header_content":row.header_content,
+#                 "footer_content":row.footer_content,
+#                 "middle_content":row.middle_content,
+#                  "state_id":row.state_id,
+#                 "state_name":row.states.name if row.state_id else None,
+#                 "city_id":row.city_id,
+#                 "is_journalist":row.is_journalist,
+#                 "city_name":row.cities.name if row.city_id else None,
+#                 "submition_date":row.submition_date,
+#                 "topic_approved":row.topic_approved,
+#                 "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
+#                 "content_approved":row.content_approved,
+#                 "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
+#                 "created_at":row.created_at,                  
+#                 "updated_at":row.updated_at, 
+#                 "journalist_id":row.created_by,                 
+#                 "journalist_name":row.createdBy.user_name if row.created_by else None,                  
+#                 "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+#                       }  )
+            
+#             data=({"approval_pending":approval_pending,
+#                    "deadline_article_count":deadlineArtcileCount,
+#                    "notification_count":notifyCount,"page":page,"size":size,
+#                    "total_page":totalPages,
+#                    "total_count":totalCount,
+#                    "items":dataList})
+        
+#             return ({"status":1,"msg":"Success","data":data})
+#         else:
+#             return {'status':0,"msg":"You are not authenticated to view Article."}
+#     else:
+#         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})

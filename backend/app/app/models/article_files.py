@@ -9,6 +9,7 @@ class ArticleFiles(Base):
     id=Column(Integer,primary_key=True)
     img_path = Column(String(500))
     img_alter = Column (String(255))
+    file_type =Column(TINYINT,comment="1->image,2 ->gif,3 ->pdf,4-> video,5 -> others")
     article_id = Column(Integer,ForeignKey("article.id"),comment="journal tab id")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")

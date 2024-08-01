@@ -21,6 +21,23 @@ async def uploadFile(db:Session=Depends(deps.get_db),
     if user:
         checkArticle = db.query(Article).filter(
             Article.id == article_id,Article.status == 1 ).first()
+        
+
+        file_type_map = {
+        "image": ["image/jpeg", "image/png"],
+
+        "gif": ["image/gif"],
+        "pdf": ["application/pdf"],
+        "video": ["video/mp4", "video/mpeg"],
+    }
+        
+        file_type_int_map = {
+            "image": 1,
+            "gif": 2,
+            "pdf": 3,
+            "video": 4,
+            "other": 5
+        }
         if not checkArticle:
             return {"status":0,"msg":"No Article record found."}
         else:
@@ -31,12 +48,31 @@ async def uploadFile(db:Session=Depends(deps.get_db),
                     uploadedFile = file.filename
                     fName,*etn = uploadedFile.split(".")
                     filePath,returnFilePath = file_storage(file,fName)
+
                     splited_filename = img_alter.split(',') if img_alter else None
+
+
+                    file_type = file_type_int_map["other"]  # Default to 'other' if type is not recognized
+                    content_type = file.content_type.lower()
+
+                    # Check for GIF first
+                    if content_type in file_type_map["gif"]:
+                        file_type = file_type_int_map["gif"]
+                    else:
+                        for key, values in file_type_map.items():
+                            # if key != "gif" and any(content_type.startswith(value.split('/')[0]) for value in values):
+                            if key != "gif" and content_type in values:
+                                file_type = file_type_int_map[key]
+                                break
+
+                    
+
                     imageData.append({
                         "img_path" : returnFilePath,
                         "img_alter" : img_alter,
                         "created_at" : datetime.now(settings.tz_IN),
                         "status" : 1,
+                        "file_type":file_type,
                         "article_id":article_id,
                         "created_by":user.id
                     })
@@ -81,6 +117,7 @@ async def listArticleFiles(db:Session = Depends(deps.get_db),
                 dataList.append({
                     "article_file_id":row.id,
                     "alter_img":row.img_alter,
+                    "file_type":row.file_type,
                     "img_path": f"{settings.BASE_DOMAIN}{row.img_path}",
                 })
         data=({

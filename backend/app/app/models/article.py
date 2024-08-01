@@ -10,6 +10,7 @@ class Article(Base):
     content=Column(String(250))
     topic=Column(String(250))
     article_title=Column(String(500))
+    youtube_link=Column(String(500))
     img_path = Column(String(500))
     description=Column(String(250))
 

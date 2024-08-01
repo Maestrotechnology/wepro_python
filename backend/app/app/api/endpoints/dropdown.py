@@ -111,7 +111,7 @@ async def topicDropDown(db:Session=Depends(deps.get_db),
 
             return {"status":1,"msg":"Success","data":dataList}
         else:
-            return {"status":0,"msg":"You are not authenticated to see the Category details."}
+            return {"status":0,"msg":"You are not authenticated to see the Editors's Topic."}
     return {'status':-1,"msg":"Your login session expires.Please login later."}
 
 
@@ -151,22 +151,29 @@ async def categoryDropDown(db:Session=Depends(deps.get_db),
 @router.post("/sub_category_dropdown")
 async def subCtegoryDropDown(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
-                       is_report:int=Form(None)):
+                       category_id:int=Form(None)
+                ):
     user = deps.get_user_token(db=db,token =token)
     if user:
         if user:
 
             getSubCategory = db.query(SubCategory).filter(SubCategory.status == 1)
 
-            if not is_report:
-                getSubCategory = getSubCategory.filter(SubCategory.is_active==1)
+            if category_id:
+                getSubCategory =getSubCategory.filter(SubCategory.category_id == category_id)
+
+
+            # if not is_report:
+            #     getSubCategory = getSubCategory.filter(SubCategory.is_active==1)
 
 
             count = getSubCategory.count()
+
             getSubCategory = getSubCategory.order_by(SubCategory.title.asc()).all()
             
 
             dataList =[]
+
 
             if getSubCategory:
                 for category in getSubCategory:

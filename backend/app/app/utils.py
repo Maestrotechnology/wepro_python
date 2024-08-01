@@ -406,7 +406,7 @@ def file_storage(file_name, f_name):
     txt = filename[::-1]
     splitted = txt.split(".", 1)
     txt1 = splitted[0][::-1]
-    txt2 = splitted[1][::-1]
+    # txt2 = splitted[1][::-1]
 
     files_name = f_name.split(".")
 

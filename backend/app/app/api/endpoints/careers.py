@@ -22,6 +22,9 @@ async def createCareers(db:Session = Depends(deps.get_db),
                      salary:float=Form(...),
                      requirements:str=Form(...),
                      employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary'),
+                     experience_type:int=Form(...,description='1-ffresher, 2-experience'),
+                     experience_year_from:str=Form(...),
+                     experience_year_to:str=Form(...),
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -37,6 +40,9 @@ async def createCareers(db:Session = Depends(deps.get_db),
             addCareers = Careers(
             title = title,
             salary = salary,
+            experience_type = experience_type,
+            experience_year_to = experience_year_to,
+            experience_year_from = experience_year_from,
             description = description,
             requirements = requirements,
             employement_type = employement_type,
@@ -63,6 +69,9 @@ async def updateCareers(db:Session = Depends(deps.get_db),
                      salary:float=Form(...),
                      requirements:str=Form(...),
                      employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary'),
+                     experience_type:int=Form(...,description='1-ffresher, 2-experience'),
+                     experience_year_from:str=Form(...),
+                     experience_year_to:str=Form(...),
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -81,7 +90,10 @@ async def updateCareers(db:Session = Depends(deps.get_db),
 
             if not getCareers:
                 return{"status":0,"msg":"Not Found"}
-
+            
+            getCareers.experience_type = experience_type
+            getCareers.experience_year_to = experience_year_to
+            getCareers.experience_year_from = experience_year_from
             getCareers.title = title
             getCareers.requirements = requirements
             getCareers.employement_type = employement_type
@@ -125,15 +137,23 @@ async def listCareers(db:Session =Depends(deps.get_db),
             getAllCareers = getAllCareers.limit(limit).offset(offset).all()
 
             dataList=[]
+            experienceName = ["-","Fresher","Experienced"]
+            employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary"]
             if getAllCareers:
                 for row in getAllCareers:
+
                     dataList.append({
                 "career_id":row.id,
                 "title":row.title,
                 "salary":row.salary,
+                "experience_year_to":row.experience_year_to,
+                "experience_year_from":row.experience_year_from,
+                "experience_type":row.experience_type,
+                "experience_type_name":experienceName[row.experience_type] if row.experience_type else None,
                 "description":row.description,
                 "requirements":row.requirements,
-                "employement_type":row.employement_type,
+                "employement_type_name":employementType[row.employement_type] if row.employement_type else None,
+                "employement_type":row.employement_type ,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at,                  
                 "created_by":row.createdBy.user_name if row.created_by else None,                  
