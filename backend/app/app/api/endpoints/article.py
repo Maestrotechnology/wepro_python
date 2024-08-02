@@ -97,6 +97,102 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
         return {"status":-1,"msg":"Your login session expires.Please login again."}
 
 
+@router.post("/topic_request_update")
+async def topicReqUpdate(db:Session=Depends(deps.get_db),
+                       token:str=Form(...),
+                       topic_request_id:int=Form(...),
+                       topic_id:int=Form(None),
+                       topic:str=Form(None),
+                       category_id:int=Form(None),
+                       description:str=Form(None),
+                    #    submition_date:date=Form(None),
+                       ):
+    
+    user=deps.get_user_token(db=db,token=token)
+    
+    if user:
+        if user:
+
+            getTopic = None
+
+            getArticle = db.query(Article).\
+                filter(Article.status==1,Article.id==topic_request_id).first()
+
+            if not getArticle :
+                    return {"status":0,"msg":"This Topic Req is Not available"}
+            
+            getTopic = None
+
+            if topic_id:
+                getTopic = db.query(ArticleTopic).\
+                filter(ArticleTopic.status==1,ArticleTopic.id==topic_id).first()
+
+                if not getTopic :
+                    return {"status":0,"msg":"This Topic is Not available"}
+                
+
+            getArticle.updated_at = datetime.now(settings.tz_IN)
+            getArticle.article_topic_id = topic_id
+            getArticle.topic = topic if not getTopic else getTopic.topic
+            getArticle.category_id = category_id
+            getArticle.description = description if not getTopic else getTopic.description
+            getArticle.created_by = user.id
+            getArticle.is_journalist = 1
+            getArticle.editors_choice = 2 if getTopic else 1
+            getArticle.status=1
+            getArticle.topic_approved = 5 if getTopic else 1
+            
+            db.commit()
+            comment=""
+            if not getTopic:
+                comment=f"The Article {topic} Topic is Send for Approval"
+
+                addHistory = ArticleHistory(
+                        article_id = getArticle.id,
+                        comment = comment,
+                        journalist_id = getArticle.created_by ,
+                        sub_editor_notify = 1,
+                        chief_editor_notify =0,
+                        sub_editor_id =  getArticle.sub_editor_id,
+                        chief_editor_id =  getArticle.chief_editor_id,
+                        journalist_notify = 0,
+                        status=1,
+                        created_at =datetime.now(settings.tz_IN),
+                        created_by = user.id
+                    )
+                db.add(addHistory)
+                db.commit()
+
+            if getTopic:
+                comment=f"The Article {getArticle.topic} Topic has been approved."
+                addHistory = ArticleHistory(
+                        article_id = getArticle.id,
+                        comment = comment,
+                        journalist_id = getArticle.created_by ,
+                        sub_editor_notify = 1,
+                        sub_editor_id =  getArticle.sub_editor_id,
+                        chief_editor_id =  getArticle.chief_editor_id,
+                        chief_editor_notify =0,
+                        journalist_notify = 0,
+                        status=1,
+                        created_at =datetime.now(settings.tz_IN),
+                        created_by = user.id
+                    )
+                db.add(addHistory)
+                db.commit()
+
+
+            subject ="Artcle Update"
+            mailForArticleUpdate = await send_mail_req_approval(
+            db,2,getArticle.id,getArticle.created_by,subject,user.name,user.email,comment
+            )
+
+            return {"status":1,"msg":comment}
+        
+        return ({"status":1,"msg":"Successfully New Article Published.","article_id":getArticle.id})
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+
 @router.post("/create_article")
 async def createArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
@@ -228,7 +324,6 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
                      media_file:Optional[UploadFile] = File(None),
-
                 #    article_files: Optional[List[UploadFile]] = File(None),
                    img_alter:str=Form(None),
                    ):
@@ -253,7 +348,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                 return {"status":0,"msg":"Article Not Found"}
             
             if user.user_type==8 and (getArticle.topic_approved not in [1,3] or getArticle.content_approved not in [1,3]):
-                return {"status":0,",msg":"You are not allowed to update during the article review period."}
+                return {"status":0,"msg":"You are not allowed to update during the article review period."}
 
             
             getArticle.article_title=article_title
@@ -328,6 +423,8 @@ async def viewArticle(db:Session =Depends(deps.get_db),
             "editors_choice":getArticle.editors_choice,
             "is_paid":getArticle.is_paid,
             "media_file":f'{settings.BASE_DOMAIN}{getArticle.img_path}',
+            "youtube_link":getArticle.youtube_link,
+
 
             "article_title":getArticle.article_title,
             "header_content":getArticle.header_content,
@@ -480,6 +577,8 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
                 return {"status":0,"msg":"This article is not available."}
             
             approvedStatus =["-","new","Review","comment","SE approved","CE Approved/Published",]
+
+            getArticle.updated_at = datetime.now(settings.tz_IN)
             
             journalistEmail = getArticle.createdBy.email if getArticle.created_by else None
             journalistName = getArticle.createdBy.name if getArticle.created_by else None
@@ -612,6 +711,9 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             
             if not getArticle:
                 return {"status":0,"msg":"This article is not available."}
+            
+            getArticle.updated_at = datetime.now(settings.tz_IN)
+
             
             approvedStatus =["-","new","Review","comment","SE approved","CE Approved/Published",]
             getArticle.content_approved = approved_status
@@ -873,6 +975,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
                  getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
                                                          Article.content_approved==1))
             if user.user_type==4:
+
+                getAllArticle =  getAllArticle.filter(or_(Article.chief_editor_id==user.id,Article.chief_editor_id==None))
                 
                 if section_type==2 and not article_status:
 
@@ -890,9 +994,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
 
             if user.user_type==5:
+                getAllArticle =  getAllArticle.filter(or_(Article.sub_editor_id==user.id,Article.sub_editor_id==None))
                 
                 if section_type==2 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,Article.content_approved!=None,
                                                         Article.content_approved.not_in([4,5]))
                     
                 if section_type==1 and not article_status:
@@ -910,6 +1015,16 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     Article.content_approved==1,
                     Article.submition_date<=datetime.now(settings.tz_IN)
                 ).count()
+
+
+                if section_type==2 and not article_status:
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,
+                                                         Article.content_approved!=5, Article.content_approved!=None
+                                                                )
+
+                if section_type==1 and not article_status:
+                    getAllArticle = getAllArticle.filter(Article.topic_approved!=5,Article.topic_approved!=None
+                                                                )
                 deadlineArtcileCount = getDeadlineArticles
 
             if user.user_type ==8:
@@ -917,11 +1032,11 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
                 if section_type==2 and not article_status:
                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-                                                         Article.content_approved!=5
+                                                         Article.content_approved!=5, Article.content_approved!=None
                                                                 )
 
                 if section_type==1 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved!=5,
+                    getAllArticle = getAllArticle.filter(Article.topic_approved!=5,Article.topic_approved!=None
                                                                 )
                     
                 
@@ -943,6 +1058,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 getAllArticle = getAllArticle.filter(Article.topic_approved==article_status )
 
 
+
+
             totalCount = getAllArticle.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
             getAllArticle = getAllArticle.limit(limit).offset(offset).all()
@@ -960,10 +1077,11 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,
-                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
+                "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
 
                 "meta_description":row.meta_description,
                 "category_id":row.category_id,
+                "youtube_link":row.youtube_link,
                 "category_title":row.category.title if row.category_id else None,
                 "seo_url":row.seo_url,
                 "meta_keywords":row.meta_keywords,

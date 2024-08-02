@@ -131,7 +131,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 async def listMediaFiles(db:Session =Depends(deps.get_db),
                        token:str = Form(...),
                        media_type:int=Form(None),
-                       title:int=Form(None),
+                       title:str=Form(None),
                        page:int=1,size:int = 10):
     user=deps.get_user_token(db=db,token=token)
     if user:

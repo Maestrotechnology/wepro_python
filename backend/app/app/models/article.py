@@ -32,7 +32,7 @@ class Article(Base):
     sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
     comment = Column(String(500))
     topic_approved = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved,5-CE Approved")
-    content_approved = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved,5-Published(CE Approved)")
+    content_approved = Column(TINYINT,comment="1->new,2-review,3-comment,4->SE approved,5-Published(CE Approved)")
     is_journalist = Column(TINYINT,comment="1-yes")
     sub_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
     chief_editor_id = Column(Integer,ForeignKey("user.id"),comment="user id")
