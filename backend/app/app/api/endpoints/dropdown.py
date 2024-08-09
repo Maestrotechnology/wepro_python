@@ -6,6 +6,39 @@ from app.utils import *
 
 router = APIRouter()
     
+@router.post("/designation_type_dropdown")
+async def bannerDropdown(db:Session=Depends(deps.get_db),
+                          token:str=Form(...)):
+    user = deps.get_user_token(db=db,token =token)
+    
+    if user:
+
+            dataList = []
+ 
+            dataList=[{"id":3,
+                                 "name":"Hr"},
+                                 {"id":4,
+                                 "name":"Chief Editor"},
+                                 {"id":5,
+                                 "name":"Sub Editor"},
+                                 {"id":6,
+                                 "name":"Technical Lead"},
+                                 {"id":7,
+                                 "name":"Digital Marketing strategist"},
+                                 {"id":8,
+                                 "name":"Journalist"},
+                                 {"id":9,
+                                 "name":"SEO-Google Strategist"},
+                                 {"id":10,
+                                 "name":"Marketing"},
+                                               {"id":11,
+                                 "name":"Web designer"},
+                                               {"id":12,
+                                 "name":"Graphic Designer"}]
+
+            return {"status":1,"msg":"Success","data":dataList}
+    return {'status':-1,"msg":"Your login session expires.Please login later."}
+
 @router.post("/user_dropdown")
 async def userDropdown(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
@@ -126,8 +159,8 @@ async def categoryDropDown(db:Session=Depends(deps.get_db),
             getCategory = db.query(Category).filter(Category.status == 1)
 
 
-            if not is_report:
-                getCategory = getCategory.filter(Category.is_active==1)
+            # if not is_report:
+            #     getCategory = getCategory.filter(Category.is_active==1)
 
             count = getCategory.count()
             getCategory = getCategory.order_by(Category.title.asc()).all()

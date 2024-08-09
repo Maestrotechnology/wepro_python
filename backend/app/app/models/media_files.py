@@ -11,6 +11,7 @@ class MediaFiles(Base):
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
     title=Column(String(250))
+    media_orientation =Column(TINYINT,comment="1->Portrait,2-Landscape")
     meta_title = Column(String(250))
     meta_description = Column(String(250))
     meta_keywords = Column(String(250))

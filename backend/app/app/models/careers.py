@@ -11,6 +11,8 @@ class Careers(Base):
     salary = Column(DECIMAL(10,2),default=0)
     employement_type = Column(TINYINT,comment='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary')
     experience_type = Column(TINYINT,comment='1-fresher, 2-experience')
+    designation_type =Column(TINYINT,comment="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,,9-SEO-Google Strategist,10-Marketing,11-Web designer,12-Graphic Designer")
+
     experience_year_from = Column(String(255))
     experience_year_to = Column(String(255))
     description=Column(TEXT)

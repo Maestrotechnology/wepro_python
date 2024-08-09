@@ -24,7 +24,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      meta_keywords:str=Form(None),
                     #  seo_url:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
-
+                     media_orientation:int=Form(None,description="1->Portrait,2-Landscape"),
                      token:str=Form(...),
                      content_type:int=Form(None,description="1->Ads,2->banners,3-youtube"),
                      media_type:int=Form(None,description="1->img,2-shorts,3->Video")
@@ -41,6 +41,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
             meta_title = meta_title,
             media_type = media_type,
             img_alter = img_alter,
+            media_orientation = media_orientation,
             content_type = content_type,
             meta_description = meta_description,
             # seo_url = seo_url,
@@ -79,7 +80,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      meta_description:str=Form(None),
                      meta_keywords:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
-
+                     media_orientation:int=Form(None,description="1->Portrait,2-Landscape"),
                     #  seo_url:str=Form(None),
                      token:str=Form(...)
                      ):
@@ -97,6 +98,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
             getMediaFiles.media_url = media_url
             getMediaFiles.title = title
             getMediaFiles.img_alter = img_alter
+            getMediaFiles.media_orientation=media_orientation
 
             getMediaFiles.description = description
             getMediaFiles.meta_title = meta_title
@@ -156,6 +158,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
                 "title":row.title,
                 "description":row.description,
                 "meta_title":row.meta_title,
+                "media_orientation":row.media_orientation,
                 "meta_description":row.meta_description,
                 # "seo_url":row.seo_url,
                 "img_alter":row.img_alter,
@@ -203,6 +206,8 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
 
             "description":getData.description,
             "img_alter":getData.img_alter,
+            "media_orientation":getData.media_orientation,
+
             "meta_title":getData.meta_title,
             "meta_description":getData.meta_description,
             # "seo_url":getData.seo_url,

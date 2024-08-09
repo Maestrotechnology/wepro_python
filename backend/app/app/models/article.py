@@ -39,8 +39,29 @@ class Article(Base):
     editors_choice = Column(TINYINT,default=1,comment="1->No,2->yes")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
+
     created_at=Column(DateTime)
+    content_created_at=Column(DateTime)
+
+
+    topic_se_review_at=Column(DateTime)
+    topic_ce_review_at=Column(DateTime)
+
+    topic_ce_cmnt_at=Column(DateTime)
+    topic_se_cmnt_at=Column(DateTime)
+
+    topic_se_approved_at=Column(DateTime)
+    topic_ce_approved_at=Column(DateTime)
+
+    content_se_review_at=Column(DateTime)
+    content_ce_review_at=Column(DateTime)
+
+    content_ce_cmnt_at=Column(DateTime)
+    content_se_cmnt_at=Column(DateTime)
+   
+    content_se_approved_at=Column(DateTime)
     published_at=Column(DateTime)
+
     updated_at=Column(DateTime)
 
     created_by = Column(Integer,ForeignKey("user.id"),comment="user id")

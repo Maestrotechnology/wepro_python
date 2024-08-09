@@ -28,6 +28,7 @@ async def signUp(db:Session = Depends(deps.get_db),
                      bank:str=Form(None),
                      pan_number:str=Form(None),
                      aadhaar_number:str=Form(None),
+                     past_designation:str=Form(None),
                      educational_qualification:str=Form(None),
                      previous_experience:str=Form(None),
                      experience_in_relevent_field:str=Form(None),
@@ -41,8 +42,7 @@ async def signUp(db:Session = Depends(deps.get_db),
 
                     #  alt_img:str=Form(None),
                      city_id:int=Form(None),
-                    #  password:str=Form(...),
-                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-technical lead,7->Digital Marketing strategist,8-journalist,9-Member")
+                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-SEO-Google Strategist,10-Marketing,11-Web designer,12-Graphic Designer")
                      ):
     
    
@@ -77,6 +77,7 @@ async def signUp(db:Session = Depends(deps.get_db),
     createUsers = User(
         user_type = user_type,
         name = name,
+        past_designation = past_designation,
         pan_number = pan_number,
         aadhaar_number = aadhaar_number,
         educational_qualification = educational_qualification,
@@ -151,6 +152,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                      educational_qualification:str=Form(None),
                      previous_experience:str=Form(None),
                      experience_in_relevent_field:str=Form(None),
+                     past_designation:str=Form(None),
                      area_of_interest:str=Form(None),
                      ifsc_code:str=Form(None),
                      branch:str=Form(None),
@@ -166,7 +168,7 @@ async def createUser(db:Session = Depends(deps.get_db),
     
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2,3]:
+        if user.user_type in [1,2,3,6]:
             getUser = db.query(User).filter(User.status == 1)
             password = password.strip()
              
@@ -201,6 +203,7 @@ async def createUser(db:Session = Depends(deps.get_db),
                 name = name,
                 whatsapp_no=whatsapp_no,
                 user_name = user_name,
+                past_designation = past_designation,
                 email = email,
                 joining_date = joining_date,
                 phone = phone,
@@ -287,6 +290,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      img_path:Optional[UploadFile] = File(None),
                        pan_number:str=Form(None),
                      aadhaar_number:str=Form(None),
+                     past_designation:str=Form(None),
                      educational_qualification:str=Form(None),
                      previous_experience:str=Form(None),
                      experience_in_relevent_field:str=Form(None),
@@ -305,7 +309,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
     if user:
         if user:
      
-            if user_id and user.user_type not in [1,2,3]:
+            if user_id and user.user_type not in [1,2,3,6]:
                 return {"status":0,"msg":"You're not allowed to update the user."}
             elif not user_id:
                 userId = user.id
@@ -363,6 +367,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 checkUserId.branch = branch
                 checkUserId.pincode = pincode
                 checkUserId.dob = dob
+                checkUserId.past_designation = past_designation
 
                 checkUserId.pan_number = pan_number,
                 checkUserId.aadhaar_number = aadhaar_number,
@@ -409,6 +414,7 @@ async def listUser(db:Session =Depends(deps.get_db),
                    user_type:int=Form(None,description="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-Member,10-SEO-Google Strategist,11-Marketing,12-Web designer,13-Graphic Designer"),
                    email:str=Form(None),state_id:int=Form(None),city_id:int=Form(None),
                    name:str=Form(None),
+                   is_requested:int=Form(None),
                    application_status:int=Form(None,description="1->Request,2-Accepted,3-interview process,-1 ->rejected")
                    ):
     user = deps.get_user_token(db=db,token=token)
@@ -420,6 +426,11 @@ async def listUser(db:Session =Depends(deps.get_db),
 
             if user_type:
                 getAllUser = getAllUser.filter(User.user_type == user_type)
+
+
+            if is_requested:
+                getAllUser = getAllUser.filter(User.is_request != 2)
+
 
             if application_status:
                 getAllUser = getAllUser.filter(User.is_request == application_status)
@@ -437,7 +448,7 @@ async def listUser(db:Session =Depends(deps.get_db),
 
             journalistReq = 0
 
-            if user.user_type in [1,2,3]:
+            if user.user_type in [1,2,3,6]:
                 getJournalReq=db.query(User).filter(User.status==1,User.is_request==1).count()
                 journalistReq = getJournalReq
 
@@ -464,6 +475,7 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "resume_file":f'{settings.BASE_DOMAIN}{userData.resume_path}',
                             "joining_date":userData.joining_date,
                             "dob":userData.dob,
+                            "past_designation":userData.past_designation,
                             "city_id":userData.city_id,
                             "is_request":userData.is_request,
                             "city_name":userData.cities.name if userData.city_id else None,
@@ -476,7 +488,7 @@ async def listUser(db:Session =Depends(deps.get_db),
                             "branch":userData.branch,
                             "user_status":userData.is_active,
                             "user_type":userData.user_type,
-                            "user_type_name": userTypeData[userData.user_type],
+                            "user_type_name": userTypeData[userData.user_type] if userData.user_type else None,
                         }
                     )
             data=({"journalist_req_count":journalistReq,
@@ -511,6 +523,7 @@ async def viewUser(db:Session=Depends(deps.get_db),
                 "phone":getUser.phone,
                 "whatsapp_no":getUser.whatsapp_no,
                 "dob":getUser.dob,
+                "past_designation":getUser.past_designation,
                 "alternative_no":getUser.alternative_no,
 
                 "email":getUser.email,
@@ -541,7 +554,7 @@ async def deleteUser(db:Session=Depends(deps.get_db),
                      userId:int=Form(...)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2] :
+        if user.user_type in [1,2,3,4,5,6] :
             getUser = db.query(User).filter(User.id == userId,
                                             User.status == 1)
             
@@ -559,7 +572,7 @@ async def activeInactiveUser(db:Session=Depends(deps.get_db),
                              activeStatus:int=Form(...,description="1->active,2->inactive")):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2]:
+        if user.user_type in [1,2,3,6]:
             getUser = db.query(User).filter(User.id == user_id,
                                             User.status == 1)
             getUser = getUser.update({"is_active":activeStatus})
@@ -597,7 +610,7 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
             if approval_status ==2 :
                 getUser.approved_by=user.id
 
-                getUser.user_name = user_name
+                # getUser.user_name = user_name
                 getUser.approved_at = datetime.now(settings.tz_IN)
 
 

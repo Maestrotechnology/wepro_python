@@ -24,6 +24,7 @@ class User(Base):
     area_of_interest = Column(String(500))
     previous_experience = Column(String(500))
     experience_in_relevent_field = Column(String(500))
+    past_designation = Column(String(500))
     bank = Column(String(255))
     ifsc_code = Column(String(255))
     branch = Column(String(500))

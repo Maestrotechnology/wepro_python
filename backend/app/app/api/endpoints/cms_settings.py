@@ -21,6 +21,9 @@ async def createCmsSettings(db:Session = Depends(deps.get_db),
                      instagram:str=Form(None),
                      twitter:str=Form(None),
                      youtube:str=Form(None),
+                     wepro_text:str=Form(None),
+                     about:str=Form(None),
+                     our_teams:str=Form(None),
                      threads:str=Form(None),
                      linkedin:str=Form(None),
                      token:str=Form(...)
@@ -34,7 +37,10 @@ async def createCmsSettings(db:Session = Depends(deps.get_db),
             addCsmSettings = CmsSettings(google_play = google_play,
             app_store = app_store,
             facebook = facebook,
+            our_teams = our_teams,
+            wepro_text = wepro_text,
             instagram = instagram,
+            about = about,
             twitter = twitter,
             youtube = youtube,
             linkedin = linkedin,
@@ -59,6 +65,9 @@ async def updateCmsSettings(db:Session = Depends(deps.get_db),
                      google_play:str=Form(None),
                      app_store:str=Form(None),
                      facebook:str=Form(None),
+                       wepro_text:str=Form(None),
+                     about:str=Form(None),
+                     our_teams:str=Form(None),
                      instagram:str=Form(None),
                      twitter:str=Form(None),
                      youtube:str=Form(None),
@@ -79,6 +88,9 @@ async def updateCmsSettings(db:Session = Depends(deps.get_db),
             
             getCms.google_play = google_play
             getCms.app_store = app_store
+            getCms.our_teams = our_teams
+            getCms.wepro_text = wepro_text
+            getCms.about = about
             getCms.facebook = facebook
             getCms.twitter = twitter
             getCms.instagram = instagram
@@ -116,7 +128,10 @@ async def viewCmsSettings(db:Session =Depends(deps.get_db),
             "cms_settings_id":getCmsSetting.id,
             "google_play":getCmsSetting.google_play,
             "app_store":getCmsSetting.app_store,
+            "our_teams":getCmsSetting.our_teams,
             "facebook":getCmsSetting.facebook,
+            "wepro_text":getCmsSetting.wepro_text,
+            "about":getCmsSetting.about,
             "instagram":getCmsSetting.instagram,
             "twitter":getCmsSetting.twitter,
             "youtube":getCmsSetting.youtube,

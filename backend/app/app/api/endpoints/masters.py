@@ -33,6 +33,11 @@ async def createCategory(db:Session = Depends(deps.get_db),
 
             if existTitle:
                 return {"status":0,"msg":"This Title already used."}
+            
+            existSeoUrl = db.query(Category).filter(Category.seo_url==seo_url,Category.status==1).first()
+
+            if existSeoUrl:
+                return {"status":0,"msg":"This SeoUrl already used."}
 
             addCategory = Category(
             title = title,
@@ -54,6 +59,18 @@ async def createCategory(db:Session = Depends(deps.get_db),
                 fName,*etn = uploadedFile.split(".")
                 filePath,returnFilePath = file_storage(media_file,fName)
                 addCategory.img_path = returnFilePath
+
+
+                if etn[0].lower() == 'png':
+                    addCategory.img_type = 1  # Assign 1 for PNG
+                elif etn[0].lower() == 'jpg':
+                    addCategory.img_type = 2  # Assign 2 for JPG or JPEG
+                elif etn[0].lower() == 'jpeg':
+                    addCategory.img_type = 3
+                else:
+                    # Handle other file types if necessary
+                    addCategory.img_path = returnFilePath
+                    addCategory.img_type = 0  
 
                 db.commit()
 
@@ -87,7 +104,11 @@ async def updateCategory(db:Session = Depends(deps.get_db),
 
             if existTitle:
                 return {"status":0,"msg":"This Title already used."}
+            
+            existSeoUrl = db.query(Category).filter(Category.seo_url==seo_url,Category.id!=category_id,Category.status==1).first()
 
+            if existSeoUrl:
+                return {"status":0,"msg":"This SeoUrl already used."}
 
             getCategory = db.query(Category).filter(Category.id==category_id).first()
 
@@ -100,6 +121,19 @@ async def updateCategory(db:Session = Depends(deps.get_db),
                 fName,*etn = uploadedFile.split(".")
                 filePath,returnFilePath = file_storage(media_file,fName)
                 getCategory.img_path = returnFilePath
+
+
+                if etn[0].lower() == 'png':
+                    getCategory.img_type = 1  # Assign 1 for PNG
+                elif etn[0].lower() == 'jpg':
+                    getCategory.img_type = 2  # Assign 2 for JPG or JPEG
+                elif etn[0].lower() == 'jpeg':
+                    getCategory.img_type = 3 # Assign 2 for JPG or JPEG
+
+                else:
+                    # Handle other file types if necessary
+                    getCategory.img_type = 0  
+
 
                 db.commit()
             
@@ -152,6 +186,7 @@ async def listCategory(db:Session =Depends(deps.get_db),
                 "description":row.description,
                 "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
                 "img_alter":row.img_alter,
+                "img_type":row.img_type,
                 "sort_order":row.sort_order,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at,                  
@@ -189,6 +224,7 @@ async def viewCategory(db:Session =Depends(deps.get_db),
             "category_id":getCategory.id,
             "title":getCategory.title,
             "seo_url":getCategory.seo_url,
+            "img_type":getCategory.img_type,
             "description":getCategory.description,
             "is_active":getCategory.is_active,
             "img_alter":getCategory.img_alter,
@@ -234,6 +270,11 @@ async def deleteCategory(db:Session=Depends(deps.get_db),
     user = deps.get_user_token(db=db,token=token)
     if user:
         if user.user_type in [1,2,3] :
+
+            checkSub = db.query(SubCategory).filter(SubCategory.status==1,SubCategory.category_id==category_id).first()
+
+            if checkSub:
+                 return {"status": 0, "msg": "Category cannot be deleted because it contains active subcategories. Please delete the related subcategories first."}
             getCategory = db.query(Category).filter(Category.id == category_id,
                                             Category.status == 1)
             
@@ -245,9 +286,6 @@ async def deleteCategory(db:Session=Depends(deps.get_db),
     else:
         return {'status':-1,"msg":"Your login session expires.Please login again."}
     
-
-
-
 
 
 @router.post("/create_sub_category")
@@ -591,6 +629,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
             if getAllArticleTopic:
                 for row in getAllArticleTopic:
                     dataList.append({
+                    "article_topic_id":row.id,
                 "topic":row.topic,
                 "description":row.description,
                 "category_id":row.category_id,
@@ -652,6 +691,7 @@ async def deleteArticleTopic(db:Session=Depends(deps.get_db),
         if user :
             getArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.id == article_topic_id,
                                             ArticleTopic.status == 1)
+            
             
             getArticleTopic = getArticleTopic.update({"status":-1})
             db.commit()

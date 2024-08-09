@@ -16,13 +16,14 @@ router = APIRouter()
 
 @router.post("/create_career")
 async def createCareers(db:Session = Depends(deps.get_db),
-                     title:str=Form(...),
+                     title:str=Form(None),
                      description:str=Form(...),
                      token:str=Form(...),
                      salary:float=Form(...),
                      requirements:str=Form(...),
                      employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary'),
                      experience_type:int=Form(...,description='1-ffresher, 2-experience'),
+                     designation_type:int=Form(...,description="designation dropdown"),
                      experience_year_from:str=Form(...),
                      experience_year_to:str=Form(...),
                      ):
@@ -32,10 +33,10 @@ async def createCareers(db:Session = Depends(deps.get_db),
     if user:
         if user:
 
-            existTitle = db.query(Careers).filter(Careers.title==title,Careers.status==1).first()
+            # existTitle = db.query(Careers).filter(Careers.title==title,Careers.status==1).first()
 
-            if existTitle:
-                return {"status":0,"msg":"This Title already used."}
+            # if existTitle:
+            #     return {"status":0,"msg":"This Title already used."}
 
             addCareers = Careers(
             title = title,
@@ -63,13 +64,14 @@ async def createCareers(db:Session = Depends(deps.get_db),
 @router.post("/update_career")
 async def updateCareers(db:Session = Depends(deps.get_db),
                      career_id:int=Form(...),
-                    title:str=Form(...),
+                    title:str=Form(None),
                      description:str=Form(...),
                      token:str=Form(...),
                      salary:float=Form(...),
                      requirements:str=Form(...),
                      employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary'),
                      experience_type:int=Form(...,description='1-ffresher, 2-experience'),
+                     designation_type:int=Form(...,description="designation dropdown"),
                      experience_year_from:str=Form(...),
                      experience_year_to:str=Form(...),
                      ):
@@ -82,8 +84,8 @@ async def updateCareers(db:Session = Depends(deps.get_db),
             existTitle = db.query(Careers).filter(Careers.id!=career_id,
                                                    Careers.title==title,Careers.status==1).first()
 
-            if existTitle:
-                return {"status":0,"msg":"This Title already used."}
+            # if existTitle:
+            #     return {"status":0,"msg":"This Title already used."}
 
 
             getCareers = db.query(Careers).filter(Careers.id==career_id).first()
@@ -92,6 +94,7 @@ async def updateCareers(db:Session = Depends(deps.get_db),
                 return{"status":0,"msg":"Not Found"}
             
             getCareers.experience_type = experience_type
+            getCareers.designation_type = designation_type
             getCareers.experience_year_to = experience_year_to
             getCareers.experience_year_from = experience_year_from
             getCareers.title = title
@@ -115,13 +118,13 @@ async def updateCareers(db:Session = Depends(deps.get_db),
 
 @router.post("/list_career")
 async def listCareers(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
+                       token:str = Form(None),
                        title:str=Form(None),
                        employement_type :int=Form(None,description="1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary"),
                        page:int=1,size:int = 10):
-    user=deps.get_user_token(db=db,token=token)
-    if user:
-        if user:
+    # user=deps.get_user_token(db=db,token=token)
+    # if user:
+    #     if user:
             getAllCareers = db.query(Careers).filter(Careers.status ==1)
 
 
@@ -139,6 +142,8 @@ async def listCareers(db:Session =Depends(deps.get_db),
             dataList=[]
             experienceName = ["-","Fresher","Experienced"]
             employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary"]
+            userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
+
             if getAllCareers:
                 for row in getAllCareers:
 
@@ -146,6 +151,9 @@ async def listCareers(db:Session =Depends(deps.get_db),
                 "career_id":row.id,
                 "title":row.title,
                 "salary":row.salary,
+                "designation_type":row.designation_type,
+                "designation_type_name":userTypeData[row.designation_type] if row.designation_type else None,
+                        
                 "experience_year_to":row.experience_year_to,
                 "experience_year_from":row.experience_year_from,
                 "experience_type":row.experience_type,
@@ -166,42 +174,55 @@ async def listCareers(db:Session =Depends(deps.get_db),
                    "items":dataList})
         
             return ({"status":1,"msg":"Success","data":data})
-        else:
-            return {'status':0,"msg":"You are not authenticated to view Careers."}
-    else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+    #     else:
+    #         return {'status':0,"msg":"You are not authenticated to view Careers."}
+    # else:
+    #     return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     
 @router.post("/view_career")
 async def viewCareers(db:Session =Depends(deps.get_db),
-                   token:str=Form(...),
+                   token:str=Form(None),
                    career_id:int=Form(...),
                    ):
-    user = deps.get_user_token(db=db,token=token)
+    # user = deps.get_user_token(db=db,token=token)
 
-    if user:
+    # if user:
             
         getCareers = db.query(Careers).filter(
             Careers.status==1,Careers.id==career_id).first()
         
         if not getCareers:
             return {"status":0,"msg":"No Record Found"}
+    
+        experienceName = ["-","Fresher","Experienced"]
+        employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary"]
+        userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
 
+
+  
         data={
-                "career_id":getCareers.id,
-                "title":getCareers.title,
-                "salary":getCareers.salary,
-                "description":getCareers.description,
-                "requirements":getCareers.requirements,
-                "employement_type":getCareers.employement_type,
-                "created_at":getCareers.created_at,                  
-                "updated_at":getCareers.updated_at,                  
-                "created_by":getCareers.createdBy.user_name if getCareers.created_by else None,                  
-                "updated_by":getCareers.updatedBy.user_name if getCareers.updated_by else None,                  
-                      }
+                        "career_id":getCareers.id,
+                        "title":getCareers.title,
+                        "salary":getCareers.salary,
+                        "designation_type":getCareers.designation_type,
+                        "designation_type_name":userTypeData[getCareers.designation_type] if getCareers.designation_type else None,
+                        "experience_year_to":getCareers.experience_year_to,
+                        "experience_year_from":getCareers.experience_year_from,
+                        "experience_type":getCareers.experience_type,
+                        "experience_type_name":experienceName[getCareers.experience_type] if getCareers.experience_type else None,
+                        "description":getCareers.description,
+                        "requirements":getCareers.requirements,
+                        "employement_type_name":employementType[getCareers.employement_type] if getCareers.employement_type else None,
+                        "employement_type":getCareers.employement_type ,
+                        "created_at":getCareers.created_at,                  
+                        "updated_at":getCareers.updated_at,                  
+                        "created_by":getCareers.createdBy.user_name if getCareers.created_by else None,                  
+                        "updated_by":getCareers.updatedBy.user_name if getCareers.updated_by else None,                  
+                            }  
 
         return ({"status":1,"msg":"Success.","data":data})
-    else:
-        return {"status":-1,"msg":"Your login session expires.Please login again."}
+    # else:
+    #     return {"status":-1,"msg":"Your login session expires.Please login again."}
     
 
 @router.post("/delete_career")

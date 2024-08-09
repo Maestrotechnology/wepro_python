@@ -15,6 +15,9 @@ class CmsSettings(Base):
     linkedin = Column(String(255))
     instagram = Column(String(255))
     youtube = Column(String(255))
+    wepro_text = Column(Text)
+    about = Column(Text)
+    our_teams = Column(Text)
 
     created_at=Column(DateTime)
     updated_at=Column(DateTime)
