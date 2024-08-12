@@ -334,7 +334,7 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
                 totalArticle=totalArticle.filter(
                 Article.sub_editor_id==user.id,
                                                )
-                articleAction = articleAction.filter(Article.chief_editor_id==user.id)
+                articleAction = articleAction.filter(Article.sub_editor_id==user.id)
 
                 
             if user.user_type==8:
@@ -434,7 +434,7 @@ async def contentBarchart(db:Session=Depends(deps.get_db),
                 totalArticle=totalArticle.filter(
                 Article.sub_editor_id==user.id,
                                                )
-                articleAction = articleAction.filter(Article.chief_editor_id==user.id)
+                articleAction = articleAction.filter(Article.sub_editor_id==user.id)
 
                 
             if user.user_type==8:

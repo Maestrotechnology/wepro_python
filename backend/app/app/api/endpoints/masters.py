@@ -528,6 +528,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
                      topic:str=Form(...),
                      description:str=Form(None),
                      category_id:int=Form(...),
+                     sub_category_id:int=Form(...),
                      token:str=Form(...),
                      ):
     
@@ -546,6 +547,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
             topic = topic,
             description = description,
             category_id = category_id,
+            sub_category_id = sub_category_id,
             status=1,
             created_at = datetime.now(settings.tz_IN),
             created_by = user.id)
@@ -567,6 +569,7 @@ async def updateArticleTopic(db:Session = Depends(deps.get_db),
                     topic:str=Form(None),
                      description:str=Form(None),
                      category_id:int=Form(...),
+                     sub_category_id:int=Form(...),
 
                      token:str=Form(...),
                      
@@ -590,6 +593,7 @@ async def updateArticleTopic(db:Session = Depends(deps.get_db),
 
             getArticleTopic.topic = topic
             getArticleTopic.category_id = category_id
+            getArticleTopic.sub_category_id = sub_category_id
 
             getArticleTopic.description = description
             getArticleTopic.updated_at = datetime.now(settings.tz_IN)
@@ -633,7 +637,9 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
                 "topic":row.topic,
                 "description":row.description,
                 "category_id":row.category_id,
+                "sub_category_id":row.sub_category_id,
                 "category_title": row.category.title if row.category_id else None,
+                "sub_category_title": row.sub_category.title if row.sub_category_id else None,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at,                  
                 "created_by":row.createdBy.user_name if row.created_by else None,                  

@@ -193,6 +193,7 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
     user = db.query(User).filter( User.email == email,
                                   User.status == 1)
     checkUser = user.first()
+    print(checkUser.id)
     if checkUser:
         if checkUser.is_active ==0:
             return {"status":0,
@@ -268,6 +269,7 @@ async def resendOtp(db:Session = Depends(deps.get_db),
                     resetKey:str= Form(...)):
     getUser = db.query(User).filter(User.reset_key == resetKey,
                                     User.status == 1,User.is_active==1).first()
+    
     if getUser:
         (otp, reset, created_at,
             expire_time, expire_at,
@@ -283,7 +285,7 @@ async def resendOtp(db:Session = Depends(deps.get_db),
         db.commit()
 
         try:
-            send = await send_mail_req_approval(db,email_type=4,article_id=None,ref_id=getUser.id,
+            send = await send_mail_req_approval(db,email_type=4,article_id=None,user_id=getUser.id,
                                                     subject="Reset Password",
                                                     journalistName=getUser.name,
                                                     receiver_email = getUser.email,

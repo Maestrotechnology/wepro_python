@@ -17,6 +17,7 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
                        topic_id:int=Form(None),
                        topic:str=Form(None),
                        category_id:int=Form(None),
+                       sub_category_id:int=Form(...),
                        description:str=Form(None),
                     #    submition_date:date=Form(None),
                        ):
@@ -39,7 +40,8 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
                 created_at = datetime.now(settings.tz_IN),
                 article_topic_id = topic_id,
                 topic = topic if not getTopic else getTopic.topic,
-                category_id = category_id,
+                category_id = category_id if not getTopic else getTopic.category_id,
+                sub_category_id = sub_category_id if not getTopic else getTopic.sub_category_id,
                 description = description if not getTopic else getTopic.description,
                 # submition_date = submition_date,
                 created_by = user.id,
@@ -110,8 +112,10 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
                        topic_request_id:int=Form(...),
                        topic_id:int=Form(None),
                        topic:str=Form(None),
-                       category_id:int=Form(None),
+                       category_id:int=Form(...),
                        description:str=Form(None),
+                       sub_category_id:int=Form(...),
+
                     #    submition_date:date=Form(None),
                        ):
     
@@ -141,7 +145,8 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
             getArticle.updated_at = datetime.now(settings.tz_IN)
             getArticle.article_topic_id = topic_id
             getArticle.topic = topic if not getTopic else getTopic.topic
-            getArticle.category_id = category_id
+            getArticle.category_id = category_id if not getTopic else getTopic.category_id
+            getArticle.sub_category_id = sub_category_id if not getTopic else getTopic.sub_category_id
             getArticle.description = description if not getTopic else getTopic.description
             getArticle.created_by = user.id
             getArticle.is_journalist = 1
@@ -606,6 +611,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             getArticle = db.query(Article).filter(Article.status==1,
                                 Article.id==article_id).first()
             
+            
             if approved_status==2:
                 if user.user_type==4:
                     getArticle.topic_ce_review_at=datetime.now(settings.tz_IN)
@@ -623,6 +629,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             if approved_status==5:
                 getArticle.topic_ce_approved_at=datetime.now(settings.tz_IN)
 
+            getArticle.updated_by =user.id
 
             
             if not getArticle:
@@ -774,6 +781,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                 if user.user_type==5:
                     getArticle.content_se_review_at=datetime.now(settings.tz_IN)
 
+            getArticle.updated_by =user.id
 
             if approved_status==3:
                 if user.user_type==4:
@@ -1056,7 +1064,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
                        journalist_id:int=Form(None),
-                       section_type:int=Form(None,description="1-Topic,2-Content,3-published"),
+                       section_type:int=Form(None,description="1-Topic,2-Content"),
                        topic:str=Form(None),
                        article_status:int=Form(None,description="1-new,2-review,3-comment,4-se approved,5-ce approved"),
                        editors_choice:int=Form(None,description="1-no,2-yes"),
@@ -1193,7 +1201,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
                 if section_type==2 and not article_status:
                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-                                                         Article.content_approved!=5, Article.content_approved!=None
+                                                        #  Article.content_approved!=5, Article.content_approved!=None
+                                                          Article.content_approved!=None
                                                                 )
 
                 if section_type==1 and not article_status:
@@ -1236,6 +1245,17 @@ async def listArticle(db:Session =Depends(deps.get_db),
             paymentStatus = ["-","Pending","Paid"]
             if getAllArticle:
                 for row in getAllArticle:
+
+                    getArticleTop = db.query(ArticleHistory).filter(ArticleHistory.article_id==row.id,ArticleHistory.is_topic==1).first()
+                    getArticleCon = db.query(ArticleHistory).filter(ArticleHistory.article_id==row.id,ArticleHistory.is_content==1).first()
+
+                    topicUserType = getArticleTop.createdBy.user_type if getArticleTop and getArticleTop.created_by else None
+                    conUsertype = getArticleCon.createdBy.user_type if getArticleCon and getArticleCon.created_by else None
+
+                    topicUserType="CE" if topicUserType ==4 else "SE" if topicUserType==5 else None 
+                    conUsertype="CE" if conUsertype ==4 else "SE" if conUsertype==5 else None 
+
+
                     dataList.append({
                 "article_id":row.id,
                 "meta_title":row.meta_title,
@@ -1266,9 +1286,11 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "city_name":row.cities.name if row.city_id else None,
                 "submition_date":row.submition_date,
                 "topic_approved":row.topic_approved,
-                "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
+                "topic_status_name":stsName[row.topic_approved] if row.topic_approved else None ,
                 "content_approved":row.content_approved,
-                "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
+                "content_status_name":contentStsName[row.content_approved] if row.content_approved else None,
+                "topic_approved_name":f"{getArticleTop.createdBy.user_name}({topicUserType})" if getArticleTop and getArticleTop.created_by else None ,
+                "content_approved_name":f"{getArticleCon.createdBy.user_name}({conUsertype})" if getArticleCon and getArticleCon.created_by else None ,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at, 
                 "journalist_id":row.created_by,                 

@@ -132,7 +132,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 @router.post("/list_media_files")
 async def listMediaFiles(db:Session =Depends(deps.get_db),
                        token:str = Form(...),
-                       media_type:int=Form(None),
+                        media_type:int=Form(None,description="1->img,2-shorts,3->Video"),
                        title:str=Form(None),
                        page:int=1,size:int = 10):
     user=deps.get_user_token(db=db,token=token)

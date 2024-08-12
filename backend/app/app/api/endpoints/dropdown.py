@@ -118,7 +118,8 @@ async def cityDropDown(db:Session = Depends(deps.get_db),
 @router.post("/topic_dropdown")
 async def topicDropDown(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
-                       category_id:int=Form(None)):
+                       category_id:int=Form(None),
+                       sub_category_id:int=Form(None)):
     user = deps.get_user_token(db=db,token =token)
     if user:
         if user:
@@ -129,6 +130,8 @@ async def topicDropDown(db:Session=Depends(deps.get_db),
 
             if category_id:
                 getArticleTopic =getArticleTopic.filter(ArticleTopic.category_id==category_id)
+            if sub_category_id:
+                getArticleTopic =getArticleTopic.filter(ArticleTopic.sub_category_id==sub_category_id)
                 
             getArticleTopic = getArticleTopic.order_by(ArticleTopic.topic.asc()).all()
             
@@ -156,7 +159,7 @@ async def categoryDropDown(db:Session=Depends(deps.get_db),
     if user:
         if user:
 
-            getCategory = db.query(Category).filter(Category.status == 1)
+            getCategory = db.query(Category).filter(Category.status == 1,Category.is_active==1)
 
 
             # if not is_report:

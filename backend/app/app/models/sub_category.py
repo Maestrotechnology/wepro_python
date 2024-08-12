@@ -30,4 +30,5 @@ class SubCategory(Base):
     updatedBy = relationship('User', foreign_keys=[updated_by])
     category =relationship("Category",back_populates="sub_category")
     article =relationship("Article",back_populates="sub_category")
+    article_topic =relationship("ArticleTopic",back_populates="sub_category")
 

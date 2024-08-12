@@ -12,6 +12,7 @@ class ArticleTopic(Base):
     description=Column(String(250))
     topic=Column(String(250))
     category_id = Column(Integer,ForeignKey("category.id")) 
+    sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
     created_at=Column(DateTime)
@@ -23,5 +24,6 @@ class ArticleTopic(Base):
     createdBy = relationship('User', foreign_keys=[created_by])
     updatedBy = relationship('User', foreign_keys=[updated_by])
     category=relationship("Category",back_populates="article_topic")
+    sub_category=relationship("SubCategory",back_populates="article_topic")
     article=relationship("Article",back_populates="article_topic")
 
