@@ -310,9 +310,9 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
             
             if user.user_type==4:
 
-                totalArticle=totalArticle.filter(
-                Article.chief_editor_id==user.id,
-                                               )
+                # totalArticle=totalArticle.filter(
+                # Article.chief_editor_id==user.id,
+                #                                )
                 
                 articleAction = articleAction.filter(Article.chief_editor_id==user.id)
 
@@ -331,13 +331,44 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
                         Article.status==1,
                 ))
 
-                totalArticle=totalArticle.filter(
-                Article.sub_editor_id==user.id,
-                                               )
+                # totalArticle=totalArticle.filter(
+                # Article.sub_editor_id==user.id,
+                #                                )
                 articleAction = articleAction.filter(Article.sub_editor_id==user.id)
 
                 
             if user.user_type==8:
+                articleAction = (
+                    db.query(
+                        func.sum(
+                            case(
+                                
+                                    (cast(Article.topic_ce_review_at, Date) == current_date, 1),
+                                    (cast(Article.topic_se_review_at, Date) == current_date, 1)
+                                ,
+                                else_=0
+                            )
+                        ).label("review"),
+                        func.sum(
+                            case(
+                                
+                                    (cast(Article.topic_ce_cmnt_at, Date) == current_date, 1),
+                                    (cast(Article.topic_se_cmnt_at, Date) == current_date, 1)
+                                ,
+                                else_=0
+                            )
+                        ).label("comment"),
+                        func.sum(
+                            case(
+                                (cast(Article.topic_ce_approved_at, Date) == current_date, 1),
+                                    (cast(Article.topic_se_approved_at, Date) == current_date, 1)
+                                ,
+                                else_=0
+                            )
+                        ).label("approved")
+                    )
+                    .filter(Article.status == 1)
+                )
                 
 
                 totalArticle=totalArticle.filter(
@@ -412,9 +443,9 @@ async def contentBarchart(db:Session=Depends(deps.get_db),
             
             if user.user_type==4:
 
-                totalArticle=totalArticle.filter(
-                Article.chief_editor_id==user.id,
-                                               )
+                # totalArticle=totalArticle.filter(
+                # Article.chief_editor_id==user.id,
+                #                                )
                 articleAction = articleAction.filter(Article.chief_editor_id==user.id)
                 
             if user.user_type==5:
@@ -431,14 +462,44 @@ async def contentBarchart(db:Session=Depends(deps.get_db),
                 ))
             
 
-                totalArticle=totalArticle.filter(
-                Article.sub_editor_id==user.id,
-                                               )
+                # totalArticle=totalArticle.filter(
+                # Article.sub_editor_id==user.id,
+                #                                )
                 articleAction = articleAction.filter(Article.sub_editor_id==user.id)
 
                 
             if user.user_type==8:
-
+                articleAction = (
+                    db.query(
+                        func.sum(
+                            case(
+                                
+                                    (cast(Article.content_ce_review_at, Date) == current_date, 1),
+                                    (cast(Article.content_se_review_at, Date) == current_date, 1)
+                                ,
+                                else_=0
+                            )
+                        ).label("review"),
+                        func.sum(
+                            case(
+                                
+                                    (cast(Article.content_ce_cmnt_at, Date) == current_date, 1),
+                                    (cast(Article.content_se_cmnt_at, Date) == current_date, 1)
+                                ,
+                                else_=0
+                            )
+                        ).label("comment"),
+                        func.sum(
+                            case(
+                                 (cast(Article.content_se_approved_at, Date) == current_date, 1),
+                                    (cast(Article.published_at, Date) == current_date, 1)
+                                ,
+                                else_=0
+                            )
+                        ).label("approved")
+                    )
+                    .filter(Article.status == 1)
+                )
                 totalArticle=totalArticle.filter(
                 Article.created_by==user.id,
                                                )

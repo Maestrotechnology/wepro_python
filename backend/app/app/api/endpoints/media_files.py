@@ -35,6 +35,11 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
     if user:
         if user.user_type in [1,2,7]:
 
+            existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.media_url==media_url).first()
+
+            if existUrl:
+                return {"status":0,"msg":"This url already used"}
+
             addCsmSettings = MediaFiles(media_url = media_url,
             title = title,
             description = description,
@@ -94,6 +99,11 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 
             if not getMediaFiles:
                 return{"status":0,"msg":"Not Found"}
+            existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.id!=media_files_id,
+                                                  MediaFiles.media_url==media_url).first()
+
+            if existUrl:
+                return {"status":0,"msg":"This url already used"}
             
             getMediaFiles.media_url = media_url
             getMediaFiles.title = title

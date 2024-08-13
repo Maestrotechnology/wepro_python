@@ -213,7 +213,8 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
 @router.post("/create_article")
 async def createArticle(db:Session =Depends(deps.get_db),
                    token:str=Form(...),
-                   topic:str=Form(...),
+                   topic:str=Form(None),
+                   topic_id:str=Form(None),
                    middle_content:str=Form(None),
                    footer_content:str=Form(None),
                    header_content:str=Form(None),
@@ -229,7 +230,7 @@ async def createArticle(db:Session =Depends(deps.get_db),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
                    img_alter:str=Form(None),
-                     media_file:Optional[UploadFile] = File(None),
+                   media_file:Optional[UploadFile] = File(None),
 
                    ):
     
@@ -1186,14 +1187,19 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
                 if section_type==2 and not article_status:
                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-                                                         Article.content_approved!=5, Article.content_approved!=None
+                                                        #  Article.content_approved!=5,
+                                                        #    Article.content_approved!=None
                                                                 )
                     
                 #list artcile topic unapproved
 
                 if section_type==1 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved!=5,Article.topic_approved!=None
+                    print(getAllArticle.count())
+                    getAllArticle = getAllArticle.filter(Article.topic_approved!=5,Article.topic_approved!=None,
+                                                        #  Article.created_by=109
                                                                 )
+                    print(getAllArticle.count())
+                    
                 deadlineArtcileCount = getDeadlineArticles
 
             if user.user_type ==8:
@@ -1202,7 +1208,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 if section_type==2 and not article_status:
                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
                                                         #  Article.content_approved!=5, Article.content_approved!=None
-                                                          Article.content_approved!=None
+                                                        #   Article.content_approved!=None
                                                                 )
 
                 if section_type==1 and not article_status:
