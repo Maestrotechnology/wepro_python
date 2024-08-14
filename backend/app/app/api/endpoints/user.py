@@ -131,7 +131,7 @@ async def signUp(db:Session = Depends(deps.get_db),
     mailForSignupUpdate = await send_mail_req_approval(
     db,5,None,createUsers.id,subject,name,email,comment
     )
-    return {"status":1,"msg":"Success."}
+    return {"status":1,"msg":comment}
 
 
 @router.post("/create_user")

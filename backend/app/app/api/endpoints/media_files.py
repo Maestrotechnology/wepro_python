@@ -67,10 +67,10 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
 
                 db.commit()
 
-            return {"status":1,"msg":"Successfully Cms Settings Created"}
+            return {"status":1,"msg":"Successfully Media files added"}
 
         else:
-            return {'status':0,"msg":"You are not authenticated to update Cms Settings."}
+            return {'status':0,"msg":"You are not authenticated to update media files."}
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
 
@@ -130,10 +130,10 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                 db.commit()
 
 
-            return {"status":1,"msg":"Successfully Cms Settings Updated"}
+            return {"status":1,"msg":"Successfully Media files Updated"}
 
         else:
-            return {'status':0,"msg":"You are not authenticated to update Cms Settings."}
+            return {'status':0,"msg":"You are not authenticated to update Media files."}
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
 
@@ -189,7 +189,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
         
             return ({"status":1,"msg":"Success","data":data})
         else:
-            return {'status':0,"msg":"You are not authenticated to view media_files."}
+            return {'status':0,"msg":"You are not authenticated to view media_ iles."}
     else:
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     

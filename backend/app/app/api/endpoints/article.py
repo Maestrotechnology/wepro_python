@@ -1065,6 +1065,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
                        journalist_id:int=Form(None),
+                       journalist_name:int=Form(None),
                        section_type:int=Form(None,description="1-Topic,2-Content"),
                        topic:str=Form(None),
                        article_status:int=Form(None,description="1-new,2-review,3-comment,4-se approved,5-ce approved"),
@@ -1077,8 +1078,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
     if user:
         if user:
             getAllArticle = db.query(Article).filter(Article.status ==1)
+            
+            if journalist_name:
+                getAllArticle = getAllArticle.join(User,Article.created_by==User.id).filter(User.name.like("%"+journalist_name+"%"))
 
-            if topic:
                 getAllArticle =  getAllArticle.filter(Article.topic.like("%"+topic+"%"))
 
             if state_id:
@@ -1133,14 +1136,17 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 if section_type==2 and not article_status:
 
                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-                                                            Article.content_approved==4)
+                                                            Article.content_approved!=None)
                     
                 # get All Chief editor unapproved Topic
 
                 if section_type==1 and not article_status:
 
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
-
+                    # getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
+                    getAllArticle = getAllArticle.filter(Article.content_approved==None,
+                                                        # Article.content_approved.not_in([1,2,3,4,5])
+                                                        )
+                    
 
                 getAllNotify = getAllNotify.filter(
                     ArticleHistory.chief_editor_id==user.id,
@@ -1154,14 +1160,16 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 #get all sub editor unapproved content
                 
                 if section_type==2 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==5,Article.content_approved!=None,
-                                                        Article.content_approved.not_in([4,5]))
+                    getAllArticle = getAllArticle.filter(Article.topic_approved.in_([1,2,3,4,5]),Article.content_approved!=None,)
+
                     
                 # get All sub editor unapproved Topic
                     
                 if section_type==1 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved.not_in([4,5]))
-                
+                     getAllArticle = getAllArticle.filter(Article.content_approved==None,
+                                                        # Article.content_approved.not_in([1,2,3,4,5])
+                                                        )
+                    
                 getAllNotify = getAllNotify.filter(
                     ArticleHistory.sub_editor_id==user.id,
                                                 ArticleHistory.sub_editor_notify==1).count()
@@ -1293,7 +1301,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "submition_date":row.submition_date,
                 "topic_approved":row.topic_approved,
                 "topic_status_name":stsName[row.topic_approved] if row.topic_approved else None ,
-                "content_approved":row.content_approved,
+                "content_approved":0 if row.topic_approved==5 and not row.content_approved else row.content_approved ,
                 "content_status_name":contentStsName[row.content_approved] if row.content_approved else None,
                 "topic_approved_name":f"{getArticleTop.createdBy.user_name}({topicUserType})" if getArticleTop and getArticleTop.created_by else None ,
                 "content_approved_name":f"{getArticleCon.createdBy.user_name}({conUsertype})" if getArticleCon and getArticleCon.created_by else None ,

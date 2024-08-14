@@ -342,6 +342,7 @@ async def createSubCategory(db:Session = Depends(deps.get_db),
 @router.post("/update_sub_category")
 async def updateSubCategory(db:Session = Depends(deps.get_db),
                      sub_category_id:int=Form(...),
+                     category_id:int=Form(...),
                     img_alter:str=Form(None),
                     title:str=Form(None),
                      sort_order:int=Form(None),
@@ -380,6 +381,7 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
             getSubCategory.img_alter = img_alter
             getSubCategory.sort_order = sort_order
             getSubCategory.title = title
+            getSubCategory.category_id = category_id
             getSubCategory.description = description
             getSubCategory.updated_at = datetime.now(settings.tz_IN)
             getSubCategory.updated_by = user.id
