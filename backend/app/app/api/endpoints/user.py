@@ -284,6 +284,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      alternative_no:str=Form(None),
                      address:str=Form(...),
                      pincode:str=Form(...),
+                     password:str=Form(None),
                      dob:date=Form(...),
                      email:str=Form(...),
                      whatsapp_no:str=Form(None),
@@ -363,6 +364,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 checkUserId.alternative_no = alternative_no
                 checkUserId.account_number = account_number
                 checkUserId.bank = bank
+                if password:
+                    checkUserId.password =  get_password_hash(password)
                 checkUserId.ifsc_code = ifsc_code
                 checkUserId.branch = branch
                 checkUserId.pincode = pincode
@@ -516,6 +519,14 @@ async def viewUser(db:Session=Depends(deps.get_db),
             
             if not getUser:
                 return {"status":0,"msg":"No user Found"}
+            
+            getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
+
+            
+            getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
+                                                ArticleHistory.journalist_notify==1).count()
+            notifyCount = getAllNotify
+
             data ={
             "user_id":getUser.id,
                 "user_name":getUser.user_name,
@@ -542,7 +553,8 @@ async def viewUser(db:Session=Depends(deps.get_db),
                 "user_status":getUser.is_active,
                 "user_type":getUser.user_type,
                 "resume_file":f'{settings.BASE_DOMAIN}{getUser.resume_path}',
-                "img_path":f'{settings.BASE_DOMAIN}{getUser.img_path}'
+                "img_path":f'{settings.BASE_DOMAIN}{getUser.img_path}',
+                "notification_count":notifyCount,
 
             }
             return {"status":1,"msg":"Success.","data":data}

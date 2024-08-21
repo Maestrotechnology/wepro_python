@@ -13,6 +13,7 @@ class ArticleTopic(Base):
     topic=Column(String(250))
     category_id = Column(Integer,ForeignKey("category.id")) 
     sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
+    is_choosed=Column(TINYINT,comment="1->yes")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
     created_at=Column(DateTime)

@@ -83,8 +83,11 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      meta_title:str=Form(None),
                      img_alter:str=Form(None),
                      meta_description:str=Form(None),
+                    #  content_type:str=Form(None),
                      meta_keywords:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
+                     media_type:int=Form(None,description="1->img,2-shorts,3->Video"),
+
                      media_orientation:int=Form(None,description="1->Portrait,2-Landscape"),
                     #  seo_url:str=Form(None),
                      token:str=Form(...)
@@ -107,6 +110,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
             
             getMediaFiles.media_url = media_url
             getMediaFiles.title = title
+            getMediaFiles.media_type = media_type
             getMediaFiles.img_alter = img_alter
             getMediaFiles.media_orientation=media_orientation
 

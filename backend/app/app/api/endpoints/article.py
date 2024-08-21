@@ -10,7 +10,76 @@ from typing import Optional
 
 
 router = APIRouter()
+@router.post("/choose_editors_topics")
+async def chooseEditorsTopics(db:Session=Depends(deps.get_db),
+                       token:str=Form(...),
+                       topic_id:int=Form(None),
+                       ):
+    
+    user=deps.get_user_token(db=db,token=token)
+    
+    if user:
+        if user:
 
+
+            getTopic = db.query(ArticleTopic).\
+            filter(ArticleTopic.status==1,ArticleTopic.id==topic_id).first()
+
+            if not getTopic :
+                return {"status":0,"msg":"This Topic is Not available"}
+                
+            addArticle = Article(
+                created_at = datetime.now(settings.tz_IN),
+                article_topic_id = topic_id,
+                topic =getTopic.topic,
+                category_id =  getTopic.category_id,
+                sub_category_id =  getTopic.sub_category_id,
+                description =  getTopic.description,
+                # submition_date = submition_date,
+                created_by = user.id,
+                is_journalist = 1,
+                editors_choice = 2 ,
+                status=1,
+                topic_approved = 5 ,
+                topic_ce_approved_at = datetime.now(settings.tz_IN)
+
+                # content_approved = 1 if getTopic else None
+                
+            )
+
+            db.add(addArticle)
+            db.commit()
+            
+            getTopic.is_choosed=1
+            db.commit()
+           
+            comment=f"The Editors choice {addArticle.topic} Topic has been approved."
+            addHistory = ArticleHistory(
+                        article_id = addArticle.id,
+                        comment = comment,
+                        journalist_id = addArticle.created_by ,
+                        # sub_editor_notify = 1,
+                        # chief_editor_notify =0,
+                        # journalist_notify = 0,
+                        status=1,
+                        created_at =datetime.now(settings.tz_IN),
+                        created_by = user.id
+                    )
+            db.add(addHistory)
+            db.commit()
+
+
+            # subject ="Artcle Update"
+            # mailForArticleUpdate = await send_mail_req_approval(
+            # db,2,addArticle.id,addArticle.created_by,subject,user.name,user.email,comment
+            # )
+
+            return {"status":1,"msg":comment}
+        
+        return ({"status":1,"msg":"Successfully New Article Published.","article_id":addArticle.id})
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+    
 @router.post("/send_topic_request")
 async def sendTopicReq(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
@@ -100,8 +169,9 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
             )
 
             return {"status":1,"msg":comment}
+        else:
         
-        return ({"status":1,"msg":"Successfully New Article Published.","article_id":addArticle.id})
+            return {"status":-1,"msg":"Your login session expires.Please login again."}
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
 
@@ -339,6 +409,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    meta_description:str=Form(None),
                    meta_keywords:str=Form(None),
                    seo_url:str=Form(None),
+                   save_for_later:int=Form(None),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
                      media_file:Optional[UploadFile] = File(None),
@@ -387,7 +458,9 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.city_id=city_id
             getArticle.state_id=state_id
             getArticle.status=1
-            getArticle.content_approved =1 if getArticle.content_approved !=5 else 5
+            getArticle.save_for_later=save_for_later
+            if not save_for_later:
+                getArticle.content_approved =1 if getArticle.content_approved !=5 else 5
             getArticle.updated_by = user.id
             getArticle.updated_at = datetime.now(settings.tz_IN)
             getArticle.content_created_at = datetime.now(settings.tz_IN) if getArticle.content_created_at ==None else  getArticle.content_created_at
@@ -402,21 +475,23 @@ async def updateArticle(db:Session =Depends(deps.get_db),
 
                 db.commit()
 
-            addHistory = ArticleHistory(
-                article_id = article_id,
-                comment =  "content update",
-                sub_editor_id =getArticle.sub_editor_id,
-                chief_editor_id =  getArticle.chief_editor_id,
-                journalist_id = getArticle.created_by ,
-                sub_editor_notify =  1 if getArticle.content_approved !=5 else None,
-                chief_editor_notify =0,
-                journalist_notify = 0,
-                status=1,
-                created_at =datetime.now(settings.tz_IN),
-                created_by = user.id
-            )
-            db.add(addHistory)
-            db.commit()
+            if not save_for_later:
+
+                addHistory = ArticleHistory(
+                    article_id = article_id,
+                    comment =  "content update",
+                    sub_editor_id =getArticle.sub_editor_id,
+                    chief_editor_id =  getArticle.chief_editor_id,
+                    journalist_id = getArticle.created_by ,
+                    sub_editor_notify =  1 if getArticle.content_approved !=5 else None,
+                    chief_editor_notify =0,
+                    journalist_notify = 0,
+                    status=1,
+                    created_at =datetime.now(settings.tz_IN),
+                    created_by = user.id
+                )
+                db.add(addHistory)
+                db.commit()
 
          
         return ({"status":1,"msg":"Successfully Article Updated. "})
@@ -456,6 +531,8 @@ async def viewArticle(db:Session =Depends(deps.get_db),
         contentApprovedStatus =["-","New","review","comment","Sub Edior Approved","Chief Editor Approved/Published"]
 
         data={
+            "article_id":getArticle.id,
+            "save_for_later":getArticle.save_for_later,
             "article_id":getArticle.id,
             "topic":getArticle.topic,
             "editors_choice":getArticle.editors_choice,
@@ -1065,7 +1142,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
                        journalist_id:int=Form(None),
-                       journalist_name:int=Form(None),
+                       name:str=Form(None),
                        section_type:int=Form(None,description="1-Topic,2-Content"),
                        topic:str=Form(None),
                        article_status:int=Form(None,description="1-new,2-review,3-comment,4-se approved,5-ce approved"),
@@ -1079,9 +1156,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
         if user:
             getAllArticle = db.query(Article).filter(Article.status ==1)
             
-            if journalist_name:
-                getAllArticle = getAllArticle.join(User,Article.created_by==User.id).filter(User.name.like("%"+journalist_name+"%"))
-
+            if name:
+                
+                getAllArticle = getAllArticle.join(User,Article.created_by==User.id).filter(User.name.like("%"+name+"%"))
+            if topic:
                 getAllArticle =  getAllArticle.filter(Article.topic.like("%"+topic+"%"))
 
             if state_id:
@@ -1144,6 +1222,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
                     # getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
                     getAllArticle = getAllArticle.filter(Article.content_approved==None,
+                                                          Article.editors_choice!=1,
                                                         # Article.content_approved.not_in([1,2,3,4,5])
                                                         )
                     
@@ -1167,6 +1246,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     
                 if section_type==1 and not article_status:
                      getAllArticle = getAllArticle.filter(Article.content_approved==None,
+                                                          Article.editors_choice!=1,
                                                         # Article.content_approved.not_in([1,2,3,4,5])
                                                         )
                     
@@ -1273,6 +1353,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     dataList.append({
                 "article_id":row.id,
                 "meta_title":row.meta_title,
+                "save_for_later":row.save_for_later,
                 "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,

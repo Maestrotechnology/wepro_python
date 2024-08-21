@@ -27,7 +27,7 @@ async def createCategory(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,3]:
+        if user.user_type in [1,2,3,6]:
 
             existTitle = db.query(Category).filter(Category.title==title,Category.status==1).first()
 
@@ -97,7 +97,7 @@ async def updateCategory(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2]:
+        if user.user_type in [1,2,6]:
 
             existTitle = db.query(Category).filter(Category.id!=category_id,
                                                    Category.title==title,Category.status==1).first()
@@ -269,7 +269,7 @@ async def deleteCategory(db:Session=Depends(deps.get_db),
                      category_id:int=Form(...)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2,3] :
+        if user.user_type in [1,2,3,6] :
 
             checkSub = db.query(SubCategory).filter(SubCategory.status==1,SubCategory.category_id==category_id).first()
 
@@ -302,7 +302,7 @@ async def createSubCategory(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,3]:
+        if user.user_type in [1,2,3,6]:
 
             existTitle = db.query(Category).filter(Category.id!=category_id,
                                                    Category.title==title,Category.status==1).first()
@@ -356,7 +356,7 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2]:
+        if user.user_type in [1,2,6]:
 
             existTitle = db.query(SubCategory).filter(SubCategory.id!=sub_category_id,
                                                    SubCategory.title==title,SubCategory.status==1).first()
@@ -486,7 +486,7 @@ async def deleteSubCategory(db:Session=Depends(deps.get_db),
                      sub_category_id:int=Form(...)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2,3] :
+        if user.user_type in [1,2,3,6] :
             getSubCategory = db.query(SubCategory).filter(SubCategory.id == sub_category_id,
                                             SubCategory.status == 1)
             
@@ -620,7 +620,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     if user:
         if user:
-            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1)
+            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1,ArticleTopic.is_choosed==None)
 
 
             if topic:
