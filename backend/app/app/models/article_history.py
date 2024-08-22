@@ -16,11 +16,10 @@ class ArticleHistory(Base):
     sub_editor_notify = Column(TINYINT,comment="1->Notify,2->Read")
     chief_editor_notify = Column(TINYINT,comment="1->Notify,2->Read")
     journalist_notify = Column(TINYINT,comment="1->Notify,2->Read")
-    topic_status = Column(TINYINT,comment="1->new,2-review,3-comment,4->SE approved,5-CE Approved")
-    content_status = Column(TINYINT,comment="1->new,2-review,3-comment,4->SE approved,5-Published(CE Approved),6-Deadline")
-  
-    is_topic=Column(TINYINT,comment="1->yes")
-    is_content=Column(TINYINT,comment="1->yes")
+    topic_status = Column(TINYINT,comment="1->new,2-review,3-comment,4->approved")
+    content_status = Column(TINYINT,comment="1->new,2-review,3-comment,4->approved")
+    is_editor = Column(TINYINT,comment="1->Se,-2->Ce")
+    history_type=Column(TINYINT,comment="1->topic,2-content")
     status=Column(TINYINT,comment="1->active,-1->deleted")
 
     created_at=Column(DateTime)

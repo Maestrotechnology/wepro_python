@@ -40,6 +40,9 @@ async def listNotification(db:Session =Depends(deps.get_db),
                     dataList.append({
                 "article_history_id":row.id,
                 "comment":row.comment,
+                "history_type":row.history_type,
+                "article_status":row.content_status if row.history_type==2 else (row.topic_status if row.history_type==1 else None),
+                "is_editor":"CE" if row.is_editor==2 else ("CE" if row.is_editor==1 else None),
                 "created_at":row.created_at,                  
                 "created_by":row.createdBy.user_name if row.created_by else None,                  
                       }  )

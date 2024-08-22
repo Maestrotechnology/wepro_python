@@ -5,7 +5,7 @@ from app.api import deps
 from datetime import date,timedelta
 from app.utils import *
 from sqlalchemy import or_,func,case,extract,cast,Date,distinct,and_
-
+from typing import Optional
 import random
 
 
@@ -215,18 +215,38 @@ async def categorywise_barchart(
     
     user = deps.get_user_token(db=db, token=token)
     if user:
-        getAllArticle = (
-            db.query(
-                Category.title,
-                func.count(Article.id).label("article_count")  # Count of articles
-            )
-            .outerjoin(Article, Category.id == Article.category_id)  # Outer join to include all categories
-            .filter(
-                Article.status == 1, 
-                Article.content_approved == 5,
-                Article.created_by == user.id
-            )
-            .group_by(Category.id)  # Group by Category ID to get the count for each category
+        # getAllArticle = (
+        #     db.query(
+        #         Category.title,
+        #         func.count(Article.id).label("article_count")  # Count of articles
+        #     )
+        #     .outerjoin(Article, Category.id == Article.category_id)  # Outer join to include all categories
+        #     .filter(
+        #         Article.status == 1, 
+        #         Article.content_approved == 5,
+        #         Article.created_by == user.id
+        #     )
+        #     .group_by(Category.id)  # Group by Category ID to get the count for each category
+        # )
+        article_count_subquery = db.query(
+            Article.category_id,
+            func.count(Article.id).label('article_count')
+        ).filter(
+            Article.status == 1,
+            Article.content_approved == 5,
+            Article.created_by == user.id
+        ).group_by(Article.category_id).subquery()
+
+        # Main query to get categories and join with the article count subquery
+        getAllArticle = db.query(
+            Category.title,
+            func.coalesce(article_count_subquery.c.article_count, 0).label('article_count'),
+            case(
+                [(func.coalesce(article_count_subquery.c.article_count, 0) > 0, 'Yes')],
+                else_='No'
+            ).label('has_articles')
+        ).outerjoin(
+            article_count_subquery, Category.id == article_count_subquery.c.category_id
         )
 
         totalCount = getAllArticle.count()
@@ -237,7 +257,7 @@ async def categorywise_barchart(
         for row in getAllArticle:
           
             dataList.append({"category_name":row.title ,
-                             "article_count":row[1]})
+                             "article_count":row.article_count})
 
 
         data=({"page":page,"size":size,
@@ -450,12 +470,16 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
 @router.post("/content_barchart")
 async def contentBarchart(db:Session=Depends(deps.get_db),
                      token:str = Form(...),
-                     fromdate: date = Form(None),
+                    #  fromdate: date = Form(None),
+                     fromdate: Optional[date] = Form(None),
                       page:int=1,size:int=10,
-                    todate: date = Form(None)):
+                    todate: Optional[date] = Form(None),
+                    # todate: date = Form(None)
+                    ):
     
     user = deps.get_user_token(db=db,token=token)
     if user:
+        print(user.user_type)
         if user.user_type!=8:
             data = []
             current_date = fromdate
