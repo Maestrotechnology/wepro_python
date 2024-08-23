@@ -272,10 +272,9 @@ async def categorywise_barchart(
     else:
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     
-        
-    
-@router.post("/journalist_barchart")
-async def journalistbarchart(
+ 
+@router.post("/journalist_chart")
+async def journalistChart(
     db: Session = Depends(deps.get_db),
     token: str = Form(None),
 ):
@@ -304,6 +303,69 @@ async def journalistbarchart(
        
                     
        
+    else:
+        return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
+    
+    
+@router.post("/journalist_barchart")
+async def journalistbarchart(
+    db: Session = Depends(deps.get_db),
+    token: str = Form(None),
+    fromdate: date = Form(None),
+    todate: date = Form(None),
+   page:int=1,size:int=10):
+    
+    user = deps.get_user_token(db=db, token=token)
+    if user:
+        data = []
+        current_date = fromdate
+        offset = (page - 1) * size
+        days = (todate - fromdate).days + 1
+        dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
+
+        paginated_dates = dates_to_query[offset:offset + size]
+
+        for current_date in paginated_dates:
+            next_date = current_date + timedelta(days=1)
+
+            getReq = db.query(User).filter(
+                cast(User.requested_at, Date) == current_date,
+                User.status == 1,
+                User.user_type == 8
+            ).count()
+
+            getApproved = db.query(User).filter(
+                cast(User.approved_at, Date) == current_date,
+                User.status == 1,
+                User.user_type == 8
+            ).count()
+
+            getRejected = db.query(User).filter(
+                cast(User.rejected_at, Date) == current_date,
+                User.status == 1,
+                User.user_type == 8
+            ).count()
+
+            data.append({
+                "date": current_date.strftime("%Y-%m-%d"),
+                "requested": getReq or 0,
+                "accepted": getApproved or 0,
+                "rejected": getRejected or 0,
+            })
+
+        total_pages = (days + size - 1) // size  # Calculate total pages
+
+        return {
+            "status": 1,
+            "msg": "Success",
+            "data": {
+                "page": page,
+                "size": size,
+                "total_pages": total_pages,
+                "total_count": days,
+                "items": data,
+            }
+        }
     else:
         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
     
