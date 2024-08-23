@@ -18,6 +18,7 @@ class Article(Base):
     header_content = Column(Text)
     middle_content = Column(Text)
     is_paid = Column(TINYINT,default=1,comment="1-pending,2-Paid")
+    paid_amount=Column(DECIMAL(10,2))
 
     img_alter = Column(String(250))
     meta_title = Column(String(250))
@@ -82,6 +83,7 @@ class Article(Base):
     category=relationship("Category",back_populates="article")
     sub_category=relationship("SubCategory",back_populates="article")
     article_topic=relationship("ArticleTopic",back_populates="article")
+    notification=relationship("Notification",back_populates="article")
 
 
 

@@ -7,6 +7,85 @@ from app.utils import *
 router = APIRouter()
 
 
+
+@router.post("/notification_count")
+async def notificationCount(db:Session=Depends(deps.get_db),
+                             token:str=Form(...)):
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getNotify = db.query(ArticleHistory).filter(ArticleHistory.status == 1)
+
+            if user.user_type in [1,2]:
+                getNotify = db.query(Notification).filter(Notification.status==1,
+                                                          Notification.admin_notify==1)
+         
+                
+            if user.user_type==4:
+                getNotify=getNotify.filter(ArticleHistory.chief_editor_id==user.id,
+                                           ArticleHistory.chief_editor_notify==1)
+            if user.user_type==5:
+                getNotify=getNotify.filter(ArticleHistory.sub_editor_id==user.id,
+                                           ArticleHistory.sub_editor_notify==1)
+            if user.user_type==8:
+                getNotify=getNotify.filter(ArticleHistory.journalist_id==user.id,
+                                           ArticleHistory.chief_editor_notify==1)
+                
+            getNotify=getNotify.count()
+
+            message ="Success."
+
+
+            return {"status":1,"msg":"success","notification_count":getNotify}
+        else:
+            return {'status':0,"msg":"You are not authenticated to read notification"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
+    
+
+@router.post("/list_admin_notification")
+async def listAdminNotification(db:Session =Depends(deps.get_db),
+                       token:str = Form(...),
+                       page:int=1,size:int = 10):
+    user=deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            
+            getAllNotify = db.query(Notification).filter(Notification.status ==1,Notification.admin_notify==1)
+
+            totalCount = getAllNotify.count()
+
+            totalPages,offset,limit = get_pagination(totalCount,page,size)
+            getAllNotify = getAllNotify.limit(limit).offset(offset).all()
+
+            notifyTypeName = ["-","Topic","Content","Account Approval","Editor Topic"]
+
+            dataList=[]
+            if getAllNotify:
+                for row in getAllNotify:
+                    dataList.append({
+                "notification_id":row.id,
+                "comment":row.comment,
+                "title":row.title,
+                "article_id":row.article_id,
+                "notification_type":row.notification_type,
+                "notification_type_name":notifyTypeName[row.notification_type] if row.notification_type else None,
+                "topic_id":row.topic_id,
+                "created_at":row.created_at,                  
+                "created_by":row.createdBy.user_name if row.created_by else None,                  
+                      }  )
+            
+            data=({"page":page,"size":size,
+                   "total_page":totalPages,
+                   "total_count":totalCount,
+                   "items":dataList})
+        
+            return ({"status":1,"msg":"Success","data":data})
+        else:
+            return {'status':0,"msg":"You are not authenticated to view Notification."}
+    else:
+        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+
 @router.post("/list_notification")
 async def listNotification(db:Session =Depends(deps.get_db),
                        token:str = Form(...),
@@ -14,16 +93,17 @@ async def listNotification(db:Session =Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     if user:
         if user:
+            
             getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status ==1)
 
             if user.user_type ==4:
                 getAllNotify = getAllNotify.filter(
-                    # ArticleHistory.chief_editor_id==user.id,
+                    ArticleHistory.chief_editor_id==user.id,
                                                    ArticleHistory.chief_editor_notify==1)
 
             if user.user_type ==5:
                 getAllNotify = getAllNotify.filter(
-                    # ArticleHistory.sub_editor_id==user.id,
+                    ArticleHistory.sub_editor_id==user.id,
                                                    ArticleHistory.sub_editor_notify==1)
 
             if user.user_type ==8:
@@ -34,13 +114,17 @@ async def listNotification(db:Session =Depends(deps.get_db),
             totalPages,offset,limit = get_pagination(totalCount,page,size)
             getAllNotify = getAllNotify.limit(limit).offset(offset).all()
 
+            historyName = ["-","TOPIC","CONTENT","EDITORS CHOICE"]
+
             dataList=[]
             if getAllNotify:
                 for row in getAllNotify:
                     dataList.append({
                 "article_history_id":row.id,
+                "title":row.title,
                 "comment":row.comment,
                 "history_type":row.history_type,
+                "history_type_name":historyName[row.history_type] if row.history_type else None,
                 "article_status":row.content_status if row.history_type==2 else (row.topic_status if row.history_type==1 else None),
                 "is_editor":"CE" if row.is_editor==2 else ("CE" if row.is_editor==1 else None),
                 "created_at":row.created_at,                  
@@ -67,8 +151,12 @@ async def readNotification(db:Session=Depends(deps.get_db),
     if user:
         if user:
             getNotify = db.query(ArticleHistory).filter(ArticleHistory.status == 1)
+
+            if user.user_type in [1,2]:
+                getNotify = db.query(Notification).filter(Notification.status==1,
+                                                          Notification.admin_notify==1)
            
-            if notification_id:
+            if notification_id and not user.user_type in [1,2]:
                 getNotify = getNotify.filter(ArticleHistory.id==notification_id).first()
 
                 if not getNotify:
@@ -81,9 +169,22 @@ async def readNotification(db:Session=Depends(deps.get_db),
                 if user.user_type==8:
                     getNotify.journalist_notify =2
                 db.commit()
+            
+            if notification_id and user.user_type in [1,2]:
+                getNotifiy = getNotify.filter(Notification.id==notification_id).first()
+
+                if not getNotifiy:
+                    return {"status":0,"msg":"Invalid Notification Id"}
+                getNotifiy.admin_notify=2
+                getNotifiy.admin_id=user.id
+                db.commit()
 
             if read_type==2:
                 update_data = {}
+
+                if user.user_type in [1,2]:
+                    getNotify=getNotify.update({"admin_notify":2,
+                                                "admin_id":user.id})
 
                 if user.user_type == 4:
                     getNotify=getNotify.filter(

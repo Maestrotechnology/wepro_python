@@ -12,6 +12,7 @@ class MediaFiles(Base):
     description=Column(String(250))
     title=Column(String(250))
     media_orientation =Column(TINYINT,comment="1->Portrait,2-Landscape")
+    media_position =Column(TINYINT,comment="1->Top,2-Bottom,3-right,4-Left")
     meta_title = Column(String(250))
     meta_description = Column(String(250))
     meta_keywords = Column(String(250))

@@ -93,6 +93,7 @@ async def signUp(db:Session = Depends(deps.get_db),
         ifsc_code = ifsc_code,
         branch = branch,
         pincode = pincode,
+        request_user=1,
         dob = dob,
         address = address,
         state_id = state_id,
@@ -304,6 +305,9 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      city_id:int=Form(None),
                      branch:str=Form(None),
                      resume_file:Optional[UploadFile] = File(None),
+                     comment:str=Form(None),
+                     approval_status:int=Form(None,description="2-Accpted,3-Interview Process,-1 ->rejected"),
+                          
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -402,6 +406,48 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 checkUserId.img_path = returnFilePath
 
                 db.commit()
+
+            if approval_status ==2 :
+                
+                message = (
+                    f"Congratulations! Your request for account creation has been successfully approved. "
+                    f"You can now proceed with accessing the platform and utilizing the available resources. "
+                    f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+                    "<div>"
+                    "<p style='margin: 0;'>Login Credentials:</p>"
+                    "<p style='margin: 0;'>User Name: {user_name}</p>"
+                    "<p style='margin: 0;'>Password: {password}</p>"
+                    "</div>")
+
+                if comment:
+                    message = (f"{comment}"
+                               f"    User Name: {user_name}\n"
+                    f"    Password: {password}\n")
+ 
+            if approval_status ==3 and not comment:
+
+                message = (
+                    "Your application is currently under review as part of the interview process. "
+                    "We will keep you updated on the progress and notify you once the review is complete. "
+                    "Thank you for your patience, and please feel free to contact us if you have any questions."
+                )
+
+            if approval_status ==-1 and not comment:
+   
+                message = (
+                    "We regret to inform you that your request for account creation has been rejected. "
+                    "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
+                    "please contact us for more details."
+                )
+
+            if approval_status:
+
+                approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
+                subject = f"User Account {approvalSts[approval_status]}"
+                sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
+                    receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
+                    message=message,
+                )
 
             return {"status":1,"msg":"User successfully updated."}
           
@@ -628,51 +674,67 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                 getUser.approved_at = datetime.now(settings.tz_IN)
 
 
-                if password:
-                    getUser.password =  get_password_hash(password)
+                # if password:
+                #     getUser.password =  get_password_hash(password)
 
                 db.commit()
-                
-                message = (
-                    f"Congratulations! Your request for account creation has been successfully approved. "
-                    f"You can now proceed with accessing the platform and utilizing the available resources. "
-                    f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
-                    "<div>"
-                    "<p style='margin: 0;'>Login Credentials:</p>"
-                    "<p style='margin: 0;'>User Name: {user_name}</p>"
-                    "<p style='margin: 0;'>Password: {password}</p>"
-                    "</div>")
 
-                if comment:
-                    message = (f"{comment}"
-                               f"    User Name: {user_name}\n"
-                    f"    Password: {password}\n")
- 
-            if approval_status ==3 and not comment:
+                userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
 
-                message = (
-                    "Your application is currently under review as part of the interview process. "
-                    "We will keep you updated on the progress and notify you once the review is complete. "
-                    "Thank you for your patience, and please feel free to contact us if you have any questions."
+                addNotification = Notification(
+                user_id = getUser.id,
+                comment =f'{user.name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.name}. ' ,
+                title = f'{user.name}({userTypeData[user.user_type]})- Account Approved',
+                status=1,
+                admin_notify=1,
+                notification_type=4,
+                created_at =datetime.now(settings.tz_IN),
+                created_by = user.id
+
                 )
+                db.add(addNotification)
+                db.commit()
+                
+            #     message = (
+            #         f"Congratulations! Your request for account creation has been successfully approved. "
+            #         f"You can now proceed with accessing the platform and utilizing the available resources. "
+            #         f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+            #         "<div>"
+            #         "<p style='margin: 0;'>Login Credentials:</p>"
+            #         "<p style='margin: 0;'>User Name: {user_name}</p>"
+            #         "<p style='margin: 0;'>Password: {password}</p>"
+            #         "</div>")
+
+            #     if comment:
+            #         message = (f"{comment}"
+            #                    f"    User Name: {user_name}\n"
+            #         f"    Password: {password}\n")
+ 
+            # if approval_status ==3 and not comment:
+
+            #     message = (
+            #         "Your application is currently under review as part of the interview process. "
+            #         "We will keep you updated on the progress and notify you once the review is complete. "
+            #         "Thank you for your patience, and please feel free to contact us if you have any questions."
+            #     )
 
             if approval_status ==-1 and not comment:
                 getUser.rejected_by=user.id
                 getUser.rejected_at = datetime.now(settings.tz_IN)
                 db.commit()
-                message = (
-                    "We regret to inform you that your request for account creation has been rejected. "
-                    "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
-                    "please contact us for more details."
-                )
+            #     message = (
+            #         "We regret to inform you that your request for account creation has been rejected. "
+            #         "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
+            #         "please contact us for more details."
+            #     )
 
-            approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
-            subject = f"Journalist Account {approvalSts[approval_status]}"
-            sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
-                receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
-                message=message,
-            )
-            print(sendNotifyEmail)
+            # approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
+            # subject = f"Journalist Account {approvalSts[approval_status]}"
+            # sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
+            #     receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
+            #     message=message,
+            # )
+            # print(sendNotifyEmail)
 
             return {"status":1,"msg":"success"}
         else:

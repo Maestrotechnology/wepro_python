@@ -233,9 +233,13 @@ async def categorywise_barchart(
             func.count(Article.id).label('article_count')
         ).filter(
             Article.status == 1,
-            Article.content_approved == 5,
-            Article.created_by == user.id
-        ).group_by(Article.category_id).subquery()
+            Article.content_approved == 4,
+        )
+
+        if user.user_type==8:
+            article_count_subquery =article_count_subquery.filter(Article.created_by == user.id)
+
+        article_count_subquery = article_count_subquery.group_by(Article.category_id).subquery()
 
         # Main query to get categories and join with the article count subquery
         getAllArticle = db.query(
@@ -274,353 +278,265 @@ async def categorywise_barchart(
 async def journalistbarchart(
     db: Session = Depends(deps.get_db),
     token: str = Form(None),
-    fromdate: date = Form(None),
-    todate: date = Form(None),
-   page:int=1,size:int=10):
+):
     
     user = deps.get_user_token(db=db, token=token)
     if user:
-        data = []
-        current_date = fromdate
-        offset = (page - 1) * size
-        days = (todate - fromdate).days + 1
-        dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
-
-        paginated_dates = dates_to_query[offset:offset + size]
-
-        for current_date in paginated_dates:
-            next_date = current_date + timedelta(days=1)
-
-            getReq = db.query(User).filter(
-                cast(User.requested_at, Date) == current_date,
-                User.status == 1,
-                User.user_type == 8
-            ).count()
-
-            getApproved = db.query(User).filter(
-                cast(User.approved_at, Date) == current_date,
-                User.status == 1,
-                User.user_type == 8
-            ).count()
-
-            getRejected = db.query(User).filter(
-                cast(User.rejected_at, Date) == current_date,
-                User.status == 1,
-                User.user_type == 8
-            ).count()
-
-            data.append({
-                "date": current_date.strftime("%Y-%m-%d"),
-                "requested": getReq or 0,
-                "accepted": getApproved or 0,
-                "rejected": getRejected or 0,
-            })
-
-        total_pages = (days + size - 1) // size  # Calculate total pages
-
-        return {
-            "status": 1,
-            "msg": "Success",
-            "data": {
-                "page": page,
-                "size": size,
-                "total_pages": total_pages,
-                "total_count": days,
-                "items": data,
-            }
+        totalUser =db.query(func.count(User.id)).filter(User.status==1,User.user_type==8).scalar() or 0
+        userCount = db.query(
+                    # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
+                   func.sum(case([(User.request_user==1,1)],else_=0)).label("requested"),
+                   func.sum(case([(User.is_request==2,1)],else_=0)).label("accepted"),
+                   func.sum(case([(User.is_request==-1,1)],else_=0)).label("rejected")).\
+                    filter(User.status==1,User.user_type==8).first()
+        data={
+            "total_journalist": totalUser,
+            "requested": userCount.requested or 0 if userCount else 0,
+            "accepted": userCount.accepted or 0 if userCount else 0,
+            "rejected":userCount.rejected or  0 if userCount else 0
         }
+            
+        return {
+                "status": 1,
+                "msg": "Success",
+                "data":data
+            }
+       
+                    
+       
     else:
         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
-
-
+    
 @router.post("/topic_barchart")
 async def topicBarchart(db:Session=Depends(deps.get_db),
                      token:str = Form(...),
-                     fromdate: date = Form(None),
-                      page:int=1,size:int=10,
-                    todate: date = Form(None)):
-    
-    user = deps.get_user_token(db=db,token=token)
-    if user:
-        data = []
-        current_date = fromdate
-        offset = (page - 1) * size
-        days = (todate - fromdate).days + 1
-        dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
-
-        paginated_dates = dates_to_query[offset:offset + size]
-
-        for current_date in paginated_dates:
-            next_date = current_date + timedelta(days=1)
-
-            totalArticle = db.query(func.count(distinct(Article.id))).filter(
-                cast(Article.created_at, Date) == current_date,
-                Article.status==1
-            )
-
-            articleAction = (
-                    db.query(
-                        # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
-                        func.sum(case((cast(Article.topic_ce_review_at, Date) == current_date, 1), else_=0)).label("review"),
-                        func.sum(case((cast(Article.topic_ce_cmnt_at, Date) == current_date, 1), else_=0)).label("comment"),
-                        func.sum(case((cast(Article.topic_ce_approved_at, Date) == current_date, 1), else_=0)).label("approved")
-                    )
-                    .filter(
-                        Article.status==1,
-                ))
-            
-            
-            if user.user_type==4:
-
-                # totalArticle=totalArticle.filter(
-                # Article.chief_editor_id==user.id,
-                #                                )
-                
-                articleAction = articleAction.filter(Article.chief_editor_id==user.id)
-
-                
-            if user.user_type==5:
-
-
-                articleAction = (
-                    db.query(
-                        # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
-                        func.sum(case((cast(Article.topic_se_review_at, Date) == current_date, 1), else_=0)).label("review"),
-                        func.sum(case((cast(Article.topic_se_cmnt_at, Date) == current_date, 1), else_=0)).label("comment"),
-                        func.sum(case((cast(Article.topic_se_approved_at, Date) == current_date, 1), else_=0)).label("approved")
-                    )
-                    .filter(
-                        Article.status==1,
-                ))
-
-                # totalArticle=totalArticle.filter(
-                # Article.sub_editor_id==user.id,
-                #                                )
-                articleAction = articleAction.filter(Article.sub_editor_id==user.id)
-
-                
-            if user.user_type==8:
-                articleAction = (
-                    db.query(
-                        func.sum(
-                            case(
-                                
-                                    (cast(Article.topic_ce_review_at, Date) == current_date, 1),
-                                    (cast(Article.topic_se_review_at, Date) == current_date, 1)
-                                ,
-                                else_=0
-                            )
-                        ).label("review"),
-                        func.sum(
-                            case(
-                                
-                                    (cast(Article.topic_ce_cmnt_at, Date) == current_date, 1),
-                                    (cast(Article.topic_se_cmnt_at, Date) == current_date, 1)
-                                ,
-                                else_=0
-                            )
-                        ).label("comment"),
-                        func.sum(
-                            case(
-                                (cast(Article.topic_ce_approved_at, Date) == current_date, 1),
-                                    (cast(Article.topic_se_approved_at, Date) == current_date, 1)
-                                ,
-                                else_=0
-                            )
-                        ).label("approved")
-                    )
-                    .filter(Article.status == 1)
-                )
-                
-
-                totalArticle=totalArticle.filter(
-                Article.created_by==user.id,
-                                               )
-                articleAction = articleAction.filter(Article.created_by==user.id)
-
-                
-            totalArticle = totalArticle.scalar()
-            artcileDet = articleAction.first()
-           
-            data.append({
-                "date": current_date.strftime("%Y-%m-%d"),
-                "total_article": totalArticle,
-                "review": artcileDet.review or 0 if artcileDet else 0,
-                "comment": artcileDet.comment or 0 if artcileDet else 0,
-                "approved":artcileDet.approved or  0 if artcileDet else 0
-                # "rejected": getRejected,
-            })
-
-        total_pages = (days + size - 1) // size  # Calculate total pages
-
-        return {
-            "status": 1,
-            "msg": "Success",
-            "data": {
-                "page": page,
-                "size": size,
-                "total_pages": total_pages,
-                "total_count": days,
-                "items": data,
-            }
-        }
-    else:
-        return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
-
-@router.post("/content_barchart")
-async def contentBarchart(db:Session=Depends(deps.get_db),
-                     token:str = Form(...),
-                    #  fromdate: date = Form(None),
-                     fromdate: Optional[date] = Form(None),
-                      page:int=1,size:int=10,
-                    todate: Optional[date] = Form(None),
-                    # todate: date = Form(None)
                     ):
     
     user = deps.get_user_token(db=db,token=token)
     if user:
-        print(user.user_type)
-        if user.user_type!=8:
-            data = []
-            current_date = fromdate
-            offset = (page - 1) * size
-            days = (todate - fromdate).days + 1
-            dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
+       
 
-            paginated_dates = dates_to_query[offset:offset + size]
+        totalArticle = db.query(func.count(distinct(Article.id))).filter(
+            Article.status==1,Article.save_for_later!=1)
 
-            for current_date in paginated_dates:
-                next_date = current_date + timedelta(days=1)
+        articleAction = db.query(
+                    # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
+                   func.sum(case([(ArticleHistory.topic_status==2,1)],else_=0)).label("review"),
+                   func.sum(case([(ArticleHistory.topic_status==3,1)],else_=0)).label("comment"),
+                   func.sum(case([(ArticleHistory.topic_status==4,1)],else_=0)).label("approved")).join(
+                       Article,ArticleHistory.article_id==Article.id).filter(Article.status==1,
+                                                                             Article.save_for_later!=1)
 
-                totalArticle = db.query(func.count(distinct(Article.id))).filter(
-                    
-                    Article.status==1,cast(Article.content_created_at, Date) == current_date)
-
-                articleAction = (
-                        db.query(
-                            # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
-                            func.sum(case((cast(Article.content_ce_review_at, Date) == current_date, 1), else_=0)).label("review"),
-                            func.sum(case((cast(Article.content_ce_cmnt_at, Date) == current_date, 1), else_=0)).label("comment"),
-                            func.sum(case((cast(Article.published_at, Date) == current_date, 1), else_=0)).label("approved")
-                        )
-                        .filter(
-                            Article.status==1,
-                    ))
+     
                 
-                if user.user_type==4:
-
-                    # totalArticle=totalArticle.filter(
-                    # Article.chief_editor_id==user.id,
-                    #                                )
-                    articleAction = articleAction.filter(Article.chief_editor_id==user.id)
                     
-                if user.user_type==5:
-
-                    articleAction = (
-                        db.query(
-                            # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
-                            func.sum(case((cast(Article.content_se_review_at, Date) == current_date, 1), else_=0)).label("review"),
-                            func.sum(case((cast(Article.content_se_cmnt_at, Date) == current_date, 1), else_=0)).label("comment"),
-                            func.sum(case((cast(Article.content_se_approved_at, Date) == current_date, 1), else_=0)).label("approved")
-                        )
-                        .filter(
-                            Article.status==1,
-                    ))
-                
-
-                    # totalArticle=totalArticle.filter(
-                    # Article.sub_editor_id==user.id,
-                    #                                )
-                    articleAction = articleAction.filter(Article.sub_editor_id==user.id)
-
-                    
-
-                    
-                totalArticle = totalArticle.scalar()
-                artcileDet = articleAction.first()
+        totalArticle = totalArticle.scalar()
+        artcileDet = articleAction.first()
             
-                data.append({
-                    "date": current_date.strftime("%Y-%m-%d"),
+        data={
                     "total_article": totalArticle,
-                    "new": artcileDet.new if user.user_type==8 and artcileDet else 0,
                     "review": artcileDet.review or 0 if artcileDet else 0,
                     "comment": artcileDet.comment or 0 if artcileDet else 0,
                     "approved":artcileDet.approved or  0 if artcileDet else 0
-                    # "rejected": getRejected,
-                })
-            total_pages = (days + size - 1) // size  # Calculate total pages
+                }
             
-            return {
-                    "status": 1,
-                    "msg": "Success",
-                    "data": {
-                        "page": page,
-                        "size": size,
-                        "total_pages": total_pages,
-                        "total_count": days,
-                        "items": data,
-                    }
-                }
-        if user.user_type==8:
-            articleAction = (
-                    db.query(
-                        func.sum(case((Article.content_approved == 1, 1), else_=0)).label("new"),
-                        func.sum(case((Article.content_approved == 2, 1), else_=0)).label("review"),
-                        func.sum(case((Article.content_approved == 3, 1), else_=0)).label("comment"),
-                        func.sum(case((Article.content_approved == 5, 1), else_=0)).label("approved")
-                    )
-                    .filter(Article.status == 1)
-                )
-            # articleAction = (
-            #     db.query(
-            #         func.sum(
-            #             case(
-                            
-            #                     (cast(Article.content_ce_review_at, Date) == current_date, 1),
-            #                     (cast(Article.content_se_review_at, Date) == current_date, 1)
-            #                 ,
-            #                 else_=0
-            #             )
-            #         ).label("review"),
-            #         func.sum(
-            #             case(
-                            
-            #                     (cast(Article.content_ce_cmnt_at, Date) == current_date, 1),
-            #                     (cast(Article.content_se_cmnt_at, Date) == current_date, 1)
-            #                 ,
-            #                 else_=0
-            #             )
-            #         ).label("comment"),
-            #         func.sum(
-            #             case(
-            #                  (cast(Article.content_se_approved_at, Date) == current_date, 1),
-            #                     (cast(Article.published_at, Date) == current_date, 1)
-            #                 ,
-            #                 else_=0
-            #             )
-            #         ).label("approved")
-            #     )
-            #     .filter(Article.status == 1)
-            # )
-            totalArticle= db.query(func.count(distinct(Article.id))).filter(
-                    Article.status==1,
-            Article.created_by==user.id).scalar()
-            articleAction = articleAction.filter(Article.created_by==user.id).first()
-                        
-            data={
-                    "total_article": totalArticle,
-                    "new": articleAction.new if user.user_type==8 and articleAction else 0,
-                    "review": articleAction.review or 0 if articleAction else 0,
-                    "comment": articleAction.comment or 0 if articleAction else 0,
-                    "published":articleAction.approved or  0 if articleAction else 0
-                    # "rejected": getRejected,
-                }
-
-
         return {
-            "status": 1,
-            "msg": "Success",
-            "data":data
-        }
+                "status": 1,
+                "msg": "Success",
+                "data":data
+            }
+       
+    else:
+        return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
+
+# @router.post("/topic_barchart")
+# async def topicBarchart(db:Session=Depends(deps.get_db),
+#                      token:str = Form(...),
+#                      fromdate: date = Form(None),
+#                       page:int=1,size:int=10,
+#                     todate: date = Form(None)):
+    
+#     user = deps.get_user_token(db=db,token=token)
+#     if user:
+#         data = []
+#         current_date = fromdate
+#         offset = (page - 1) * size
+#         days = (todate - fromdate).days + 1
+#         dates_to_query = [fromdate + timedelta(days=i) for i in range(days)]
+
+#         paginated_dates = dates_to_query[offset:offset + size]
+
+#         for current_date in paginated_dates:
+#             next_date = current_date + timedelta(days=1)
+
+#             totalArticle = db.query(func.count(distinct(Article.id))).filter(
+#                 cast(Article.created_at, Date) == current_date,
+#                 Article.status==1
+#             )
+
+#             articleAction = (
+#                     db.query(
+#                         # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
+#                         func.sum(case((cast(Article.topic_ce_review_at, Date) == current_date, 1), else_=0)).label("review"),
+#                         func.sum(case((cast(Article.topic_ce_cmnt_at, Date) == current_date, 1), else_=0)).label("comment"),
+#                         func.sum(case((cast(Article.topic_ce_approved_at, Date) == current_date, 1), else_=0)).label("approved")
+#                     )
+#                     .filter(
+#                         Article.status==1,
+#                 ))
+            
+            
+#             if user.user_type==4:
+
+#                 # totalArticle=totalArticle.filter(
+#                 # Article.chief_editor_id==user.id,
+#                 #                                )
+                
+#                 articleAction = articleAction.filter(Article.chief_editor_id==user.id)
+
+                
+#             if user.user_type==5:
+
+
+#                 articleAction = (
+#                     db.query(
+#                         # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
+#                         func.sum(case((cast(Article.topic_se_review_at, Date) == current_date, 1), else_=0)).label("review"),
+#                         func.sum(case((cast(Article.topic_se_cmnt_at, Date) == current_date, 1), else_=0)).label("comment"),
+#                         func.sum(case((cast(Article.topic_se_approved_at, Date) == current_date, 1), else_=0)).label("approved")
+#                     )
+#                     .filter(
+#                         Article.status==1,
+#                 ))
+
+#                 # totalArticle=totalArticle.filter(
+#                 # Article.sub_editor_id==user.id,
+#                 #                                )
+#                 articleAction = articleAction.filter(Article.sub_editor_id==user.id)
+
+                
+#             if user.user_type==8:
+#                 articleAction = (
+#                     db.query(
+#                         func.sum(
+#                             case(
+                                
+#                                     (cast(Article.topic_ce_review_at, Date) == current_date, 1),
+#                                     (cast(Article.topic_se_review_at, Date) == current_date, 1)
+#                                 ,
+#                                 else_=0
+#                             )
+#                         ).label("review"),
+#                         func.sum(
+#                             case(
+                                
+#                                     (cast(Article.topic_ce_cmnt_at, Date) == current_date, 1),
+#                                     (cast(Article.topic_se_cmnt_at, Date) == current_date, 1)
+#                                 ,
+#                                 else_=0
+#                             )
+#                         ).label("comment"),
+#                         func.sum(
+#                             case(
+#                                 (cast(Article.topic_ce_approved_at, Date) == current_date, 1),
+#                                     (cast(Article.topic_se_approved_at, Date) == current_date, 1)
+#                                 ,
+#                                 else_=0
+#                             )
+#                         ).label("approved")
+#                     )
+#                     .filter(Article.status == 1)
+#                 )
+                
+
+#                 totalArticle=totalArticle.filter(
+#                 Article.created_by==user.id,
+#                                                )
+#                 articleAction = articleAction.filter(Article.created_by==user.id)
+
+                
+#             totalArticle = totalArticle.scalar()
+#             artcileDet = articleAction.first()
+           
+#             data.append({
+#                 "date": current_date.strftime("%Y-%m-%d"),
+#                 "total_article": totalArticle,
+#                 "review": artcileDet.review or 0 if artcileDet else 0,
+#                 "comment": artcileDet.comment or 0 if artcileDet else 0,
+#                 "approved":artcileDet.approved or  0 if artcileDet else 0
+#                 # "rejected": getRejected,
+#             })
+
+#         total_pages = (days + size - 1) // size  # Calculate total pages
+
+#         return {
+#             "status": 1,
+#             "msg": "Success",
+#             "data": {
+#                 "page": page,
+#                 "size": size,
+#                 "total_pages": total_pages,
+#                 "total_count": days,
+#                 "items": data,
+#             }
+#         }
+#     else:
+#         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
+
+@router.post("/content_barchart")
+async def contentBarchart(db:Session=Depends(deps.get_db),
+                     token:str = Form(...),
+                    ):
+    
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+       
+
+        totalArticle = db.query(func.count(distinct(Article.id))).filter(
+            Article.status==1,Article.save_for_later!=1)
+
+        articleAction = db.query(
+                    # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
+                   func.sum(case([(ArticleHistory.content_status==2,1)],else_=0)).label("review"),
+                   func.sum(case([(ArticleHistory.content_status==3,1)],else_=0)).label("comment"),
+                   func.sum(case([(ArticleHistory.content_status==4,1)],else_=0)).label("approved")).join(
+                       Article,ArticleHistory.article_id==Article.id).filter(Article.status==1,
+                                                                             Article.save_for_later!=1)
+
+                
+        if user.user_type==4:
+
+
+            articleAction = articleAction.filter(ArticleHistory.chief_editor_id==user.id,
+                                               ArticleHistory.is_editor==2)
+            
+            
+        if user.user_type==5:
+
+
+            articleAction = articleAction.filter(ArticleHistory.sub_editor_id==user.id,
+                                               ArticleHistory.is_editor==1)
+            
+        if user.user_type==8:
+            articleAction = articleAction.filter(Article.created_by==user.id)
+            totalArticle = totalArticle.filter(Article.created_by==user.id)          
+                
+                    
+        totalArticle = totalArticle.scalar()
+        artcileDet = articleAction.first()
+            
+        data={
+                    "total_article": totalArticle,
+                    "review": artcileDet.review or 0 if artcileDet else 0,
+                    "comment": artcileDet.comment or 0 if artcileDet else 0,
+                    "approved":artcileDet.approved or  0 if artcileDet else 0
+                }
+            
+        return {
+                "status": 1,
+                "msg": "Success",
+                "data":data
+            }
+       
     else:
         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}

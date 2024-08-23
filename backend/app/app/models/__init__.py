@@ -13,3 +13,4 @@ from .mail_history import EmailHistory
 from .article_history import ArticleHistory
 from .article_topic import ArticleTopic
 from .careers import Careers
+from .notification import Notification

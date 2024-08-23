@@ -126,6 +126,9 @@ async def topicDropDown(db:Session=Depends(deps.get_db),
 
             getArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status == 1)
 
+            if user.user_type==8:
+                getArticleTopic = getArticleTopic.filter(ArticleTopic.is_approved==2)
+
             count = getArticleTopic.count()
 
             if category_id:

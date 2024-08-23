@@ -25,6 +25,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                     #  seo_url:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
                      media_orientation:int=Form(None,description="1->Portrait,2-Landscape"),
+                     media_position:int=Form(None,description="1->Top,2-Bottom,3-right,4-Left"),
                      token:str=Form(...),
                      content_type:int=Form(None,description="1->Ads,2->banners,3-youtube"),
                      media_type:int=Form(None,description="1->img,2-shorts,3->Video")
@@ -44,6 +45,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
             title = title,
             description = description,
             meta_title = meta_title,
+            media_position = media_position,
             media_type = media_type,
             img_alter = img_alter,
             media_orientation = media_orientation,
@@ -83,6 +85,8 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      meta_title:str=Form(None),
                      img_alter:str=Form(None),
                      meta_description:str=Form(None),
+                     media_position:int=Form(None,description="1->Top,2-Bottom,3-right,4-Left"),
+
                     #  content_type:str=Form(None),
                      meta_keywords:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
@@ -109,6 +113,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                 return {"status":0,"msg":"This url already used"}
             
             getMediaFiles.media_url = media_url
+            getMediaFiles.media_position = media_position
             getMediaFiles.title = title
             getMediaFiles.media_type = media_type
             getMediaFiles.img_alter = img_alter
@@ -162,17 +167,23 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
             totalCount = getAllAds.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
             getAllAds = getAllAds.limit(limit).offset(offset).all()
+            medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+            medOrientationName =["-","Portrait","Landscape"]
 
             dataList=[]
             if getAllAds:
                 for row in getAllAds:
                     dataList.append({
                 "media_files_id":row.id,
+                "media_position_name":medPositionName[row.media_position] if row.media_position else None,
+
                 "media_url":row.media_url,
+                "media_position":row.media_position,
                 "title":row.title,
                 "description":row.description,
                 "meta_title":row.meta_title,
                 "media_orientation":row.media_orientation,
+                "media_orientation_name":medOrientationName[row.media_orientation] if row.media_orientation else None,
                 "meta_description":row.meta_description,
                 # "seo_url":row.seo_url,
                 "img_alter":row.img_alter,
@@ -211,12 +222,20 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
         
         if not getData:
             return {"status":0,"msg":"No Record Found"}
+        
+        medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+        medOrientationName =["-","Portrait","Landscape"]
+
 
         data={
             "media_files_id":getData.id,
+            "media_position":getData.media_position,
+            "media_position_name":medPositionName[getData.media_position] if getData.media_position else None,
+
             "media_url":getData.media_url,
             "title":getData.title,
             "media_file":f"{settings.BASE_DOMAIN}{getData.img_path}" if getData.img_path else "",
+            "media_orientation_name":medOrientationName[getData.media_orientation] if getData.media_orientation else None,
 
             "description":getData.description,
             "img_alter":getData.img_alter,

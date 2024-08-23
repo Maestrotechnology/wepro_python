@@ -28,6 +28,8 @@ class User(Base):
     bank = Column(String(255))
     ifsc_code = Column(String(255))
     branch = Column(String(500))
+    request_user =Column(TINYINT,comment = "1->Yes,2->No")
+
     is_request =Column(TINYINT,comment = "1->Request,2-Accpted,3-Interview Process,-1 ->rejected")
 
     state_id = Column(Integer,ForeignKey("states.id")) 

@@ -551,11 +551,47 @@ async def addTopic(db:Session = Depends(deps.get_db),
             category_id = category_id,
             sub_category_id = sub_category_id,
             status=1,
+            is_approved=2,
             created_at = datetime.now(settings.tz_IN),
             created_by = user.id)
 
             db.add(addArticleTopic)
             db.commit()
+
+            if user.user_type==4:
+                addArticleTopic.approved_by=user.id
+                addArticleTopic.is_approved=1
+                db.commit()
+
+                addNotification = Notification(
+                topic_id = addArticleTopic.id,
+                comment =f"Chief Editor added new {topic}" ,
+                status=1,
+                notification_type=4,
+                created_at =datetime.now(settings.tz_IN),
+                admin_notify=1,
+                created_by = user.id
+
+                )
+                db.add(addNotification)
+                db.commit()
+
+            if user.user_type==3:
+                addHistory = ArticleHistory(
+                # comment = f" {approvedStatus[approved_status]}" if not comment else comment,
+                comment =f"Sub Editor requested new {topic}"  ,
+                title=f"{user.name}(Sub Editor)- Editor Topic Requested",
+                topic_id=addArticleTopic.id,
+                sub_editor_id = user.id ,
+                chief_editor_notify =1,
+                status=1,
+                history_type=3,
+                is_editor = 1,
+                created_at =datetime.now(settings.tz_IN),
+                created_by = user.id
+            )
+                db.add(addHistory)
+                db.commit()
 
 
             return {"status":1,"msg":"Successfully ArticleTopic Added"}
@@ -625,7 +661,9 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
 
             if topic:
                 getAllArticleTopic =  getAllArticleTopic.filter(ArticleTopic.topic.like("%"+topic+"%"))
-
+            
+            if user.user_type==8:
+                getAllArticleTopic = getAllArticleTopic.filter(ArticleTopic.is_approved==1)
 
             totalCount = getAllArticleTopic.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
@@ -638,6 +676,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
                     "article_topic_id":row.id,
                 "topic":row.topic,
                 "description":row.description,
+                "is_approved":row.is_approved,
                 "category_id":row.category_id,
                 "sub_category_id":row.sub_category_id,
                 "category_title": row.category.title if row.category_id else None,

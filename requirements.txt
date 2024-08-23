@@ -9,7 +9,7 @@ pyfcm==1.5.4
 python_jose==3.3.0
 pytz==2024.1
 pytz==2022.1
-SQLAlchemy==2.0.29
+SQLAlchemy==1.4.46
 SQLAlchemy==1.4.41
 starlette==0.38.0
 XlsxWriter==3.2.0
