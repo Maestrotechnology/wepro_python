@@ -444,8 +444,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
 
                 approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
                 subject = f"User Account {approvalSts[approval_status]}"
-                sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
-                    receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
+                sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=checkUserId.id,
+                    receiver_email=checkUserId.email,subject=subject,journalistName=checkUserId.name,
                     message=message,
                 )
 

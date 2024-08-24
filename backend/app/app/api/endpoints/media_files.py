@@ -151,6 +151,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 @router.post("/list_media_files")
 async def listMediaFiles(db:Session =Depends(deps.get_db),
                        token:str = Form(...),
+                       content_type:int=Form(None,description="1->Advertisement,2->Banners,3-youtube,4-shorts"),
                         media_type:int=Form(None,description="1->img,2-shorts,3->Video"),
                        title:str=Form(None),
                        page:int=1,size:int = 10):
@@ -158,6 +159,10 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
     if user:
         if user:
             getAllAds = db.query(MediaFiles).filter(MediaFiles.status ==1)
+
+            if content_type:
+                getAllAds = getAllAds.filter(MediaFiles.content_type==content_type)
+
 
             if media_type:
                 getAllAds = getAllAds.filter(MediaFiles.media_type==media_type)

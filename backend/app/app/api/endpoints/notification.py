@@ -56,7 +56,7 @@ async def listAdminNotification(db:Session =Depends(deps.get_db),
             totalCount = getAllNotify.count()
 
             totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllNotify = getAllNotify.limit(limit).offset(offset).all()
+            getAllNotify = getAllNotify.order_by(Notification.id.desc()).limit(limit).offset(offset).all()
 
             notifyTypeName = ["-","Topic","Content","Account Approval","Editor Topic"]
 
@@ -112,7 +112,7 @@ async def listNotification(db:Session =Depends(deps.get_db),
 
             totalCount = getAllNotify.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllNotify = getAllNotify.limit(limit).offset(offset).all()
+            getAllNotify = getAllNotify.order_by(ArticleHistory.id.desc()).limit(limit).offset(offset).all()
 
             historyName = ["-","TOPIC","CONTENT","EDITORS CHOICE"]
 

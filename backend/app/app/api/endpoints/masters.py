@@ -565,7 +565,8 @@ async def addTopic(db:Session = Depends(deps.get_db),
 
                 addNotification = Notification(
                 topic_id = addArticleTopic.id,
-                comment =f"Chief Editor added new {topic}" ,
+                comment =f"The topic is {topic}" ,
+                title=f"{user.name}(Chief Editor)-added new Topic",
                 status=1,
                 notification_type=4,
                 created_at =datetime.now(settings.tz_IN),

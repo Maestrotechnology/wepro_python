@@ -479,7 +479,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    meta_description:str=Form(None),
                    meta_keywords:str=Form(None),
                    seo_url:str=Form(None),
-                   save_for_later:int=Form(None),
+                   save_for_later:int=Form(None,description="0-no,1-yes"),
                    city_id:int=Form(...),
                    state_id:int=Form(...),
                      media_file:Optional[UploadFile] = File(None),
@@ -528,8 +528,9 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.city_id=city_id
             getArticle.state_id=state_id
             getArticle.status=1
-            getArticle.save_for_later=save_for_later
             if not save_for_later:
+                getArticle.save_for_later=save_for_later
+
                 getArticle.content_se_approved =1 if getArticle.content_approved !=5 else 5
             getArticle.updated_by = user.id
             getArticle.updated_at = datetime.now(settings.tz_IN)
@@ -963,6 +964,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             if approved_status==4:
                 if user.user_type==4:
                     getArticle.content_se_approved = approved_status
+                    getArticle.content_approved = 1
                     getArticle.content_se_approved_at=datetime.now(settings.tz_IN)
                 if user.user_type==5:
                     getArticle.published_at=datetime.now(settings.tz_IN)
@@ -1335,13 +1337,13 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 
                 if section_type==2 and not article_status:
 
-                    getAllArticle = getAllArticle.filter(Article.content_se_approved==4)
+                    getAllArticle = getAllArticle.filter(Article.content_se_approved==4,Article.content_approved!=None)
                     
                 # get All Chief editor unapproved Topic
 
                 if section_type==1 and not article_status:
 
-                    # getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
+                    # getAllArticle = getAllArticle.filter(Article.topic_approved==4 )f
                     getAllArticle = getAllArticle.filter(Article.topic_se_approved==4,
                                                           Article.editors_choice!=1,
                                                           Article.content_se_approved==None,
@@ -1372,7 +1374,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 #get all sub editor unapproved content
                 
                 if section_type==2 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==4)
+                    getAllArticle = getAllArticle.filter(Article.topic_approved==4,Article.content_se_approved!=None)
 
                     
                 # get All sub editor unapproved Topic
