@@ -29,7 +29,7 @@ async def notificationCount(db:Session=Depends(deps.get_db),
                                            ArticleHistory.sub_editor_notify==1)
             if user.user_type==8:
                 getNotify=getNotify.filter(ArticleHistory.journalist_id==user.id,
-                                           ArticleHistory.chief_editor_notify==1)
+                                           ArticleHistory.journalist_notify==1)
                 
             getNotify=getNotify.count()
 
@@ -115,6 +115,8 @@ async def listNotification(db:Session =Depends(deps.get_db),
             getAllNotify = getAllNotify.order_by(ArticleHistory.id.desc()).limit(limit).offset(offset).all()
 
             historyName = ["-","TOPIC","CONTENT","EDITORS CHOICE"]
+            stsName = ["-","new","review","comment","Approved","CE Approved","Approved"]
+
 
             dataList=[]
             if getAllNotify:
@@ -126,6 +128,8 @@ async def listNotification(db:Session =Depends(deps.get_db),
                 "history_type":row.history_type,
                 "history_type_name":historyName[row.history_type] if row.history_type else None,
                 "article_status":row.content_status if row.history_type==2 else (row.topic_status if row.history_type==1 else None),
+                "article_status_name":stsName[row.content_status] if row.history_type==2 and row.content_status else (stsName[row.topic_status] if row.history_type==1 and row.topic_status else None),
+
                 "is_editor":"CE" if row.is_editor==2 else ("CE" if row.is_editor==1 else None),
                 "created_at":row.created_at,                  
                 "created_by":row.createdBy.user_name if row.created_by else None,                  

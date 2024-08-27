@@ -13,7 +13,47 @@ router = APIRouter()
 
 
 
+@router.post("/add_checked_content")
+async def addCheckedContent(db:Session=Depends(deps.get_db),
+                             token:str=Form(...),article_id:int=Form(...),
+                             content_type:int=Form(...,description="1-header,2-middle,3-footer,"),
+                           ):
+    
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        getArticle = db.query(Article).filter(Article.id == article_id,
+                                        Article.status == 1).first()
+        
+        if not getArticle:
+            return {"status":0,"msg":"Not found"}
+        
+        if user.user_type==5:
+            if content_type==1:
+                getArticle.se_header_checkbox=1
+            if content_type==2:
+                getArticle.se_middle_checkbox=1
+            if content_type==3:
+                getArticle.se_footer_checkbox=1
 
+
+        if user.user_type==4:
+            if content_type==1:
+                getArticle.ce_header_checkbox=1
+            if content_type==2:
+                getArticle.ce_middle_checkbox=1
+            if content_type==3:
+                getArticle.ce_footer_checkbox=1
+
+        getArticle.updated_at = datetime.now(settings.tz_IN)
+        getArticle.updated_by = user.id
+
+        db.commit()
+
+        return {"status":1,"msg":"success"}
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+    
+                    
 @router.post("/approved_editors_topics")
 async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
@@ -192,6 +232,10 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
 
             if getTopic:
                 addArticle.topic_ce_approved_at = datetime.now(settings.tz_IN)
+                addArticle.content_se_approved=0
+                addArticle.topic_se_approved =  4
+                addArticle.topic_approved =  4
+
                 db.commit()
 
             comment=""
@@ -291,7 +335,7 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
             getArticle.status=1
             # getArticle.content_approved = 1 if getTopic else None
 
-            getArticle.topic_se_approved = 5 if getTopic else 1
+            getArticle.topic_se_approved =  1
             
             db.commit()
             comment=""
@@ -318,6 +362,11 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
 
             if getTopic:
                 getArticle.topic_ce_approved_at = datetime.now(settings.tz_IN)
+                getArticle.content_se_approved=0
+                getArticle.topic_se_approved =  4
+                getArticle.topic_approved =  4
+
+
                 db.commit()
 
                 comment=f"The Article {getArticle.topic} Topic has been approved."
@@ -367,10 +416,12 @@ async def createArticle(db:Session =Depends(deps.get_db),
                    seo_url:str=Form(None),
                    category_id:int=Form(...),
                    sub_category_id:int=Form(None),
-                   city_id:int=Form(...),
-                   state_id:int=Form(...),
+                   city_id:int=Form(None),
+                   state_id:int=Form(None),
                    img_alter:str=Form(None),
                    media_file:Optional[UploadFile] = File(None),
+                   header_image:Optional[UploadFile] = File(None),
+                   middle_image:Optional[UploadFile] = File(None),
 
                    ):
     
@@ -480,10 +531,12 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    meta_keywords:str=Form(None),
                    seo_url:str=Form(None),
                    save_for_later:int=Form(None,description="0-no,1-yes"),
-                   city_id:int=Form(...),
-                   state_id:int=Form(...),
+                   city_id:int= Form(None),
+                   state_id:int=Form(None),
                      media_file:Optional[UploadFile] = File(None),
                 #    article_files: Optional[List[UploadFile]] = File(None),
+                   header_image:Optional[UploadFile] = File(None),
+                   middle_image:Optional[UploadFile] = File(None),
                    img_alter:str=Form(None),
                    ):
     
@@ -531,7 +584,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             if not save_for_later:
                 getArticle.save_for_later=save_for_later
 
-                getArticle.content_se_approved =1 if getArticle.content_approved !=5 else 5
+                getArticle.content_se_approved =1 if getArticle.content_approved !=4 else 4
             getArticle.updated_by = user.id
             getArticle.updated_at = datetime.now(settings.tz_IN)
             getArticle.content_created_at = datetime.now(settings.tz_IN) if getArticle.content_created_at ==None else  getArticle.content_created_at
@@ -543,6 +596,23 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                 fName,*etn = uploadedFile.split(".")
                 filePath,returnFilePath = file_storage(media_file,fName)
                 getArticle.img_path = returnFilePath
+
+                db.commit()
+
+            if header_image:
+
+                uploadedFile = header_image.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(header_image,fName)
+                getArticle.header_image = returnFilePath
+
+                db.commit()
+            if middle_image:
+
+                uploadedFile = middle_image.filename
+                fName,*etn = uploadedFile.split(".")
+                filePath,returnFilePath = file_storage(middle_image,fName)
+                getArticle.middle_image = returnFilePath
 
                 db.commit()
 
@@ -605,11 +675,18 @@ async def viewArticle(db:Session =Depends(deps.get_db),
         data={
             "article_id":getArticle.id,
             "save_for_later":getArticle.save_for_later,
-            "article_id":getArticle.id,
             "topic":getArticle.topic,
+            "se_header_checkbox":getArticle.se_header_checkbox,
+            "se_middle_checkbox":getArticle.se_middle_checkbox,
+            "se_footer_checkbox":getArticle.se_footer_checkbox,
+            "ce_header_checkbox":getArticle.ce_header_checkbox,
+            "ce_middle_checkbox":getArticle.ce_middle_checkbox,
+            "ce_footer_checkbox":getArticle.ce_footer_checkbox,
             "editors_choice":getArticle.editors_choice,
             "is_paid":getArticle.is_paid,
             "media_file":f'{settings.BASE_DOMAIN}{getArticle.img_path}',
+            "header_image":f'{settings.BASE_DOMAIN}{getArticle.header_image}',
+            "middle_image":f'{settings.BASE_DOMAIN}{getArticle.middle_image}',
             "youtube_link":getArticle.youtube_link,
 
 
@@ -782,6 +859,8 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
                     getArticle.topic_se_approved_at=datetime.now(settings.tz_IN)
                     getArticle.topic_Approved=1
                 if user.user_type==4:
+                    getArticle.content_approved=0
+                    getArticle.se_content_approved=0
 
                     getArticle.topic_ce_approved_at=datetime.now(settings.tz_IN)
 
@@ -801,7 +880,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             journalistEmail = getArticle.createdBy.email if getArticle.created_by else None
             journalistName = getArticle.createdBy.name if getArticle.created_by else None
 
-            userType = "Chief" if user.userType==4 else "Sub"
+            userType = "Chief" if user.user_type==4 else "Sub"
 
 
             msgForCmt = [
@@ -976,7 +1055,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             
             approvedStatus =["-","new","Review","comment","approved","CE Approved/Published",]
 
-            userType = "Chief" if user.userType==4 else "Sub"
+            userType = "Chief" if user.user_type==4 else "Sub"
 
 
             msgForCmt = [
@@ -1518,6 +1597,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "is_paid":row.is_paid,
                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
 
+                "header_image":f'{settings.BASE_DOMAIN}{row.header_image}',
+                "middle_image":f'{settings.BASE_DOMAIN}{row.middle_image}',
                 "meta_description":row.meta_description,
                 "description":row.description,
                 "category_id":row.category_id,

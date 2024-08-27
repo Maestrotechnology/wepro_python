@@ -12,6 +12,8 @@ class Article(Base):
     article_title=Column(String(500))
     youtube_link=Column(String(500))
     img_path = Column(String(500))
+    header_image = Column(String(500))
+    middle_image = Column(String(500))
     description=Column(String(250))
 
     footer_content = Column(Text)
@@ -19,6 +21,12 @@ class Article(Base):
     middle_content = Column(Text)
     is_paid = Column(TINYINT,default=1,comment="1-pending,2-Paid")
     paid_amount=Column(DECIMAL(10,2))
+    se_header_checkbox = Column(TINYINT,default=1,comment="1-checked")
+    se_middle_checkbox = Column(TINYINT,default=1,comment="1-checked")
+    se_footer_checkbox = Column(TINYINT,default=1,comment="1-checked")
+    ce_header_checkbox = Column(TINYINT,default=1,comment="1-checked")
+    ce_middle_checkbox = Column(TINYINT,default=1,comment="1-checked")
+    ce_footer_checkbox = Column(TINYINT,default=1,comment="1-checked")
 
     img_alter = Column(String(250))
     meta_title = Column(String(250))
