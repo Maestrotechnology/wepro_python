@@ -98,13 +98,15 @@ async def uploadFile(db:Session=Depends(deps.get_db),
 
 @router.post("/list_article_files")
 async def listArticleFiles(db:Session = Depends(deps.get_db),
-                        token:str = Form(...),article_id:int=Form(None)):
+                        token:str = Form(...),article_id:int=Form(None),
+                       ):
     user = deps.get_user_token(db=db,token=token)
     if  user:
         getAllArticleFiles = db.query(ArticleFiles).filter(ArticleFiles.status == 1)
         if article_id:
             getAllArticleFiles = getAllArticleFiles.filter(ArticleFiles.article_id == article_id)
-    
+
+     
         getAllArticleFiles = getAllArticleFiles.order_by(ArticleFiles.id.desc())
 
         attachmentCount = getAllArticleFiles.count()

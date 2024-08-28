@@ -12,6 +12,7 @@ class ArticleFiles(Base):
     file_type =Column(TINYINT,comment="1->image,2 ->gif,3 ->pdf,4-> video,5 -> others")
     article_id = Column(Integer,ForeignKey("article.id"),comment="journal tab id")
 
+    # is_top_image=Column(TINYINT,comment="1->yes")
     status=Column(TINYINT,comment="1->active,-1->deleted")
     created_at=Column(DateTime)
 

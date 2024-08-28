@@ -21,7 +21,7 @@ async def createCareers(db:Session = Depends(deps.get_db),
                      token:str=Form(...),
                      salary:float=Form(...),
                      requirements:str=Form(...),
-                     employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary'),
+                     employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper'),
                      experience_type:int=Form(...,description='1-ffresher, 2-experience'),
                      designation_type:int=Form(...,description="designation dropdown"),
                      experience_year_from:str=Form(...),
@@ -70,7 +70,7 @@ async def updateCareers(db:Session = Depends(deps.get_db),
                      token:str=Form(...),
                      salary:float=Form(...),
                      requirements:str=Form(...),
-                     employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary'),
+                     employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper'),
                      experience_type:int=Form(...,description='1-ffresher, 2-experience'),
                      designation_type:int=Form(...,description="designation dropdown"),
                      experience_year_from:str=Form(...),
@@ -121,7 +121,7 @@ async def updateCareers(db:Session = Depends(deps.get_db),
 async def listCareers(db:Session =Depends(deps.get_db),
                        token:str = Form(None),
                        title:str=Form(None),
-                       employement_type :int=Form(None,description="1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary"),
+                       employement_type :int=Form(None,description="1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper"),
                        page:int=1,size:int = 10):
     # user=deps.get_user_token(db=db,token=token)
     # if user:
@@ -142,7 +142,7 @@ async def listCareers(db:Session =Depends(deps.get_db),
 
             dataList=[]
             experienceName = ["-","Fresher","Experienced"]
-            employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary"]
+            employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary","Hyper"]
             userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
 
             if getAllCareers:
@@ -196,7 +196,7 @@ async def viewCareers(db:Session =Depends(deps.get_db),
             return {"status":0,"msg":"No Record Found"}
     
         experienceName = ["-","Fresher","Experienced"]
-        employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary"]
+        employementType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary","Hyper"]
         userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
 
 

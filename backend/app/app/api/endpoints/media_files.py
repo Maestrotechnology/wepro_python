@@ -6,16 +6,148 @@ from app.core.config import settings
 from datetime import datetime,date
 from app.utils import *
 from datetime import datetime
-from typing import Optional
+from typing import Optional,List
 
 
 
 router = APIRouter()
 
 
+@router.post("/list_media_top_image")
+async def listMediaTopImage(db:Session = Depends(deps.get_db),
+                        token:str = Form(...),media_file_id:int=Form(None),
+                       ):
+    user = deps.get_user_token(db=db,token=token)
+    if  user:
+        getAllMediaTopImages = db.query(MediaTopImages).filter(MediaTopImages.status == 1)
+        if media_file_id:
+            getAllMediaTopImages = getAllMediaTopImages.filter(MediaTopImages.media_file_id == media_file_id)
+
+     
+        getAllMediaTopImages = getAllMediaTopImages.order_by(MediaTopImages.id.desc())
+
+        attachmentCount = getAllMediaTopImages.count()
+       
+        getAllMediaTopImages = getAllMediaTopImages.all()
+
+        dataList = []
+        if getAllMediaTopImages:
+            for row in getAllMediaTopImages:
+                dataList.append({
+                    "media_top_image_id":row.id,
+                    "top_url":row.top_url,
+                    "top_image": f"{settings.BASE_DOMAIN}{row.top_image}",
+                })
+        data=({
+               "total_count": attachmentCount,"items": dataList})
+        return {"status": 1,"msg": "success","data": data}
+    else:
+        return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+
+@router.post("/delete_media_top_image")
+async def deleteMediaTopImage(db: Session = Depends(deps.get_db),
+                            token:str = Form(...),
+                            media_top_image_id: int = Form(...)):
+    user = deps.get_user_token(db=db,token=token)
+    
+    if  user:
+        deleteAttachment = db.query(MediaTopImages).filter(
+            MediaTopImages.id == media_top_image_id,
+            MediaTopImages.status == 1
+        ).first()
+        deleteAttachment.status=-1
+        db.commit()
+        file_path = deleteAttachment.top_image
+        
+        file_loc = settings.BASE_UPLOAD_FOLDER+"/"+file_path
+
+        if os.path.exists(file_loc):
+            os.remove(file_loc)
+        return {"status": 1,"msg": "MediaTopImage deleted successfully"}
+    return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+
+@router.post("/upload_media_top_image")
+async def upload_media_top_image(
+    db: Session = Depends(deps.get_db),
+    token: str = Form(...),
+    media_file_id: int = Form(...),
+    top_urls: Optional[List[str]] = Form(None),  # Receive top_url as a list
+    upload_files: Optional[List[UploadFile]] = File(None),  # Handle multiple files
+):
+    user = deps.get_user_token(db=db, token=token)
+    if user:
+        check_media_files = db.query(MediaFiles).filter(
+            MediaFiles.id == media_file_id, MediaFiles.status == 1
+        ).first()
+
+        if not check_media_files:
+            return {"status": 0, "msg": "No MediaFiles record found."}
+        
+        if upload_files and top_urls:
+            if len(upload_files) != len(top_urls):
+                return {"status": 0, "msg": "The number of files and URLs do not match."}
+            
+            image_data = []
+            for file, top_url in zip(upload_files, top_urls):
+                uploaded_file = file.filename
+                f_name, *ext = uploaded_file.split(".")
+                file_path, return_file_path = file_storage(file, f_name)
+
+                content_type = file.content_type.lower()
+
+                # Determine file type
+                file_type_map = {
+                    "image": ["image/jpeg", "image/png"],
+                    "gif": ["image/gif"],
+                    "pdf": ["application/pdf"],
+                    "video": ["video/mp4", "video/mpeg"],
+                }
+
+                file_type_int_map = {
+                    "image": 1,
+                    "gif": 2,
+                    "pdf": 3,
+                    "video": 4,
+                    "other": 5,
+                }
+
+                file_type = file_type_int_map.get("other", 5)  # Default to 'other'
+                if content_type in file_type_map["gif"]:
+                    file_type = file_type_int_map["gif"]
+                else:
+                    for key, values in file_type_map.items():
+                        if content_type in values:
+                            file_type = file_type_int_map[key]
+                            break
+
+                # Add file and its corresponding URL to the data entry
+                image_data.append({
+                    "top_image": return_file_path,
+                    "top_url": top_url,
+                    "created_at": datetime.now(settings.tz_IN),
+                    "status": 1,
+                    "file_type": file_type,
+                    "media_file_id": media_file_id,
+                    "created_by": user.id
+                })
+
+            try:
+                # Bulk insert the collected data
+                db.bulk_insert_mappings(MediaTopImages, image_data)
+                db.commit()
+                return {"status": 1, "msg": "Uploaded Successfully."}
+            except Exception as e:
+                db.rollback()
+                print(f"Error during bulk insert: {str(e)}")
+                return {"status": 0, "msg": "Failed to insert images"}
+        else:
+            return {"status": 0, "msg": "No file or URL is provided."}
+    else:
+        return {"status": -1, "msg": "Sorry, your login session expired. Please login again."}
+
 @router.post("/create_media_files")
 async def createMediaFiles(db:Session = Depends(deps.get_db),
-                     media_url:str=Form(...),
+                     media_url:str=Form(None),
                      title:str=Form(None),
                      description:str=Form(None),
                      meta_title:str=Form(None),
@@ -26,10 +158,10 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      meta_keywords:str=Form(None),
                     #  seo_url:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
-                     top_url:Optional[UploadFile] = File(None),
-                     bottom_url:Optional[UploadFile] = File(None),
-                     right_url:Optional[UploadFile] = File(None),
-                     left_url:Optional[UploadFile] = File(None),
+                     top_url:str = File(None),
+                     bottom_url:str = File(None),
+                     right_url:str = File(None),
+                     left_url:str = File(None),
                      media_orientation:int=Form(None,description="1->Portrait,2-Landscape"),
                      media_page:int=Form(None,description="1->Home,2-Category"),
                      top_image:Optional[UploadFile] = File(None),
@@ -124,7 +256,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                 db.commit()
                 
 
-            return {"status":1,"msg":"Successfully Media files added"}
+            return {"status":1,"msg":"Successfully Media files added","media_file_id":addCsmSettings.id}
 
         else:
             return {'status':0,"msg":"You are not authenticated to update media files."}
@@ -133,8 +265,8 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
 
 @router.post("/update_media_files")
 async def updateMediaFiles(db:Session = Depends(deps.get_db),
-                     media_files_id:int=Form(...),
-                     media_url:str=Form(...),
+                     media_files_id:int=Form(None),
+                     media_url:str=Form(None),
                      title:str=Form(None),
                      brand_name:str=Form(None),
 
@@ -150,10 +282,10 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      bottom_image:Optional[UploadFile] = File(None),
                      right_image:Optional[UploadFile] = File(None),
                      left_image:Optional[UploadFile] = File(None),
-                        top_url:Optional[UploadFile] = File(None),
-                     bottom_url:Optional[UploadFile] = File(None),
-                     right_url:Optional[UploadFile] = File(None),
-                     left_url:Optional[UploadFile] = File(None),
+                        top_url:str= File(None),
+                     bottom_url:str= File(None),
+                     right_url:str= File(None),
+                     left_url:str= File(None),
 
                     #  content_type:str=Form(None),
                      meta_keywords:str=Form(None),

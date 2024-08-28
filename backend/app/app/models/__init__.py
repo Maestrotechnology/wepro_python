@@ -14,3 +14,4 @@ from .article_history import ArticleHistory
 from .article_topic import ArticleTopic
 from .careers import Careers
 from .notification import Notification
+from .media_top_images import MediaTopImages

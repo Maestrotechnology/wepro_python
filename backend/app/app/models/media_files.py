@@ -50,3 +50,4 @@ class MediaFiles(Base):
      
     createdBy = relationship('User', foreign_keys=[created_by])
     updatedBy = relationship('User', foreign_keys=[updated_by])
+    media_top_images=relationship("MediaTopImages",back_populates="media_files")
