@@ -10,11 +10,12 @@ class ArticleTopic(Base):
 
     id=Column(Integer,primary_key=True)
     description=Column(String(250))
+    comment=Column(String(250))
     topic=Column(String(250))
     category_id = Column(Integer,ForeignKey("category.id")) 
     sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
     is_choosed=Column(TINYINT,comment="1->yes")
-    is_approved=Column(TINYINT,comment="1->no,2-yes")
+    is_approved=Column(TINYINT,comment="1-approved,2-comment")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
     created_at=Column(DateTime)

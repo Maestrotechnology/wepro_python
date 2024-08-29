@@ -66,12 +66,45 @@ async def deleteMediaTopImage(db: Session = Depends(deps.get_db),
         return {"status": 1,"msg": "MediaTopImage deleted successfully"}
     return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
 
+
+@router.post("/update_media_top_image")
+async def update_media_top_image(
+    db: Session = Depends(deps.get_db),
+    token: str = Form(...),
+    media_top_image_id: int = Form(...),
+    top_url: str = Form(None),  # Receive top_url as a list
+    upload_file:Optional[UploadFile] = File(None),
+):
+    user = deps.get_user_token(db=db, token=token)
+    if user:
+        checkTopImage = db.query(MediaTopImages).filter(
+            MediaTopImages.id == media_top_image_id, MediaTopImages.status == 1
+        ).first()
+
+        if not checkTopImage:
+            return {"status": 0, "msg": "No MediaTopImages record found."}
+        
+        if top_url:
+            checkTopImage.top_url=top_url
+            db.commit()
+        if upload_file:
+
+            uploadedFile = upload_file.filename
+            fName,*etn = uploadedFile.split(".")
+            filePath,returnFilePath = file_storage(upload_file,fName)
+            checkTopImage.top_image = returnFilePath
+
+            db.commit()
+        return {"status":1,"msg":"success"}
+    else:
+        return {"status": -1, "msg": "Sorry, your login session expired. Please login again."}
+
 @router.post("/upload_media_top_image")
 async def upload_media_top_image(
     db: Session = Depends(deps.get_db),
     token: str = Form(...),
     media_file_id: int = Form(...),
-    top_urls: Optional[List[str]] = Form(None),  # Receive top_url as a list
+    top_urls: str = Form(...),  # Receive top_url as a list
     upload_files: Optional[List[UploadFile]] = File(None),  # Handle multiple files
 ):
     user = deps.get_user_token(db=db, token=token)
@@ -82,6 +115,10 @@ async def upload_media_top_image(
 
         if not check_media_files:
             return {"status": 0, "msg": "No MediaFiles record found."}
+        
+        if isinstance(top_urls, str):
+            top_urls = top_urls.split(',')
+            
         
         if upload_files and top_urls:
             if len(upload_files) != len(top_urls):
@@ -127,7 +164,7 @@ async def upload_media_top_image(
                     "created_at": datetime.now(settings.tz_IN),
                     "status": 1,
                     "file_type": file_type,
-                    "media_file_id": media_file_id,
+                    "media_files_id": media_file_id,
                     "created_by": user.id
                 })
 
@@ -180,10 +217,12 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
     if user:
         if user.user_type in [1,2,7]:
 
-            existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.media_url==media_url).first()
+            if media_url:
 
-            if existUrl:
-                return {"status":0,"msg":"This url already used"}
+                existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.media_url==media_url).first()
+
+                if existUrl:
+                    return {"status":0,"msg":"This url already used"}
 
             addCsmSettings = MediaFiles(media_url = media_url,
             title = title,
@@ -306,11 +345,13 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 
             if not getMediaFiles:
                 return{"status":0,"msg":"Not Found"}
-            existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.id!=media_files_id,
+            
+            if media_url:
+                existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.id!=media_files_id,
                                                   MediaFiles.media_url==media_url).first()
 
-            if existUrl:
-                return {"status":0,"msg":"This url already used"}
+                if existUrl:
+                    return {"status":0,"msg":"This url already used"}
             
             getMediaFiles.media_url = media_url
             getMediaFiles.start_date = start_date

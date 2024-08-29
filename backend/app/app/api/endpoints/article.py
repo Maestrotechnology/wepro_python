@@ -57,8 +57,9 @@ async def addCheckedContent(db:Session=Depends(deps.get_db),
 @router.post("/approved_editors_topics")
 async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
+                       comment:str=Form(None),
                        topic_id:int=Form(None),
-                       is_approved:int=Form(...,description="1-approved")
+                       is_approved:int=Form(...,description="1-approved,2-comment")
                        ):
     
         
@@ -71,15 +72,18 @@ async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
         if not getTopic :
             return {"status":0,"msg":"This Topic is Not available"}
         
-        if is_approved==1:
+        if is_approved:
         
-            getTopic.is_approved=2
+            getTopic.is_approved=is_approved
+            getTopic.comment=comment
             getTopic.approved_by=user.id
             db.commit()
 
+            name=["-","approved","comment"]
+            comment =comment or f"{user.name}(Chief Editor) {name[is_approved]} {getTopic.topic}"
             addHistory = ArticleHistory(
                     # comment = f" {approvedStatus[approved_status]}" if not comment else comment,
-                comment =f"{user.name}(Chief Editor) approved your {getTopic.topic}"  ,
+                comment = comment ,
                 title = "Editor Choice",
                 sub_editor_id = getTopic.created_by,
                 chief_editor_id = user.id,
@@ -93,22 +97,24 @@ async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
             db.add(addHistory)
             db.commit()
 
-            addNotification = Notification(
-                topic_id = getTopic.id,
-                comment =f"The Topic is {getTopic.topic}" ,
-                title=f'{user.name}(Chief Editor)-Approved New Topic',
-                status=1,
-                notification_type=4,
-                created_at =datetime.now(settings.tz_IN),
-                admin_notify=1,
-                created_by = user.id
+            if is_approved==1:
 
-                )
-            db.add(addNotification)
-            db.commit()
+                addNotification = Notification(
+                    topic_id = getTopic.id,
+                    comment =f"The Topic is {getTopic.topic}" ,
+                    title=f'{user.name}(Chief Editor)-Approved New Topic',
+                    status=1,
+                    notification_type=4,
+                    created_at =datetime.now(settings.tz_IN),
+                    admin_notify=1,
+                    created_by = user.id
+
+                    )
+                db.add(addNotification)
+                db.commit()
 
 
-            return {"status":1,"msg":"Successfully ArticleTopic Added"}
+            return {"status":1,"msg":"Successfully ArticleTopic Updated"}
 
 
     else:

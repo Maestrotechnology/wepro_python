@@ -551,7 +551,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
             category_id = category_id,
             sub_category_id = sub_category_id,
             status=1,
-            is_approved=2,
+            is_approved=2 if user.user_type==5 else 1,
             created_at = datetime.now(settings.tz_IN),
             created_by = user.id)
 
@@ -560,7 +560,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
 
             if user.user_type==4:
                 addArticleTopic.approved_by=user.id
-                addArticleTopic.is_approved=1
+                addArticleTopic.is_approved=2
                 db.commit()
 
                 addNotification = Notification(
@@ -577,7 +577,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
                 db.add(addNotification)
                 db.commit()
 
-            if user.user_type==3:
+            if user.user_type==5:
                 addHistory = ArticleHistory(
                 # comment = f" {approvedStatus[approved_status]}" if not comment else comment,
                 comment =f"Sub Editor requested new {topic}"  ,
@@ -671,6 +671,8 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
             getAllArticleTopic = getAllArticleTopic.limit(limit).offset(offset).all()
 
             dataList=[]
+            name=["-","approved","comment"]
+
             if getAllArticleTopic:
                 for row in getAllArticleTopic:
                     dataList.append({
@@ -678,6 +680,8 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
                 "topic":row.topic,
                 "description":row.description,
                 "is_approved":row.is_approved,
+                "comment":row.comment,
+                "is_approved_name":name[row.is_approved] if row.is_approved else None,
                 "category_id":row.category_id,
                 "sub_category_id":row.sub_category_id,
                 "category_title": row.category.title if row.category_id else None,
