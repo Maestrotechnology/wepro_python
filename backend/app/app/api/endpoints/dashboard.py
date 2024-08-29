@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Form
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,aliased
 from app.models import *
 from app.api import deps
 from datetime import date,timedelta
@@ -383,17 +383,33 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
         completedArticle = db.query(func.count(distinct(Article.id))).filter(
             Article.status==1,Article.save_for_later==0,Article.topic_approved==4,Article.topic_se_approved!=None)
 
-        articleAction = db.query(
-                    # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
-                   func.sum(case([(ArticleHistory.topic_status==2,1)],else_=0)).label("review"),
-                   func.sum(case([(ArticleHistory.topic_status==3,1)],else_=0)).label("comment"),
-                   func.sum(case([(ArticleHistory.topic_status==4,1)],else_=0)).label("approved")).join(
-                       Article,ArticleHistory.article_id==Article.id).filter(Article.status==1,
-                                                                             Article.topic_se_approved!=None,
-                                                                             Article.save_for_later==0)
+        # articleAction = db.query(
+        #             # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
+        #            func.sum(case([(ArticleHistory.topic_status==2,1)],else_=0)).label("review"),
+        #            func.sum(case([(ArticleHistory.topic_status==3,1)],else_=0)).label("comment"),
+        #            func.sum(case([(ArticleHistory.topic_status==4,1)],else_=0)).label("approved")).join(
+        #                Article,ArticleHistory.article_id==Article.id).filter(Article.status==1,
+        #                                                                      Article.topic_se_approved!=None,
+        #                                                                      Article.save_for_later==0)
 
      
-                
+        subquery = db.query(
+                Article.id,
+                ArticleHistory.topic_status
+            ).join(
+                ArticleHistory, ArticleHistory.article_id == Article.id
+            ).filter(
+                Article.status == 1,
+                Article.topic_se_approved != None,
+                Article.save_for_later == 0
+            ).distinct(Article.id).subquery()
+
+            # Main query to aggregate counts based on distinct articles
+        articleAction = db.query(
+            func.sum(case([(subquery.c.topic_status == 2, 1)], else_=0)).label("review"),
+            func.sum(case([(subquery.c.topic_status == 3, 1)], else_=0)).label("comment"),
+            func.sum(case([(subquery.c.topic_status == 4, 1)], else_=0)).label("approved")
+        )
                     
         completedArticle = completedArticle.scalar()
         totalArticle = totalArticle.scalar()
@@ -551,72 +567,112 @@ async def topicBarchart(db:Session=Depends(deps.get_db),
 #         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
 
 @router.post("/content_barchart")
-async def contentBarchart(db:Session=Depends(deps.get_db),
-                     token:str = Form(...),
-                    ):
+async def contentBarchart(
+    db: Session = Depends(deps.get_db),
+    token: str = Form(...),
+):
+    user = deps.get_user_token(db=db, token=token)
     
-    user = deps.get_user_token(db=db,token=token)
     if user:
-       
-
+        # Base queries
         totalArticle = db.query(func.count(distinct(Article.id))).filter(
-            Article.status==1,Article.save_for_later==0,Article.topic_approved==4,Article.content_approved!=None)
+            Article.status == 1,
+            Article.save_for_later == 0,
+            Article.topic_approved == 4,
+            Article.content_approved.isnot(None)
+        )
+        
         completedArticle = db.query(func.count(distinct(Article.id))).filter(
-            Article.status==1,Article.save_for_later==0)
-
+            Article.status == 1,
+            Article.save_for_later == 0,
+            Article.content_approved == 4
+        )
+        
+        # Aliased ArticleHistory
+        ArticleHistoryAlias = aliased(ArticleHistory)
+        
+        # Subquery for distinct articles and their content statuses
+        subquery = db.query(
+            Article.id.label('article_id'),
+            ArticleHistoryAlias.content_status
+        ).join(
+            ArticleHistoryAlias, ArticleHistoryAlias.article_id == Article.id
+        ).filter(
+            Article.status == 1,
+            Article.topic_approved == 4,
+            Article.save_for_later == 0
+        ).distinct(Article.id).subquery()
+        
+        # Main query to aggregate counts based on distinct articles
         articleAction = db.query(
-                    # func.sum(case((Article.content_status == 1, 1), else_=0)).label("new"),
-                   func.sum(case([(ArticleHistory.content_status==2,1)],else_=0)).label("review"),
-                   func.sum(case([(ArticleHistory.content_status==3,1)],else_=0)).label("comment"),
-                   func.sum(case([(ArticleHistory.content_status==4,1)],else_=0)).label("approved")).join(
-                       Article,ArticleHistory.article_id==Article.id).filter(Article.status==1,
-                                                                             Article.topic_approved==4,Article.content_approved!=None,
-                                                                             Article.save_for_later==0)
+            func.sum(case([(subquery.c.content_status == 2, 1)], else_=0)).label("review"),
+            func.sum(case([(subquery.c.content_status == 3, 1)], else_=0)).label("comment"),
+            func.sum(case([(subquery.c.content_status == 4, 1)], else_=0)).label("approved")
+        ).select_from(subquery)
+        
+        # Apply user-specific filters
+        if user.user_type == 4:
+            print(articleAction.first())
+            articleAction = articleAction.join(
+                ArticleHistoryAlias,
+                ArticleHistoryAlias.article_id == subquery.c.article_id
+            ).filter(
+                ArticleHistoryAlias.chief_editor_id == user.id,
+                ArticleHistoryAlias.is_editor == 2
+            )
+            print(articleAction.first())
 
-                
-        if user.user_type==4:
-
-
-            articleAction = articleAction.filter(ArticleHistory.chief_editor_id==user.id,
-                                               ArticleHistory.is_editor==2)
-            
-            completedArticle=completedArticle.filter(Article.chief_editor_id==user.id,
-                                                     Article.content_approved==4)
-            
-            
-        if user.user_type==5:
-            completedArticle=completedArticle.filter(Article.sub_editor_id==user.id,
-                                                     Article.content_se_approved==4)
-
-            articleAction = articleAction.filter(ArticleHistory.sub_editor_id==user.id,
-                                               ArticleHistory.is_editor==1)
-            
-        if user.user_type==8:
-            articleAction = articleAction.filter(Article.created_by==user.id)
-            totalArticle = totalArticle.filter(Article.created_by==user.id) 
-            completedArticle=completedArticle.filter(Article.created_by==user.id, Article.content_approved==4)
-
-        if user.user_type in [1,2]:
-            completedArticle=completedArticle.filter(Article.content_approved==4)
-                
-                    
-        totalArticle = totalArticle.scalar()
-        completedArticle = completedArticle.scalar()
-        artcileDet = articleAction.first()
-            
-        data={
-                    "total_article": totalArticle,
-                    "review": artcileDet.review or 0 if artcileDet else 0,
-                    "comment": artcileDet.comment or 0 if artcileDet else 0,
-                    "approved":completedArticle
-                    # "approved":artcileDet.approved or  0 if artcileDet else 0
-                }
-            
+            completedArticle = completedArticle.filter(
+                Article.chief_editor_id == user.id
+            )
+        
+        if user.user_type == 5:
+            articleAction = articleAction.join(
+                ArticleHistoryAlias,
+                ArticleHistoryAlias.article_id == subquery.c.article_id
+            ).filter(
+                ArticleHistoryAlias.sub_editor_id == user.id,
+                ArticleHistoryAlias.is_editor == 2
+            )
+            completedArticle = completedArticle.filter(
+                Article.sub_editor_id == user.id
+            )
+        
+        if user.user_type == 8:
+            articleAction = articleAction.join(
+                Article,
+                Article.id == subquery.c.article_id
+            ).filter(
+                Article.created_by == user.id
+            )
+            totalArticle = totalArticle.filter(Article.created_by == user.id)
+            completedArticle = completedArticle.filter(
+                Article.created_by == user.id
+            )
+        
+        if user.user_type in [1, 2]:
+            completedArticle = completedArticle.filter(
+                Article.content_approved == 4
+            )
+        
+        # Execute queries
+        totalArticle_count = totalArticle.scalar()
+        completedArticle_count = completedArticle.scalar()
+        articleAction_result = articleAction.first()
+        
+        # Prepare response data
+        data = {
+            "total_article": totalArticle_count,
+            "review": articleAction_result.review or 0 if articleAction_result else 0,
+            "comment": articleAction_result.comment or 0 if articleAction_result else 0,
+            "approved": completedArticle_count
+        }
+        
         return {
-                "status": 1,
-                "msg": "Success",
-                "data":data
-            }
-       
+            "status": 1,
+            "msg": "Success",
+            "data": data
+        }
+    
     else:
         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}

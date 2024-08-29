@@ -5,7 +5,7 @@ from app.models import ApiTokens,User
 from app.api import deps
 from app.core.config import settings
 from app.core.security import get_password_hash,verify_password
-from datetime import datetime
+from datetime import datetime,timedelta
 from app.utils import *
 
 import random
@@ -43,6 +43,12 @@ async def login(*,db: Session = Depends(deps.get_db),
         auth_text = device_id + str(userName)
     else:
         auth_text = userName
+    sevenDays = datetime.now(settings.tz_IN)-timedelta(days=7)
+    
+    deleteOverDueArticle = db.query(Article).filter(Article.status==1,
+                                           Article.topic_ce_approved_at <= sevenDays ,
+                                          Article.published_at==None).update({"status":-1})
+    db.commit()
     
     deviceTypeData = [1,2]
     user = deps.authenticate(db,username = userName,
