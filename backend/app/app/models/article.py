@@ -14,7 +14,7 @@ class Article(Base):
     img_path = Column(String(500))
     header_image = Column(String(500))
     middle_image = Column(String(500))
-    description=Column(String(250))
+    description=Column(String(2000))
 
     footer_content = Column(Text)
     header_content = Column(Text)
