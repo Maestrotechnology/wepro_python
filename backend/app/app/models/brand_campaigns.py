@@ -9,7 +9,7 @@ class BrandCampaigns(Base):
     __tablename__ = "brand_campaigns"
 
     id=Column(Integer,primary_key=True)
-    description=Column(String(250))
+    description=Column(String(2000))
     title=Column(String(250))
     img_alter=Column(String(250))
     img_path = Column(Text)

@@ -1456,23 +1456,21 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 # get All sub editor unapproved Topic
                     
                 if section_type==1 and not article_status:
-                     print(getAllArticle.count())
                      getAllArticle = getAllArticle.filter(
-                                                            Article.topic_approved==None,
+                                                            Article.topic_approved!=4,
                                                           Article.topic_se_approved.in_([1,2,3,4]),
                                                         #   Article.editors_choice==2,
                                                         )
-                     print(getAllArticle.count())
                      
                 
                 if section_type==2 and  article_status:
 
-                    getAllArticle = getAllArticle.filter(Article.content_approved==article_status)
+                    getAllArticle = getAllArticle.filter(Article.content_se_approved==article_status)
                     
 
                 if section_type==1 and  article_status:
 
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
+                    getAllArticle = getAllArticle.filter(Article.topic_se_approved==article_status,
                                                         Article.content_se_approved==None,# Article.content_approved.not_in([1,2,3,4,5])
                                                         )
                 getAllNotify = getAllNotify.filter(

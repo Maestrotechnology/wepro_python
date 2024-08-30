@@ -115,21 +115,22 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
 async def send_mail_req_approval(db,email_type,article_id, user_id, subject,journalistName, receiver_email, message):
     from_email = "johnsonkoilraj53@gmail.com"
 
+    # Save email history to database
+    addEmailHistory = EmailHistory(
+        article_id=article_id ,
+        user_id=user_id ,
+        from_email=from_email,
+        subject=subject,
+        to_email=receiver_email,
+        email_type = email_type,
+        status=1,
+        created_at=datetime.now(),
+        message=message
+    )
+    db.add(addEmailHistory)
+    db.commit()
+
     try:
-        # Save email history to database
-        addEmailHistory = EmailHistory(
-            article_id=article_id ,
-            user_id=user_id ,
-            from_email=from_email,
-            subject=subject,
-            to_email=receiver_email,
-            email_type = email_type,
-            status=1,
-            created_at=datetime.now(),
-            message=message
-        )
-        db.add(addEmailHistory)
-        db.commit()
 
         # Load the email template from the file
         html_template = """
@@ -259,19 +260,19 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
         </html>
         """
 
-        # Send the email using the send_html_email function
-        send_html_email(
-            email_to=receiver_email,
-            subject_template=subject,
-            html_template=html_template,
-            environment={
-                "name": journalistName,
-                "message": message,
-                "subject": subject,
-                "current_year": datetime.now().year,
-                "email": receiver_email
-            }
-        )
+        # # Send the email using the send_html_email function
+        # send_html_email(
+        #     email_to=receiver_email,
+        #     subject_template=subject,
+        #     html_template=html_template,
+        #     environment={
+        #         "name": journalistName,
+        #         "message": message,
+        #         "subject": subject,
+        #         "current_year": datetime.now().year,
+        #         "email": receiver_email
+        #     }
+        # )
 
 
         # Send the email using the send_html_email function
@@ -288,7 +289,6 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
                 "email": receiver_email
             }
         )
-
         addEmailHistory.response = "success"
         db.commit()
 
@@ -297,8 +297,10 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
     except Exception as e:
         addEmailHistory.response = f"Failed to send email: {str(e)}"
         db.commit()
-        db.rollback()
         return {"status": 0, "msg": f"Failed to send email: {str(e)}"}
+
+        
+   
     
 # async def send_mail_req_approval(db,subject,receiver_email, message):  # Demo
 
