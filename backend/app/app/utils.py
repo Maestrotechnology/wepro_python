@@ -295,6 +295,8 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
         return {"status": 1, "msg": "Success"}
 
     except Exception as e:
+        db.rollback()
+        
         addEmailHistory.response = f"Failed to send email: {str(e)}"
         db.commit()
         return {"status": 0, "msg": f"Failed to send email: {str(e)}"}
