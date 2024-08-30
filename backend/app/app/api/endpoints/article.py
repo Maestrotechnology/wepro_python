@@ -620,6 +620,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                 getArticle.header_image = returnFilePath
 
                 db.commit()
+                print(getArticle.header_image)
             if middle_image:
 
                 uploadedFile = middle_image.filename

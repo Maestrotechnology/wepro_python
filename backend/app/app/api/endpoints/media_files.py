@@ -21,7 +21,7 @@ async def listMediaTopImage(db:Session = Depends(deps.get_db),
     if  user:
         getAllMediaTopImages = db.query(MediaTopImages).filter(MediaTopImages.status == 1)
         if media_file_id:
-            getAllMediaTopImages = getAllMediaTopImages.filter(MediaTopImages.media_file_id == media_file_id)
+            getAllMediaTopImages = getAllMediaTopImages.filter(MediaTopImages.media_files_id == media_file_id)
 
      
         getAllMediaTopImages = getAllMediaTopImages.order_by(MediaTopImages.id.desc())
