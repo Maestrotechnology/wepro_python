@@ -598,7 +598,7 @@ async def viewUser(db:Session=Depends(deps.get_db),
                 "joining_date":getUser.joining_date,
                 "user_status":getUser.is_active,
                 "user_type":getUser.user_type,
-                "resume_file":f'{settings.BASE_DOMAIN}{getUser.resume_path}',
+                "resume_file":f'{settings.BASE_DOMAIN}{getUser.resume_path}' if getUser.resume_path else None,
                 "img_path":f'{settings.BASE_DOMAIN}{getUser.img_path}',
                 "notification_count":notifyCount,
 

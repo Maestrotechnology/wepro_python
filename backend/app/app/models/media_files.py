@@ -9,7 +9,7 @@ class MediaFiles(Base):
     __tablename__ ="media_files"
 
     id=Column(Integer,primary_key=True)
-    description=Column(String(250))
+    description=Column(String(2000))
     title=Column(String(250))
     start_date=Column(Date)
     end_date=Column(Date)

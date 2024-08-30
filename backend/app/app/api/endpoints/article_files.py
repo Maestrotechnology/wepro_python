@@ -120,7 +120,7 @@ async def listArticleFiles(db:Session = Depends(deps.get_db),
                     "article_file_id":row.id,
                     "alter_img":row.img_alter,
                     "file_type":row.file_type,
-                    "img_path": f"{settings.BASE_DOMAIN}{row.img_path}",
+                    "img_path": f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else None,
                 })
         data=({
                "total_count": attachmentCount,"items": dataList})
