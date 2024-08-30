@@ -1612,7 +1612,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,
-                "is_editable":isEditable,
+                "is_editable":1 if row.updated_at else 0,
                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
 
                 "header_image":f'{settings.BASE_DOMAIN}{row.header_image}' if row.header_image else None,
