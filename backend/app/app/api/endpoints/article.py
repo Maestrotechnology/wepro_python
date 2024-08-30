@@ -1521,7 +1521,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
                                                                 )
 
                 if section_type==1 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved!=4)
+                    print(getAllArticle.count())
+                    getAllArticle = getAllArticle.filter(Article.content_se_approved==None)
+                    print(getAllArticle.count())
+
                     
                 
                 getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
