@@ -678,7 +678,7 @@ async def viewArticle(db:Session =Depends(deps.get_db),
         for eachFile in getAllFiles:
             articleFiles.append({
                 "image_id":eachFile.id,
-                "img_path":f'{settings.BASE_DOMAIN}{eachFile.img_path}',
+                "img_path":f'{settings.BASE_DOMAIN}{eachFile.img_path}' if eachFile.img_path else None,
                 "img_alter":eachFile.img_alter,
                 "file_type":eachFile.file_type,
             })
@@ -1595,6 +1595,14 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     topicUserType="CE" if topicUserType ==4 else "SE" if topicUserType==5 else None 
                     conUsertype="CE" if conUsertype ==4 else "SE" if conUsertype==5 else None 
 
+                    isEditable=0
+
+                    if row.topic_se_approved in [0,None,3] or row.topic_approved in [0,None,3]:
+                        isEditable=1
+
+                    if row.content_se_approved in [0,None,3] or row.content_approved in [0,None,3]:
+                        isEditable=1
+
 
                     dataList.append({
                 "article_id":row.id,
@@ -1604,6 +1612,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,
+                "is_editable":isEditable,
                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
 
                 "header_image":f'{settings.BASE_DOMAIN}{row.header_image}' if row.header_image else None,
