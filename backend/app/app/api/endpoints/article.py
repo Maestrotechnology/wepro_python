@@ -558,6 +558,10 @@ async def updateArticle(db:Session =Depends(deps.get_db),
 
             if not getArticle:
                 return {"status":0,"msg":"Article Not Found"}
+            
+            if not seo_url:
+                return {"status":0,"msg":"The SEO url is required"}
+
 
 
             if seo_url:
@@ -568,7 +572,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                 if existSeo:
                     return {"status":0,"msg":"The SEO url must be unique"}
             
-            print(getArticle.content_approved)
+            # print(getArticle.content_approved)
             
             # if user.user_type==8 and (getArticle.topic_approved not in [1,3] or getArticle.content_approved not in [1,3]):
             #     return {"status":0,"msg":"You are not allowed to update during the article review period."}
@@ -1416,7 +1420,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
                     # getAllArticle = getAllArticle.filter(Article.topic_approved==4 )f
                     getAllArticle = getAllArticle.filter(Article.topic_se_approved==4,
-                                                          Article.editors_choice!=1,
+                                                        #   Article.editors_choice!=1,
                                                           Article.content_se_approved==None,
                                                         # Article.content_approved.not_in([1,2,3,4,5])
                                                         )

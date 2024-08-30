@@ -40,7 +40,7 @@ class Article(Base):
     category_id = Column(Integer,ForeignKey("category.id")) 
     sub_category_id = Column(Integer,ForeignKey("sub_category.id")) 
     comment = Column(String(500))
-    topic_approved = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->CE Approved")
+    topic_approved = Column(TINYINT,comment="1->new,2-review,3-comment,4->CE Approved")
     content_approved = Column(TINYINT,comment="1->new,2-review,3-comment,4->-Published(CE Approved)")
     topic_se_approved = Column(TINYINT,default=1,comment="1->new,2-review,3-comment,4->SE approved")
     content_se_approved = Column(TINYINT,comment="1->new,2-review,3-comment,4->SE approved")
