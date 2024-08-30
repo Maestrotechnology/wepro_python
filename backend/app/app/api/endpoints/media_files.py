@@ -208,7 +208,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      brand_name:str=Form(None),
                      media_position:int=Form(None,description="1->Top,2-Bottom,3-right,4-Left"),
                      token:str=Form(...),
-                     content_type:int=Form(None,description="1->Ads,2->banners,3-youtube"),
+                     content_type:int=Form(None,description="1->Ads,2->banners,3-youtube,4-shorts"),
                      media_type:int=Form(None,description="1->img,2-shorts,3->Video")
                      ):
     
@@ -217,12 +217,12 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
     if user:
         if user.user_type in [1,2,7]:
 
-            if media_url:
+            # if media_url:
 
-                existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.media_url==media_url).first()
+            #     existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.media_url==media_url).first()
 
-                if existUrl:
-                    return {"status":0,"msg":"This url already used"}
+            #     if existUrl:
+            #         return {"status":0,"msg":"This url already used"}
 
             addCsmSettings = MediaFiles(media_url = media_url,
             title = title,
@@ -346,12 +346,12 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
             if not getMediaFiles:
                 return{"status":0,"msg":"Not Found"}
             
-            if media_url:
-                existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.id!=media_files_id,
-                                                  MediaFiles.media_url==media_url).first()
+            # if media_url:
+            #     existUrl =db.query(MediaFiles).filter(MediaFiles.status==1,MediaFiles.id!=media_files_id,
+            #                                       MediaFiles.media_url==media_url).first()
 
-                if existUrl:
-                    return {"status":0,"msg":"This url already used"}
+            #     if existUrl:
+            #         return {"status":0,"msg":"This url already used"}
             
             getMediaFiles.media_url = media_url
             getMediaFiles.start_date = start_date

@@ -251,7 +251,7 @@ async def categorywise_barchart(
             ).label('has_articles')
         ).outerjoin(
             article_count_subquery, Category.id == article_count_subquery.c.category_id
-        )
+        ).filter(Category.status==1)
 
         totalCount = getAllArticle.count()
         
@@ -592,7 +592,7 @@ async def contentBarchart(
         ArticleHistoryAlias = aliased(ArticleHistory)
         
         # Subquery for distinct articles and their content statuses
-        subquery = db.query(
+        subqueryHistory = db.query(
             Article.id.label('article_id'),
             ArticleHistoryAlias.content_status
         ).join(
@@ -601,54 +601,43 @@ async def contentBarchart(
             Article.status == 1,
             Article.topic_approved == 4,
             Article.save_for_later == 0
-        ).distinct(Article.id).subquery()
-        
-        # Main query to aggregate counts based on distinct articles
-        articleAction = db.query(
-            func.sum(case([(subquery.c.content_status == 2, 1)], else_=0)).label("review"),
-            func.sum(case([(subquery.c.content_status == 3, 1)], else_=0)).label("comment"),
-            func.sum(case([(subquery.c.content_status == 4, 1)], else_=0)).label("approved")
-        ).select_from(subquery)
-        
-        # Apply user-specific filters
-        if user.user_type == 4:
-            print(articleAction.first())
-            articleAction = articleAction.join(
-                ArticleHistoryAlias,
-                ArticleHistoryAlias.article_id == subquery.c.article_id
-            ).filter(
-                ArticleHistoryAlias.chief_editor_id == user.id,
-                ArticleHistoryAlias.is_editor == 2
-            )
-            print(articleAction.first())
+        ).distinct(Article.id)
 
+        if user.user_type==4:
+            subqueryHistory = subqueryHistory.filter( ArticleHistoryAlias.chief_editor_id == user.id,
+                ArticleHistoryAlias.is_editor == 2)
+            
             completedArticle = completedArticle.filter(
                 Article.chief_editor_id == user.id
             )
-        
-        if user.user_type == 5:
-            articleAction = articleAction.join(
-                ArticleHistoryAlias,
-                ArticleHistoryAlias.article_id == subquery.c.article_id
-            ).filter(
-                ArticleHistoryAlias.sub_editor_id == user.id,
-                ArticleHistoryAlias.is_editor == 2
-            )
+            
+
+        if user.user_type==5:
+            subqueryHistory = subqueryHistory.filter( ArticleHistoryAlias.sub_editor_id == user.id,
+                ArticleHistoryAlias.is_editor == 2)
+            
             completedArticle = completedArticle.filter(
                 Article.sub_editor_id == user.id
             )
-        
+
         if user.user_type == 8:
-            articleAction = articleAction.join(
-                Article,
-                Article.id == subquery.c.article_id
-            ).filter(
-                Article.created_by == user.id
-            )
+        
+            subqueryHistory = subqueryHistory.filter( Article.created_by == user.id)
             totalArticle = totalArticle.filter(Article.created_by == user.id)
             completedArticle = completedArticle.filter(
                 Article.created_by == user.id
             )
+            
+        subqueryHistory=subqueryHistory.subquery()
+        
+        # Main query to aggregate counts based on distinct articles
+        articleAction = db.query(
+            func.sum(case([(subqueryHistory.c.content_status == 2, 1)], else_=0)).label("review"),
+            func.sum(case([(subqueryHistory.c.content_status == 3, 1)], else_=0)).label("comment"),
+            func.sum(case([(subqueryHistory.c.content_status == 4, 1)], else_=0)).label("approved")
+        ).select_from(subqueryHistory)
+        
+        
         
         if user.user_type in [1, 2]:
             completedArticle = completedArticle.filter(
@@ -676,3 +665,4 @@ async def contentBarchart(
     
     else:
         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
+

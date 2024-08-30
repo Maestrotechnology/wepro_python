@@ -671,7 +671,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
             getAllArticleTopic = getAllArticleTopic.limit(limit).offset(offset).all()
 
             dataList=[]
-            name=["-","approved","comment"]
+            name=["-","approved","comment","-"]
 
             if getAllArticleTopic:
                 for row in getAllArticleTopic:

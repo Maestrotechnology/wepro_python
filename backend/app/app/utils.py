@@ -107,7 +107,7 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(from_email, "eelj txyx kive laag")  # Update with your email password
+            server.login(from_email, "bkdy ftou hcdx gwod")  # Update with your email password
             server.sendmail(from_email, email_to, msg.as_string())
     except Exception as e:
         print(f"Error sending email: {e}")
@@ -353,7 +353,7 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
 async def send_mail(db,receiver_email, message):  # Demo
     sender_email = "johnsonkoilraj53@gmail.com"
     receiver_email = receiver_email
-    password = "eelj txyx kive laag"
+    password = "bkdy ftou hcdx gwod"
 
     msg = MIMEText(message)
 

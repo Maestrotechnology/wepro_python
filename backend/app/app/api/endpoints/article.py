@@ -87,7 +87,7 @@ async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
                 title = "Editor Choice",
                 sub_editor_id = getTopic.created_by,
                 chief_editor_id = user.id,
-                suub_editor_notify =1,
+                sub_editor_notify =1,
                 status=1,
                 history_type=3,
                 is_editor = 1,
@@ -551,12 +551,6 @@ async def updateArticle(db:Session =Depends(deps.get_db),
     if user:
         if user.user_type :
 
-            existSeo = db.query(Article).filter(Article.status==1,
-                                                Article.id!=article_id,
-                                                Article.seo_url==seo_url).first()
-            
-            if existSeo:
-                return {"status":0,"msg":"The SEO url must be unique"}
             
 
             getArticle = db.query(Article).filter(Article.id==article_id,
@@ -564,6 +558,15 @@ async def updateArticle(db:Session =Depends(deps.get_db),
 
             if not getArticle:
                 return {"status":0,"msg":"Article Not Found"}
+
+
+            if seo_url:
+                existSeo = db.query(Article).filter(Article.status==1,
+                                                    Article.id!=article_id,
+                                                    Article.seo_url==seo_url).first()
+                
+                if existSeo:
+                    return {"status":0,"msg":"The SEO url must be unique"}
             
             print(getArticle.content_approved)
             
@@ -626,7 +629,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
 
                 addHistory = ArticleHistory(
                     article_id = article_id,
-                    comment =  f"Edit the {getArticle.topic} artcile content",
+                    comment =  f"Edit the {getArticle.topic} article content",
                     title=f"{user.name} -content update",
                     sub_editor_id =getArticle.sub_editor_id,
                     chief_editor_id =  getArticle.chief_editor_id,
@@ -892,10 +895,10 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             msgForCmt = [
                 "-",
                 "-",
-                "Your article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
-               "We wanted to inform you that the publication of your article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
-                f"We are delighted to inform you that your article topic has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
-                "We are delighted to inform you that your article topic has been approved by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                f"{getArticle.topic} article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
+               f"We wanted to inform you that the publication of {getArticle.topic} article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
+                f"We are delighted to inform you that {getArticle.topic} article topic has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                "We are delighted to inform you that {getArticle.topic} article topic has been approved by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
 
                     ]
 
@@ -1047,11 +1050,11 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
 
 
             if approved_status==4:
-                if user.user_type==4:
+                if user.user_type==5:
                     getArticle.content_se_approved = approved_status
                     getArticle.content_approved = 1
                     getArticle.content_se_approved_at=datetime.now(settings.tz_IN)
-                if user.user_type==5:
+                if user.user_type==4:
                     getArticle.published_at=datetime.now(settings.tz_IN)
                     getArticle.content_approved = approved_status
 
@@ -1067,9 +1070,9 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             msgForCmt = [
                 "-",
                 "-",
-                "Your article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
-               "We wanted to inform you that the publication of your article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
-                f"We are delighted to inform you that your article has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                f"{getArticle.topic} article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
+               f"We wanted to inform you that the publication of {getArticle.topic} article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
+                f"We are delighted to inform you that {getArticle.topic} article has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
                 "We are delighted to inform you that your article has been approved and Published by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
 
                     ]
@@ -1392,28 +1395,11 @@ async def listArticle(db:Session =Depends(deps.get_db),
             if sub_category_id:
                 getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
 
-   
-            # approval_pending = db.query(Article).filter(Article.status==1,
-            #                                               Article.content_approved!=5)
-            # approval_pending =approval_pending.filter(Article.created_by==user.id)
-
-            # approval_pending =approval_pending.count()
-
             notifyCount = 0
             deadlineArtcileCount = 0
             getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
 
 
-
-            # if article_status ==5 and not section_type:
-
-            #     getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
-            #                                          Article.content_approved==article_status)
-                
-
-            # if article_status==1 and not section_type:
-            #      getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
-            #                                              Article.content_approved==1))
             if user.user_type==4:
 
                 getAllArticle =  getAllArticle.filter(or_(Article.chief_editor_id==user.id,Article.chief_editor_id==None))
@@ -1465,10 +1451,14 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 # get All sub editor unapproved Topic
                     
                 if section_type==1 and not article_status:
-                     getAllArticle = getAllArticle.filter(Article.content_se_approved==None,
+                     print(getAllArticle.count())
+                     getAllArticle = getAllArticle.filter(
+                                                            Article.topic_approved==None,
                                                           Article.topic_se_approved.in_([1,2,3,4]),
-                                                          Article.editors_choice!=1,
+                                                        #   Article.editors_choice==2,
                                                         )
+                     print(getAllArticle.count())
+                     
                 
                 if section_type==2 and  article_status:
 
@@ -1486,7 +1476,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 notifyCount = getAllNotify
 
 
-            if user.user_type in [1,2,3]:
+            if user.user_type in [1,2,3,7]:
                 getDeadlineArticles = db.query(Article).filter(
                     Article.status==1,
                     Article.submition_date<=datetime.now(settings.tz_IN)
@@ -1583,8 +1573,15 @@ async def listArticle(db:Session =Depends(deps.get_db),
             if getAllArticle:
                 for row in getAllArticle:
 
-                    getArticleTop = db.query(ArticleHistory).filter(ArticleHistory.article_id==row.id).first()
-                    getArticleCon = db.query(ArticleHistory).filter(ArticleHistory.article_id==row.id).first()
+                    getArticleTop = db.query(ArticleHistory).join(User,ArticleHistory.created_by==User.id).\
+                        filter(ArticleHistory.article_id==row.id,ArticleHistory.topic_status==4,
+                               User.user_type.in_([4,5]),ArticleHistory.history_type==1).\
+                            order_by(ArticleHistory.id.desc()).first()
+                    
+                    getArticleCon = db.query(ArticleHistory).join(User,ArticleHistory.created_by==User.id).\
+                        filter(ArticleHistory.article_id==row.id,ArticleHistory.content_status==4,
+                               User.user_type.in_([4,5]),ArticleHistory.history_type==2).\
+                            order_by(ArticleHistory.id.desc()).first()
 
                     topicUserType = getArticleTop.createdBy.user_type if getArticleTop and getArticleTop.created_by else None
                     conUsertype = getArticleCon.createdBy.user_type if getArticleCon and getArticleCon.created_by else None

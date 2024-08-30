@@ -125,14 +125,14 @@ async def signUp(db:Session = Depends(deps.get_db),
         createUsers.img_path = returnFilePath
 
         db.commit()
-    
+        
+    subject = "Sign-Up Request Received"
+    comment = "Thank you for requesting to sign up! We have received your request, and our team will review it shortly. You will hear from us soon with the next steps."
 
-    subject ="Sign-Up Confirmed"
-    comment="Thank you for signing up! We appreciate your interest and look forward to connecting with you soon. Our team will reach out to you shortly. "
     mailForSignupUpdate = await send_mail_req_approval(
     db,5,None,createUsers.id,subject,name,email,comment
     )
-    return {"status":1,"msg":comment}
+    return {"status":1,"msg":"Your account creation request has been successfully submitted."}
 
 
 @router.post("/create_user")
@@ -240,10 +240,10 @@ async def createUser(db:Session = Depends(deps.get_db),
                     f"Congratulations! Your account has been successfully created."
                     f"You can now proceed with accessing the platform and utilizing the available resources. "
                     f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
-                    "<div style='padding-left: 15px;'>"
+                    "<div>"
                     "<p style='margin: 0;'>Login Credentials:</p>"
-                    "<p style='margin: 0;'>User Name: {user_name}</p>"
-                    "<p style='margin: 0;'>Password: {password}</p>"
+                    f"<p style='margin: 0;'>User Name: {user_name}</p>"
+                    f"<p style='margin: 0;'>Password: {password}</p>"
                     "</div>")
 
             subject = f"Account Creation"
@@ -415,8 +415,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
                     f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
                     "<div>"
                     "<p style='margin: 0;'>Login Credentials:</p>"
-                    "<p style='margin: 0;'>User Name: {user_name}</p>"
-                    "<p style='margin: 0;'>Password: {password}</p>"
+                    f"<p style='margin: 0;'>User Name: {user_name}</p>"
+                    f"<p style='margin: 0;'>Password: {password}</p>"
                     "</div>")
 
                 if comment:
@@ -684,7 +684,7 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
                 addNotification = Notification(
                 user_id = getUser.id,
                 comment =f'{user.name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.name}. ' ,
-                title = f'{user.name}({userTypeData[user.user_type]})- Account Approved',
+                title = f'{user.name}({userTypeData[user.user_type]}) - Account Approved',
                 status=1,
                 admin_notify=1,
                 notification_type=4,
@@ -720,21 +720,24 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
 
             if approval_status ==-1 and not comment:
                 getUser.rejected_by=user.id
+                getUser.status=-1
                 getUser.rejected_at = datetime.now(settings.tz_IN)
                 db.commit()
-            #     message = (
-            #         "We regret to inform you that your request for account creation has been rejected. "
-            #         "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
-            #         "please contact us for more details."
-            #     )
+            if approval_status ==-1 and not comment:
+            
+                message = (
+                    "We regret to inform you that your request for account creation has been rejected. "
+                    "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
+                    "please contact us for more details."
+                )
 
-            # approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
-            # subject = f"Journalist Account {approvalSts[approval_status]}"
-            # sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
-            #     receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
-            #     message=message,
-            # )
-            # print(sendNotifyEmail)
+
+                approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
+                subject = f"User Account {approvalSts[approval_status]}"
+                sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=getUser.id,
+                    receiver_email=getUser.email,subject=subject,journalistName=getUser.name,
+                    message=message,
+                )
 
             return {"status":1,"msg":"success"}
         else:
