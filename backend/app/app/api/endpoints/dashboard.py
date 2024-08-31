@@ -579,7 +579,6 @@ async def contentBarchart(
             Article.status == 1,
             Article.save_for_later == 0,
             Article.topic_approved == 4,
-            Article.content_approved.isnot(None)
         )
         
         completedArticle = db.query(func.count(distinct(Article.id))).filter(
@@ -604,6 +603,8 @@ async def contentBarchart(
         ).distinct(Article.id)
 
         if user.user_type==4:
+            
+            totalArticle = totalArticle.filter(Article.content_approved.isnot(None))
             subqueryHistory = subqueryHistory.filter( ArticleHistoryAlias.chief_editor_id == user.id,
                 ArticleHistoryAlias.is_editor == 2)
             
@@ -613,6 +614,8 @@ async def contentBarchart(
             
 
         if user.user_type==5:
+            totalArticle = totalArticle.filter(Article.content_se_approved.isnot(None))
+
             subqueryHistory = subqueryHistory.filter( ArticleHistoryAlias.sub_editor_id == user.id,
                 ArticleHistoryAlias.is_editor == 2)
             

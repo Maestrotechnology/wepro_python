@@ -1274,7 +1274,7 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
 
             addHistory = ArticleHistory(
                 article_id = article_id,
-                comment = f"Payment of {amount} paid for the article" if not comment else comment,
+                comment = f"Payment of {amount} paid for the {getArticle.topic} article" if not comment else comment,
                 title=f'{user.user_name}(HR)-Payment Update',
                 journalist_id = getArticle.created_by ,
                 journalist_notify = 1,
