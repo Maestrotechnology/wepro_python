@@ -314,12 +314,12 @@ async def updateUser (db:Session=Depends(deps.get_db),
     if user:
         if user:
      
-            if user_id and user.user_type not in [1,2,3,6]:
-                return {"status":0,"msg":"You're not allowed to update the user."}
-            elif not user_id:
-                userId = user.id
-            else:
-                userId =user_id
+            # if user_id and user.user_type not in [1,2,3,6]:
+            #     return {"status":0,"msg":"You're not allowed to update the user."}
+            # elif not user_id:
+            #     userId = user.id
+            # else:
+            userId =user_id
 
             if deps.contains_emoji(user_name):
                 return {"status":0,"msg":"Emojis are not allowed to use."}
@@ -683,8 +683,8 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
 
                 addNotification = Notification(
                 user_id = getUser.id,
-                comment =f'{user.name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.name}. ' ,
-                title = f'{user.name}({userTypeData[user.user_type]}) - Account Approved',
+                comment =f'{user.user_name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.user_name}. ' ,
+                title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
                 status=1,
                 admin_notify=1,
                 notification_type=4,

@@ -44,7 +44,7 @@ async def addCheckedContent(db:Session=Depends(deps.get_db),
             if content_type==3:
                 getArticle.ce_footer_checkbox=1
 
-        getArticle.updated_at = datetime.now(settings.tz_IN)
+        # getArticle.updated_at = datetime.now(settings.tz_IN)
         getArticle.updated_by = user.id
 
         db.commit()
@@ -80,7 +80,7 @@ async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
             db.commit()
 
             name=["-","approved","comment"]
-            comment =comment or f"{user.name}(Chief Editor) {name[is_approved]} {getTopic.topic}"
+            comment =comment or f"{user.user_name}(Chief Editor) {name[is_approved]} {getTopic.topic}"
             addHistory = ArticleHistory(
                     # comment = f" {approvedStatus[approved_status]}" if not comment else comment,
                 comment = comment ,
@@ -102,7 +102,7 @@ async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
                 addNotification = Notification(
                     topic_id = getTopic.id,
                     comment =f"The Topic is {getTopic.topic}" ,
-                    title=f'{user.name}(Chief Editor)-Approved New Topic',
+                    title=f'{user.user_name}(Chief Editor)-Approved New Topic',
                     status=1,
                     notification_type=4,
                     created_at =datetime.now(settings.tz_IN),
@@ -151,8 +151,8 @@ async def chooseEditorsTopics(db:Session=Depends(deps.get_db),
                 status=1,
                 topic_approved = 4 ,
                 topic_se_approved = 4 ,
-                content_se_approved=1
-                # topic_ce_approved_at = datetime.now(settings.tz_IN)
+                # content_se_approved=1
+                topic_ce_approved_at = datetime.now(settings.tz_IN)
                 # content_approved = 1 if getTopic else None
                 
             )
@@ -251,7 +251,7 @@ async def sendTopicReq(db:Session=Depends(deps.get_db),
                         article_id = addArticle.id,
                         comment = comment,
                         journalist_id = addArticle.created_by ,
-                        title = f"{user.name} Topic Requested",
+                        title = f"{user.user_name} Topic Requested",
                         sub_editor_notify = 1,
                         chief_editor_notify =0,
                         journalist_notify = 0,
@@ -329,7 +329,7 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
                     return {"status":0,"msg":"This Topic is Not available"}
                 
 
-            getArticle.updated_at = datetime.now(settings.tz_IN)
+            # getArticle.updated_at = datetime.now(settings.tz_IN)
             getArticle.article_topic_id = topic_id
             getArticle.topic = topic if not getTopic else getTopic.topic
             getArticle.category_id = category_id if not getTopic else getTopic.category_id
@@ -351,7 +351,7 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
                 addHistory = ArticleHistory(
                         article_id = getArticle.id,
                         comment = comment,
-                        title = f"{user.name} Topic Requested",
+                        title = f"{user.user_name} Topic Requested",
 
                         journalist_id = getArticle.created_by ,
                         sub_editor_notify = 1,
@@ -594,6 +594,8 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.city_id=city_id
             getArticle.state_id=state_id
             getArticle.status=1
+            getArticle.save_for_later=0
+
             if not save_for_later:
                 getArticle.save_for_later=save_for_later
 
@@ -635,7 +637,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                 addHistory = ArticleHistory(
                     article_id = article_id,
                     comment =  f"Edit the {getArticle.topic} article content",
-                    title=f"{user.name} -content update",
+                    title=f"{user.user_name} -content update",
                     sub_editor_id =getArticle.sub_editor_id,
                     chief_editor_id =  getArticle.chief_editor_id,
                     journalist_id = getArticle.created_by ,
@@ -886,7 +888,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             
             approvedStatus =["-","new","Review","comment","Approved","CE Approved/Published",]
 
-            getArticle.updated_at = datetime.now(settings.tz_IN)
+            # getArticle.updated_at = datetime.now(settings.tz_IN)
 
             if submition_date:
                 getArticle.submition_date = submition_date
@@ -945,7 +947,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             addHistory = ArticleHistory(
                 article_id = article_id,
                 comment = f"{userType}-{msg}",
-                title= f'{user.name}-Change Topic Status ',
+                title= f'{user.user_name}-Change Topic Status ',
                 sub_editor_id = user.id if user.user_type==5 else getArticle.sub_editor_id,
                 chief_editor_id = user.id if user.user_type==4 else getArticle.chief_editor_id,
                 journalist_id = getArticle.created_by ,
@@ -1119,7 +1121,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                 article_id = article_id,
                 # comment = f" {approvedStatus[approved_status]}" if not comment else comment,
                 comment =msg ,
-                title= f'{user.name}-Change Content Status ',
+                title= f'{user.user_name}-Change Content Status ',
                 sub_editor_id = user.id if user.user_type==5 else getArticle.sub_editor_id,
                 chief_editor_id = user.id if user.user_type==4 else getArticle.chief_editor_id,
                 journalist_id = getArticle.created_by ,
@@ -1142,7 +1144,7 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                 addNotification = Notification(
                 article_id = article_id,
                 comment =f"Chief Editor Approved {getArticle.topic} article" ,
-                title=f'{user.name}(Chief Editor)- Article Approved',
+                title=f'{user.user_name}(Chief Editor)- Article Approved',
                 status=1,
                 admin_notify=1,
                 notification_type=2,
@@ -1182,7 +1184,7 @@ async def deadlineReminder(db:Session = Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"This article is not available."}
             
-            getArticle.updated_at = datetime.now(settings.tz_IN)
+            # getArticle.updated_at = datetime.now(settings.tz_IN)
 
 
             msgForCmt = f"Just a quick reminder that the deadline for your article on {getArticle.topic} is coming up on {getArticle.submition_date}. Please make sure to submit it by then to meet our publishing schedule."
@@ -1240,7 +1242,10 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
                                             Article.status == 1).first()
             
             if not getArticle:
-                return {"status":0,"msg":"Not found"}
+                return {"status":0,"msg":" Article Not found"}
+            
+            if getArticle.content_approved!=4:
+                return{"sttaus":0,"msg":"You cannot change the payment status until the article is published."}
 
             getUser =db.query(User).filter(User.id==getArticle.created_by).first()
 
@@ -1270,7 +1275,7 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
             addHistory = ArticleHistory(
                 article_id = article_id,
                 comment = f"Payment of {amount} paid for the article" if not comment else comment,
-                title=f'{user.name}(HR)-Payment Update',
+                title=f'{user.user_name}(HR)-Payment Update',
                 journalist_id = getArticle.created_by ,
                 journalist_notify = 1,
                 status=1,
@@ -1428,7 +1433,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     
                 if section_type==2 and  article_status:
 
-                    getAllArticle = getAllArticle.filter(Article.content_se_approved==4,Article.content_approved==article_status)
+                    getAllArticle = getAllArticle.filter(Article.save_for_later==0,Article.content_se_approved==4,Article.content_approved==article_status)
                     
 
                 if section_type==1 and  article_status:
@@ -1452,7 +1457,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 #get all sub editor unapproved content
                 
                 if section_type==2 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==4,Article.content_se_approved!=None)
+                    getAllArticle = getAllArticle.filter(Article.save_for_later==0,Article.topic_approved==4,Article.content_se_approved!=None)
 
                     
                 # get All sub editor unapproved Topic
@@ -1467,7 +1472,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 
                 if section_type==2 and  article_status:
 
-                    getAllArticle = getAllArticle.filter(Article.content_se_approved==article_status)
+                    getAllArticle = getAllArticle.filter(Article.save_for_later==0,Article.content_se_approved==article_status)
                     
 
                 if section_type==1 and  article_status:
@@ -1483,12 +1488,15 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 notifyCount = getAllNotify
 
 
-            if user.user_type in [1,2,3,7]:
+            if user.user_type in [1,2,3,6]:
                 getDeadlineArticles = db.query(Article).filter(
                     Article.status==1,
                     Article.submition_date<=datetime.now(settings.tz_IN)
                 ).count()
-
+                
+                if section_type==2 and article_status==4:
+                    getAllArticle = getAllArticle.filter(Article.content_approved==4,
+                                                                )
 
                 # is_deadline->1 show deadline reached article 
 
@@ -1515,14 +1523,18 @@ async def listArticle(db:Session =Depends(deps.get_db),
             if user.user_type ==8:
                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
 
+
+                if section_type==2 and article_status==4:
+                    getAllArticle = getAllArticle.filter(Article.content_approved==4,
+                                                                )
+
                 if section_type==2 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.topic_approved==4,
-                                                        #  Article.content_approved!=5, Article.content_approved!=None
-                                                        #   Article.content_approved!=None
+                    getAllArticle = getAllArticle.filter(
+                                                         Article.topic_approved==4,
                                                                 )
 
                 if section_type==1 and not article_status:
-                    getAllArticle = getAllArticle.filter(Article.content_se_approved==None)
+                    getAllArticle = getAllArticle.filter(Article.content_se_approved==None,Article.content_approved==None)
 
                     
                 

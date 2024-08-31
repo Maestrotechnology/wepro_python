@@ -9,7 +9,7 @@ class ArticleTopic(Base):
     __tablename__ = "article_topic"
 
     id=Column(Integer,primary_key=True)
-    description=Column(String(250))
+    description=Column(String(2000))
     comment=Column(String(250))
     topic=Column(String(250))
     category_id = Column(Integer,ForeignKey("category.id")) 

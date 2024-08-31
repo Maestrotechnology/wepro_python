@@ -9,7 +9,7 @@ class ArticleHistory(Base):
 
     id=Column(Integer,primary_key=True)
     
-    comment = Column(String(500))
+    comment = Column(Text)
     title = Column(String(500))
     article_id = Column(Integer,ForeignKey("article.id"),comment="article tab id")
     topic_id = Column(Integer,ForeignKey("article_topic.id"),comment="topic tab id")

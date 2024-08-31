@@ -27,7 +27,7 @@ async def createBrandCampaigns(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,7]:
+        if user.user_type in [1,2,7,6]:
 
             addBrandCam = BrandCampaigns(
             title = title,
@@ -76,7 +76,7 @@ async def updateBrandCampaigns(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,7]:
+        if user.user_type in [1,2,7,6]:
 
             getBrandCampaigns = db.query(BrandCampaigns).filter(BrandCampaigns.id==brand_campaigns_id).first()
 
@@ -186,7 +186,7 @@ async def viewBrandCampaigns(db:Session =Depends(deps.get_db),
             "description":getBrandCam.description,
             "img_alter":getBrandCam.img_alter,
             "sort_order":getBrandCam.sort_order,
-            "media_file":f"{settings.BASE_DOMAIN}{getBrandCam.img_path}",
+            "media_file":f"{settings.BASE_DOMAIN}{getBrandCam.img_path}" if getBrandCam.img_path else None,
             "brand_url":getBrandCam.brand_url,
             "created_at":getBrandCam.created_at,                  
             "updated_at":getBrandCam.updated_at,                  

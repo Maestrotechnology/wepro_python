@@ -50,7 +50,7 @@ class Article(Base):
     editors_choice = Column(TINYINT,default=1,comment="1->No,2->yes")
 
     status=Column(TINYINT,comment="1->active,-1->deleted")
-    save_for_later=Column(TINYINT,default=0,comment="1->yes")
+    save_for_later=Column(TINYINT,comment="1->yes")
 
     created_at=Column(DateTime)
     content_created_at=Column(DateTime)

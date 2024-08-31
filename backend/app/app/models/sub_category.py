@@ -8,7 +8,7 @@ class SubCategory(Base):
     __tablename__="sub_category"
 
     id=Column(Integer,primary_key=True)
-    description=Column(String(250))
+    description=Column(String(2000))
     seo_url = Column(String(250))
     is_active = Column(TINYINT,comment = "1->active,0->inactive")
 
