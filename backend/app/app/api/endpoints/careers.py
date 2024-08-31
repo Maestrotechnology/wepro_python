@@ -24,8 +24,8 @@ async def createCareers(db:Session = Depends(deps.get_db),
                      employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper'),
                      experience_type:int=Form(...,description='1-ffresher, 2-experience'),
                      designation_type:int=Form(...,description="designation dropdown"),
-                     experience_year_from:str=Form(...),
-                     experience_year_to:str=Form(...),
+                     experience_year_from:str=Form(None),
+                     experience_year_to:str=Form(None),
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -73,8 +73,8 @@ async def updateCareers(db:Session = Depends(deps.get_db),
                      employement_type:int=Form(...,description='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper'),
                      experience_type:int=Form(...,description='1-ffresher, 2-experience'),
                      designation_type:int=Form(...,description="designation dropdown"),
-                     experience_year_from:str=Form(...),
-                     experience_year_to:str=Form(...),
+                     experience_year_from:str=Form(None),
+                     experience_year_to:str=Form(None),
                      ):
     
     user=deps.get_user_token(db=db,token=token)

@@ -857,7 +857,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
             getArticle = db.query(Article).filter(Article.status==1,
                                 Article.id==article_id).first()
-            
+            givenCmnt=comment
             
             if approved_status==2:
                 if user.user_type==4:
@@ -942,10 +942,10 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
             userType = "Sub Editor" if user.user_type==5 else "Chief Editor"
 
-            if comment:
-                msg= comment
-            else:
-                msg=f" {userType} changed status to {approvedStatus[approved_status]}"
+            if not givenCmnt:
+                # msg=f"changed status to {approvedStatus[approved_status]} for {getArticle.topic}"
+                msg=f"The {getArticle.topic} topic has been updated to {approvedStatus[approved_status]}"
+
             addHistory = ArticleHistory(
                 article_id = article_id,
                 comment = f"{userType}-{msg}",
@@ -1028,6 +1028,8 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
     
     if user:
         if user.user_type in [1,2,3,4,5]:
+
+            givenCmnt= comment
 
             getArticle = db.query(Article).filter(Article.status==1,
                                 Article.id==article_id).first()
@@ -1114,10 +1116,8 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
 
             userType = "Sub Editor" if user.user_type==5 else "Chief Editor"
 
-            if comment:
-                msg=comment
-            else:
-                msg=f" {userType} changed status to {approvedStatus[approved_status]}"
+            if not givenCmnt:
+                msg=f"The {getArticle.topic} article has been updated to {approvedStatus[approved_status]}"
 
             addHistory = ArticleHistory(
                 article_id = article_id,
@@ -1421,7 +1421,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 if section_type==2 and not article_status:
 
                     getAllArticle = getAllArticle.filter(Article.content_se_approved==4,Article.content_approved!=None)
-                    
+                  
                 # get All Chief editor unapproved Topic
 
                 if section_type==1 and not article_status:

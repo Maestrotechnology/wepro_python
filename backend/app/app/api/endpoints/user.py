@@ -501,7 +501,7 @@ async def listUser(db:Session =Depends(deps.get_db),
                 getJournalReq=db.query(User).filter(User.status==1,User.is_request==1).count()
                 journalistReq = getJournalReq
 
-            getAllUser = getAllUser.order_by(User.name.asc())
+            getAllUser = getAllUser.order_by(User.id.desc())
             
             userCount = getAllUser.count()
             totalPages,offset,limit = get_pagination(userCount,page,size)
