@@ -151,6 +151,8 @@ async def chooseEditorsTopics(db:Session=Depends(deps.get_db),
                 status=1,
                 topic_approved = 4 ,
                 topic_se_approved = 4 ,
+                content_approved=0,
+                # se_content_approved=0,
                 # content_se_approved=1
                 topic_ce_approved_at = datetime.now(settings.tz_IN)
                 # content_approved = 1 if getTopic else None
@@ -876,7 +878,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
                     getArticle.topic_Approved=1
                 if user.user_type==4:
                     getArticle.content_approved=0
-                    getArticle.se_content_approved=0
+                    # getArticle.se_content_approved=0
 
                     getArticle.topic_ce_approved_at=datetime.now(settings.tz_IN)
 
