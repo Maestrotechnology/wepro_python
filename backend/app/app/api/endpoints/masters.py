@@ -560,7 +560,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
 
             if user.user_type==4:
                 addArticleTopic.approved_by=user.id
-                addArticleTopic.is_approved=2
+                addArticleTopic.is_approved=1
                 db.commit()
 
                 addNotification = Notification(
@@ -668,7 +668,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
 
             totalCount = getAllArticleTopic.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllArticleTopic = getAllArticleTopic.limit(limit).offset(offset).all()
+            getAllArticleTopic = getAllArticleTopic.order_by(ArticleTopic.id.desc()).limit(limit).offset(offset).all()
 
             dataList=[]
             name=["-","approved","comment","-"]
