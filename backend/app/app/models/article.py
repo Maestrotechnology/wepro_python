@@ -13,6 +13,8 @@ class Article(Base):
     youtube_link=Column(String(500))
     img_path = Column(String(500))
     header_image = Column(String(500))
+    header_image_description = Column(Text)
+    middle_image_description = Column(Text)
     middle_image = Column(String(500))
     description=Column(String(2000))
 

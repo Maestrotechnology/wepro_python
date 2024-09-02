@@ -43,11 +43,11 @@ async def login(*,db: Session = Depends(deps.get_db),
         auth_text = device_id + str(userName)
     else:
         auth_text = userName
-    sevenDays = datetime.now(settings.tz_IN)-timedelta(days=7)
+    tenDays = datetime.now(settings.tz_IN)-timedelta(days=10)
     
     deleteOverDueArticle = db.query(Article).filter(Article.status==1,
-                                           Article.topic_ce_approved_at <= sevenDays ,
-                                          Article.published_at==None).update({"status":-1})
+                                           Article.topic_ce_approved_at <= tenDays ,
+                                          Article.updated_at==None).update({"status":-1}, synchronize_session='fetch')
     db.commit()
     
     deviceTypeData = [1,2]

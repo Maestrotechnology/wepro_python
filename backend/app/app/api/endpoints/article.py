@@ -44,7 +44,6 @@ async def addCheckedContent(db:Session=Depends(deps.get_db),
             if content_type==3:
                 getArticle.ce_footer_checkbox=1
 
-        # getArticle.updated_at = datetime.now(settings.tz_IN)
         getArticle.updated_by = user.id
 
         db.commit()
@@ -331,7 +330,6 @@ async def topicReqUpdate(db:Session=Depends(deps.get_db),
                     return {"status":0,"msg":"This Topic is Not available"}
                 
 
-            # getArticle.updated_at = datetime.now(settings.tz_IN)
             getArticle.article_topic_id = topic_id
             getArticle.topic = topic if not getTopic else getTopic.topic
             getArticle.category_id = category_id if not getTopic else getTopic.category_id
@@ -532,6 +530,8 @@ async def updateArticle(db:Session =Depends(deps.get_db),
                    middle_content:str=Form(None),
                    youtube_link:str=Form(None),
                    footer_content:str=Form(None),
+                   header_image_description:str=Form(None),
+                   middle_image_description:str=Form(None),
                    header_content:str=Form(None),
                    meta_title:str=Form(None),
                    submition_date:date=Form(None),
@@ -583,6 +583,9 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.article_title=article_title
             getArticle.youtube_link=youtube_link
             getArticle.img_alter=img_alter
+            getArticle.header_content=header_content
+            getArticle.header_image_description=header_image_description
+            getArticle.middle_image_description=middle_image_description
             getArticle.header_content=header_content
             getArticle.middle_content=middle_content
             getArticle.footer_content=footer_content
@@ -694,6 +697,8 @@ async def viewArticle(db:Session =Depends(deps.get_db),
             "article_id":getArticle.id,
             "save_for_later":getArticle.save_for_later,
             "topic":getArticle.topic,
+            "header_image_description":getArticle.header_image_description,
+            "middle_image_description":getArticle.middle_image_description,
             "se_header_checkbox":getArticle.se_header_checkbox,
             "se_middle_checkbox":getArticle.se_middle_checkbox,
             "se_footer_checkbox":getArticle.se_footer_checkbox,
@@ -758,8 +763,7 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
                        journalist_id:int=Form(None),
-                    #    topic_approval_status:int=Form(None,description="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold"),
-                    #    contant_approval_status:int=Form(None,description="0-not submitted,1->new,2->SE approved,3-CE Approved,4-On Hold"),
+                   
                        page:int=1,size:int = 10):
     
     user=deps.get_user_token(db=db,token=token)
@@ -783,12 +787,7 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
             if sub_category_id:
                 getDeadlineArticles = getDeadlineArticles.filter(Article.sub_category_id==sub_category_id)
 
-            # if topic_approval_status:
-            #     getDeadlineArticles = getDeadlineArticles.filter(Article.topic_approved==topic_approval_status)
-
-            # if contant_approval_status:
-                
-            #     getDeadlineArticles = getDeadlineArticles.filter(Article.content_approved==contant_approval_status)
+      
 
             totalCount = getDeadlineArticles.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
@@ -807,6 +806,9 @@ async def listDeadlineArticle(db:Session =Depends(deps.get_db),
                 "sub_category_id":row.sub_category_id,
                 "topic":row.topic,
                 "seo_url":row.seo_url,
+
+                "header_image_description":row.header_image_description,
+                "middle_image_description":row.middle_image_description,
                 "img_alter":row.img_alter,
                 "content":row.content,
                  "state_id":row.state_id,
@@ -890,7 +892,6 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             
             approvedStatus =["-","new","Review","comment","Approved","CE Approved/Published",]
 
-            # getArticle.updated_at = datetime.now(settings.tz_IN)
 
             if submition_date:
                 getArticle.submition_date = submition_date
@@ -941,6 +942,7 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
                 db.commit()
 
             userType = "Sub Editor" if user.user_type==5 else "Chief Editor"
+            msg = givenCmnt
 
             if not givenCmnt:
                 # msg=f"changed status to {approvedStatus[approved_status]} for {getArticle.topic}"
@@ -1070,9 +1072,6 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                     getArticle.content_approved = approved_status
 
             
-            getArticle.updated_at = datetime.now(settings.tz_IN)
-
-            
             approvedStatus =["-","new","Review","comment","approved","CE Approved/Published",]
 
             userType = "Chief" if user.user_type==4 else "Sub"
@@ -1115,7 +1114,8 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
                 db.commit()
 
             userType = "Sub Editor" if user.user_type==5 else "Chief Editor"
-
+            
+            msg = givenCmnt
             if not givenCmnt:
                 msg=f"The {getArticle.topic} article has been updated to {approvedStatus[approved_status]}"
 
@@ -1186,9 +1186,6 @@ async def deadlineReminder(db:Session = Depends(deps.get_db),
             if not getArticle:
                 return {"status":0,"msg":"This article is not available."}
             
-            # getArticle.updated_at = datetime.now(settings.tz_IN)
-
-
             msgForCmt = f"Just a quick reminder that the deadline for your article on {getArticle.topic} is coming up on {getArticle.submition_date}. Please make sure to submit it by then to meet our publishing schedule."
 
             journalistEmail = getArticle.createdBy.email if getArticle.created_by else None
@@ -1383,6 +1380,8 @@ async def listArticle(db:Session =Depends(deps.get_db),
     if user:
         if user:
             getAllArticle = db.query(Article).filter(Article.status ==1)
+
+            userCreationDt = user.created_at
             
             if name:
                 
@@ -1414,7 +1413,9 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             if user.user_type==4:
 
-                getAllArticle =  getAllArticle.filter(or_(Article.chief_editor_id==user.id,Article.chief_editor_id==None))
+                getAllArticle =  getAllArticle.filter(or_(Article.chief_editor_id==user.id,Article.chief_editor_id==None),
+                                                      Article.created_at>=userCreationDt
+                                                      )
 
                 #  get all Chief editor unapproved contents
                 
@@ -1454,7 +1455,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
 
             if user.user_type==5:
-                getAllArticle =  getAllArticle.filter(or_(Article.sub_editor_id==user.id,Article.sub_editor_id==None))
+                getAllArticle =  getAllArticle.filter(or_(Article.sub_editor_id==user.id,Article.sub_editor_id==None),
+                                                      Article.created_at>=userCreationDt
+                                                      
+                                                      )
 
                 #get all sub editor unapproved content
                 
@@ -1500,33 +1504,20 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     getAllArticle = getAllArticle.filter(Article.content_approved==4,
                                                                 )
 
-                # is_deadline->1 show deadline reached article 
-
-                if is_deadline==1:
-                     getAllArticle = getAllArticle.filter(
-                    Article.submition_date<=datetime.now(settings.tz_IN))
-                     
-
-                # list all artcile topic approved but not content approved
-
-
                 if section_type==2 and not article_status:
                     getAllArticle = getAllArticle.filter(Article.topic_approved==4,
                                                                 )
-                    
-                #list artcile topic unapproved
 
                 if section_type==1 and not article_status:
                     getAllArticle = getAllArticle.filter(Article.topic_approved!=4#  Article.created_by=109
                                                                 )
                     
-                deadlineArtcileCount = getDeadlineArticles
 
             if user.user_type ==8:
                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
 
 
-                if section_type==2 and article_status==4:
+                if section_type==2 and article_status==4 and not editor_type:
                     getAllArticle = getAllArticle.filter(Article.content_approved==4,
                                                                 )
 
@@ -1545,18 +1536,16 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 notifyCount = getAllNotify
 
 
-            # unapproved content article list -status based
 
             if editor_type:
 
                 if section_type==2 and article_status :
                     if editor_type==1:
 
-
                         getAllArticle = getAllArticle.filter(Article.topic_approved==4,
-                                                            Article.content_se_approved==article_status,
-                                                                    )
-                        
+                                                             Article.content_se_approved==article_status
+                                                                            )
+
                     if editor_type==2:
                         getAllArticle = getAllArticle.filter(Article.topic_approved==4,
                                                             Article.content_approved==article_status,
@@ -1568,9 +1557,10 @@ async def listArticle(db:Session =Depends(deps.get_db),
                     if editor_type==1:
 
 
-                        getAllArticle = getAllArticle.filter(Article.content_se_approved==None,
-                                                          Article.topic_se_approved==article_status,
-                                                          Article.editors_choice!=1)
+                        getAllArticle = getAllArticle.filter(Article.topic_se_approved==article_status,
+                                                             Article.content_se_approved==None,Article.content_approved==None)
+
+                    
                         
                     if editor_type==2:
                         getAllArticle =  getAllArticle.filter(Article.topic_se_approved==4,
@@ -1589,6 +1579,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             stsName = ["-","new","review","comment","Approved","CE Approved","Approved"]
             contentStsName = ["-","new","review","comment","Approved","CE Approved","Approved"]
+            contentCeStsName = ["-","new","review","comment","Published","CE Approved","Approved"]
             paymentStatus = ["-","Pending","Paid"]
             if getAllArticle:
                 for row in getAllArticle:
@@ -1626,9 +1617,11 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,
+                "topic_approved_at":row.topic_ce_approved_at,
                 "is_editable":1 if row.updated_at else 0,
                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
-
+                "header_image_description":row.header_image_description,
+                "middle_image_description":row.middle_image_description,
                 "header_image":f'{settings.BASE_DOMAIN}{row.header_image}' if row.header_image else None,
                 "middle_image":f'{settings.BASE_DOMAIN}{row.middle_image}' if row.middle_image else None,
                 "meta_description":row.meta_description,
@@ -1659,7 +1652,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "topic_approved":row.topic_approved,
                 "topic_status_name":stsName[row.topic_approved] if row.topic_approved else None ,
                 "content_approved":0 if row.topic_approved==5 and not row.content_approved else row.content_approved ,
-                "content_status_name":contentStsName[row.content_approved] if row.content_approved else None,
+                "content_status_name":contentCeStsName[row.content_approved] if row.content_approved else None,
                 "topic_approved_name":f"{getArticleTop.createdBy.user_name}({topicUserType})" if getArticleTop and getArticleTop.created_by else None ,
                 "content_approved_name":f"{getArticleCon.createdBy.user_name}({conUsertype})" if getArticleCon and getArticleCon.created_by else None ,
                 "created_at":row.created_at,                  

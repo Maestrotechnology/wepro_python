@@ -228,6 +228,8 @@ async def categorywise_barchart(
         #     )
         #     .group_by(Category.id)  # Group by Category ID to get the count for each category
         # )
+        userCreationDt = user.created_at
+
         article_count_subquery = db.query(
             Article.category_id,
             func.count(Article.id).label('article_count')
@@ -235,6 +237,10 @@ async def categorywise_barchart(
             Article.status == 1,
             Article.content_approved == 4,
         )
+
+        if user.user_type in [4,5]:
+            article_count_subquery=article_count_subquery.filter(Article.created_at>=userCreationDt)
+
 
         if user.user_type==8:
             article_count_subquery =article_count_subquery.filter(Article.created_by == user.id)
@@ -574,6 +580,8 @@ async def contentBarchart(
     user = deps.get_user_token(db=db, token=token)
     
     if user:
+        userCreationDt = user.created_at
+
         # Base queries
         totalArticle = db.query(func.count(distinct(Article.id))).filter(
             Article.status == 1,
@@ -583,7 +591,6 @@ async def contentBarchart(
         completedArticle = db.query(func.count(distinct(Article.id))).filter(
             Article.status == 1,
             Article.save_for_later == 0,
-            Article.content_approved == 4
         )
         
         # Aliased ArticleHistory
@@ -604,23 +611,32 @@ async def contentBarchart(
         if user.user_type==4:
             
             
-            totalArticle = totalArticle.filter(Article.save_for_later == 0,Article.content_approved.isnot(None))
+                                                    #   
+            totalArticle = totalArticle.filter(Article.save_for_later == 0,
+                                               Article.created_at>=userCreationDt,
+                                               Article.content_approved.isnot(None))
             subqueryHistory = subqueryHistory.filter( ArticleHistoryAlias.chief_editor_id == user.id,
                 ArticleHistoryAlias.is_editor == 2)
             
             completedArticle = completedArticle.filter(
-                Article.chief_editor_id == user.id
+                Article.chief_editor_id == user.id,
+            Article.content_approved == 4
+
             )
             
 
         if user.user_type==5:
-            totalArticle = totalArticle.filter(Article.save_for_later == 0,Article.content_se_approved.isnot(None))
+            totalArticle = totalArticle.filter(Article.save_for_later == 0,
+                                               Article.created_at>=userCreationDt,
+                                               Article.content_se_approved.isnot(None))
 
             subqueryHistory = subqueryHistory.filter( ArticleHistoryAlias.sub_editor_id == user.id,
                 ArticleHistoryAlias.is_editor == 2)
             
             completedArticle = completedArticle.filter(
-                Article.sub_editor_id == user.id
+                Article.sub_editor_id == user.id,
+                Article.content_se_approved == 4
+
             )
 
         if user.user_type == 8:
@@ -628,8 +644,12 @@ async def contentBarchart(
             subqueryHistory = subqueryHistory.filter( Article.created_by == user.id)
             totalArticle = totalArticle.filter(Article.created_by == user.id)
             completedArticle = completedArticle.filter(
-                Article.created_by == user.id
+            Article.content_approved == 4,
+                Article.created_by == user.id,
             )
+
+
+
             
         subqueryHistory=subqueryHistory.subquery()
         
@@ -642,7 +662,7 @@ async def contentBarchart(
         
         
         
-        if user.user_type in [1, 2]:
+        if user.user_type in [1, 2,6,7]:
             completedArticle = completedArticle.filter(
                 Article.content_approved == 4
             )

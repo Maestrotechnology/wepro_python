@@ -659,6 +659,10 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
         if user:
             getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1,ArticleTopic.is_choosed==None)
 
+            userCreationDt = user.created_at
+
+            if user.user_type in [4,5]:
+                getAllArticleTopic = getAllArticleTopic.filter(ArticleTopic.created_at>=userCreationDt)
 
             if topic:
                 getAllArticleTopic =  getAllArticleTopic.filter(ArticleTopic.topic.like("%"+topic+"%"))

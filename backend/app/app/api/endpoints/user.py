@@ -408,6 +408,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 db.commit()
 
             if approval_status ==2 :
+                login_url = "https://wepro.digital/wepro_admin" 
                 
                 message = (
                     f"Congratulations! Your request for account creation has been successfully approved. "
@@ -417,12 +418,16 @@ async def updateUser (db:Session=Depends(deps.get_db),
                     "<p style='margin: 0;'>Login Credentials:</p>"
                     f"<p style='margin: 0;'>User Name: {user_name}</p>"
                     f"<p style='margin: 0;'>Password: {password}</p>"
-                    "</div>")
+                    "</div>"
+                    f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                    )
 
                 if comment:
                     message = (f"{comment}"
                                f"    User Name: {user_name}\n"
-                    f"    Password: {password}\n")
+                    f"    Password: {password}\n"
+                    f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                    )
  
             if approval_status ==3 and not comment:
 
