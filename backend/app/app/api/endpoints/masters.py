@@ -7,7 +7,7 @@ from datetime import datetime
 from app.utils import *
 from datetime import datetime
 from typing import Optional
-
+from sqlalchemy import or_
 
 
 router = APIRouter()
@@ -551,7 +551,7 @@ async def addTopic(db:Session = Depends(deps.get_db),
             category_id = category_id,
             sub_category_id = sub_category_id,
             status=1,
-            is_approved=2 if user.user_type==5 else 1,
+            is_approved=None,
             created_at = datetime.now(settings.tz_IN),
             created_by = user.id)
 
@@ -657,7 +657,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     if user:
         if user:
-            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1,ArticleTopic.is_choosed==None)
+            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1)
 
             userCreationDt = user.created_at
 
@@ -668,7 +668,8 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
                 getAllArticleTopic =  getAllArticleTopic.filter(ArticleTopic.topic.like("%"+topic+"%"))
             
             if user.user_type==8:
-                getAllArticleTopic = getAllArticleTopic.filter(ArticleTopic.is_approved==1)
+                getAllArticleTopic = getAllArticleTopic.filter(or_(ArticleTopic.is_choosed==None,ArticleTopic.is_choosed==0),
+                                                               ArticleTopic.is_approved==1)
 
             totalCount = getAllArticleTopic.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
@@ -681,6 +682,7 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
                 for row in getAllArticleTopic:
                     dataList.append({
                     "article_topic_id":row.id,
+                    "editor_type":row.createdBy.user_type if row.created_by else None,
                 "topic":row.topic,
                 "description":row.description,
                 "is_approved":row.is_approved,

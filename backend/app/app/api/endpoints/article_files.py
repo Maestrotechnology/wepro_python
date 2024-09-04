@@ -9,11 +9,43 @@ from typing import List, Optional
 
 router = APIRouter()
 
+@router.post("/update_article_file")
+async def update_article_file(
+    db: Session = Depends(deps.get_db),
+    token: str = Form(...),
+    article_file_id: int = Form(...),
+    description: str = Form(None), 
+    upload_file:Optional[UploadFile] = File(None),
+):
+    user = deps.get_user_token(db=db, token=token)
+    if user:
+        checkArticleFiles = db.query(ArticleFiles).filter(
+            ArticleFiles.id == article_file_id, ArticleFiles.status == 1
+        ).first()
+
+        if not checkArticleFiles:
+            return {"status": 0, "msg": "No ArticleFiles record found."}
+        
+        checkArticleFiles.description=description
+        db.commit()
+        if upload_file:
+
+            uploadedFile = upload_file.filename
+            fName,*etn = uploadedFile.split(".")
+            filePath,returnFilePath = file_storage(upload_file,fName)
+            checkArticleFiles.img_path = returnFilePath
+
+            db.commit()
+        return {"status":1,"msg":"success"}
+    else:
+        return {"status": -1, "msg": "Sorry, your login session expired. Please login again."}
+
 @router.post("/upload_article_file")
 async def uploadFile(db:Session=Depends(deps.get_db),
                      token:str = Form(...),
                      article_id: int = Form(...),
                      img_alter: str = Form(None),
+                     description :str=Form(None),
                      upload_file: Optional[List[UploadFile]] = File(None),
                     
                      ):
@@ -38,13 +70,16 @@ async def uploadFile(db:Session=Depends(deps.get_db),
             "video": 4,
             "other": 5
         }
+
+        if isinstance(description, str):
+            description = description.split(',')
         if not checkArticle:
             return {"status":0,"msg":"No Article record found."}
         else:
             if upload_file:
                 row = 0
                 imageData =[]
-                for file in upload_file:
+                for file,eachDes in zip(upload_file,description):
                     uploadedFile = file.filename
                     fName,*etn = uploadedFile.split(".")
                     filePath,returnFilePath = file_storage(file,fName)
@@ -70,6 +105,7 @@ async def uploadFile(db:Session=Depends(deps.get_db),
                     imageData.append({
                         "img_path" : returnFilePath,
                         "img_alter" : img_alter,
+                        "description" : eachDes,
                         "created_at" : datetime.now(settings.tz_IN),
                         "status" : 1,
                         "file_type":file_type,
@@ -119,6 +155,7 @@ async def listArticleFiles(db:Session = Depends(deps.get_db),
                 dataList.append({
                     "article_file_id":row.id,
                     "alter_img":row.img_alter,
+                    "description":row.description,
                     "file_type":row.file_type,
                     "img_path": f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else None,
                 })

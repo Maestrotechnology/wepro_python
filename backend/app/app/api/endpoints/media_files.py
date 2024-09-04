@@ -205,6 +205,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      bottom_image:Optional[UploadFile] = File(None),
                      right_image:Optional[UploadFile] = File(None),
                      left_image:Optional[UploadFile] = File(None),
+                     is_left_remove:int=Form(None),
                      brand_name:str=Form(None),
                      media_position:int=Form(None,description="1->Top,2-Bottom,3-right,4-Left"),
                      token:str=Form(...),
@@ -308,6 +309,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      media_url:str=Form(None),
                      title:str=Form(None),
                      brand_name:str=Form(None),
+                     is_left_remove:int=Form(None),
 
                      start_date:date=Form(None),
                      end_date:date=Form(None),
@@ -418,6 +420,9 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                 filePath,returnFilePath = file_storage(left_image,fName)
                 getMediaFiles.left_image = returnFilePath
 
+                db.commit()
+            if is_left_remove==1:
+                getMediaFiles.left_image = None
                 db.commit()
 
 

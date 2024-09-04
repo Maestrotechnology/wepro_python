@@ -74,11 +74,13 @@ async def approvedEditorsTopics(db:Session=Depends(deps.get_db),
         if is_approved:
         
             getTopic.is_approved=is_approved
-            getTopic.comment=comment
+            getTopic.comment=f"{getTopic.topic}-{comment}"
             getTopic.approved_by=user.id
             db.commit()
 
             name=["-","approved","comment"]
+            if comment:
+                comment=f"{getTopic.topic}-{comment}"
             comment =comment or f"{user.user_name}(Chief Editor) {name[is_approved]} {getTopic.topic}"
             addHistory = ArticleHistory(
                     # comment = f" {approvedStatus[approved_status]}" if not comment else comment,
@@ -937,12 +939,15 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
 
             db.commit()
 
-            if comment:
-                getArticle.comment = comment
-                db.commit()
+            # if comment:
+            #     getArticle.comment = comment
+            #     db.commit()
 
             userType = "Sub Editor" if user.user_type==5 else "Chief Editor"
             msg = givenCmnt
+
+            if givenCmnt:
+                msg = f'{getArticle.topic} - {givenCmnt}'
 
             if not givenCmnt:
                 # msg=f"changed status to {approvedStatus[approved_status]} for {getArticle.topic}"
@@ -1109,13 +1114,17 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
 
             db.commit()
 
-            if comment:
-                getArticle.comment = comment
-                db.commit()
+            # if comment:
+            #     getArticle.comment = comment
+            #     db.commit()
 
             userType = "Sub Editor" if user.user_type==5 else "Chief Editor"
             
             msg = givenCmnt
+
+
+            if givenCmnt:
+                msg = f'{getArticle.topic} - {givenCmnt}'
             if not givenCmnt:
                 msg=f"The {getArticle.topic} article has been updated to {approvedStatus[approved_status]}"
 
@@ -1197,9 +1206,9 @@ async def deadlineReminder(db:Session = Depends(deps.get_db),
             db,2,getArticle.id,getArticle.created_by,subject,journalistName,journalistEmail,comment or msgForCmt
             )
 
-            if comment:
-                getArticle.comment = comment
-                db.commit()
+            # if comment:
+            #     getArticle.comment = comment
+            #     db.commit()
 
             addHistory = ArticleHistory(
                 article_id = article_id,

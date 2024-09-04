@@ -407,6 +407,38 @@ async def updateUser (db:Session=Depends(deps.get_db),
 
                 db.commit()
 
+
+            message =comment
+
+            if approval_status ==2 :
+                getUser.approved_by=user.id
+                getUser.is_request=approval_status
+
+                # getUser.user_name = user_name
+                getUser.approved_at = datetime.now(settings.tz_IN)
+
+
+                # if password:
+                #     getUser.password =  get_password_hash(password)
+
+                db.commit()
+
+                userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
+
+                addNotification = Notification(
+                user_id = getUser.id,
+                comment =f'{user.user_name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.user_name}. ' ,
+                title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
+                status=1,
+                admin_notify=1,
+                notification_type=4,
+                created_at =datetime.now(settings.tz_IN),
+                created_by = user.id
+
+                )
+                db.add(addNotification)
+                db.commit()
+
             if approval_status ==2 :
                 login_url = "https://wepro.digital/wepro_admin" 
                 
@@ -667,38 +699,37 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
         if user:
             getUser = db.query(User).filter(User.id == user_id,
                                             User.status == 1).first()
-            getUser.is_request=approval_status
-            db.commit()
+
 
             message =comment
 
-            if approval_status ==2 :
-                getUser.approved_by=user.id
+            # if approval_status ==2 :
+            #     getUser.approved_by=user.id
 
-                # getUser.user_name = user_name
-                getUser.approved_at = datetime.now(settings.tz_IN)
+            #     # getUser.user_name = user_name
+            #     getUser.approved_at = datetime.now(settings.tz_IN)
 
 
-                # if password:
-                #     getUser.password =  get_password_hash(password)
+            #     # if password:
+            #     #     getUser.password =  get_password_hash(password)
 
-                db.commit()
+            #     db.commit()
 
-                userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
+            #     userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
 
-                addNotification = Notification(
-                user_id = getUser.id,
-                comment =f'{user.user_name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.user_name}. ' ,
-                title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
-                status=1,
-                admin_notify=1,
-                notification_type=4,
-                created_at =datetime.now(settings.tz_IN),
-                created_by = user.id
+            #     addNotification = Notification(
+            #     user_id = getUser.id,
+            #     comment =f'{user.user_name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.user_name}. ' ,
+            #     title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
+            #     status=1,
+            #     admin_notify=1,
+            #     notification_type=4,
+            #     created_at =datetime.now(settings.tz_IN),
+            #     created_by = user.id
 
-                )
-                db.add(addNotification)
-                db.commit()
+            #     )
+            #     db.add(addNotification)
+            #     db.commit()
                 
             #     message = (
             #         f"Congratulations! Your request for account creation has been successfully approved. "
@@ -724,11 +755,15 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
             #     )
 
             if approval_status ==-1 and not comment:
+                getUser.is_request=approval_status
+                db.commit()
                 getUser.rejected_by=user.id
                 getUser.status=-1
                 getUser.rejected_at = datetime.now(settings.tz_IN)
                 db.commit()
             if approval_status ==-1 and not comment:
+                getUser.is_request=approval_status
+                db.commit()
             
                 message = (
                     "We regret to inform you that your request for account creation has been rejected. "

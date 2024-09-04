@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from app.models import *
 from app.api import deps
+from datetime import timedelta
 from app.utils import *
 
 router = APIRouter()
@@ -15,6 +16,46 @@ async def notificationCount(db:Session=Depends(deps.get_db),
     if user:
         if user:
             getNotify = db.query(ArticleHistory).filter(ArticleHistory.status == 1)
+
+            tenDays = datetime.now(settings.tz_IN)-timedelta(days=10)
+    
+            # deleteOverDueArticle = db.query(Article).filter(Article.status==1,
+            #                                     Article.topic_ce_approved_at <= tenDays ,
+            #                                     Article.updated_at==None).update({"status":-1}, synchronize_session='fetch')
+            # db.commit()
+
+            deleteOverDueArticle = db.query(Article).filter(Article.status==1,
+                                                Article.topic_ce_approved_at <= tenDays ,
+                                                Article.updated_at==None).all()
+            for article in deleteOverDueArticle:
+                article.status=-1
+                db.commit()
+                msg=f"The topic '{article.topic}' has exceeded the timeline, so it has been removed."
+
+                if article.article_topic_id:
+                    getArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.id==article.article_topic_id,
+                                                                    ArticleTopic.status==1).first()
+                    
+                    if getArticleTopic:
+                        getArticleTopic.is_choosed=0
+                        db.commit()
+
+                addHistory = ArticleHistory(
+                    article_id = article.id,
+                    comment = msg,
+                    title= "Topic Removal",
+                    sub_editor_id = user.id if user.user_type==5 else article.sub_editor_id,
+                    chief_editor_id = user.id if user.user_type==4 else article.chief_editor_id,
+                    journalist_id = article.created_by ,
+                    sub_editor_notify = 1,
+                    chief_editor_notify =1,
+                    journalist_notify = 1,
+                    status=1,
+                    history_type=4,
+                    created_at =datetime.now(settings.tz_IN)
+                )
+                db.add(addHistory)
+                db.commit()
 
             if user.user_type in [1,2]:
                 getNotify = db.query(Notification).filter(Notification.status==1,

@@ -23,7 +23,7 @@ class ArticleHistory(Base):
     topic_status = Column(TINYINT,comment="1->new,2-review,3-comment,4->approved")
     content_status = Column(TINYINT,comment="1->new,2-review,3-comment,4->approved")
     is_editor = Column(TINYINT,comment="1->Se,-2->Ce")
-    history_type=Column(TINYINT,comment="1->topic,2-content,3-editors_topic")
+    history_type=Column(TINYINT,comment="1->topic,2-content,3-editors_topic,4-Overdue")
     status=Column(TINYINT,comment="1->active,-1->deleted")
 
     created_at=Column(DateTime)
