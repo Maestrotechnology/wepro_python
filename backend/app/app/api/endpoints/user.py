@@ -398,93 +398,93 @@ async def updateUser (db:Session=Depends(deps.get_db),
                     checkUserId.resume_path = returnFilePath
 
                 
-            if img_path:
+                if img_path:
 
-                uploadedFile = img_path.filename
-                fName,*etn = uploadedFile.split(".")
-                filePath,returnFilePath = file_storage(img_path,fName)
-                checkUserId.img_path = returnFilePath
+                    uploadedFile = img_path.filename
+                    fName,*etn = uploadedFile.split(".")
+                    filePath,returnFilePath = file_storage(img_path,fName)
+                    checkUserId.img_path = returnFilePath
 
-                db.commit()
-
-
-            message =comment
-
-            if approval_status ==2 :
-                getUser.approved_by=user.id
-                getUser.is_request=approval_status
-
-                # getUser.user_name = user_name
-                getUser.approved_at = datetime.now(settings.tz_IN)
+                    db.commit()
 
 
-                # if password:
-                #     getUser.password =  get_password_hash(password)
+                message =comment
 
-                db.commit()
+                if approval_status ==2 :
+                    checkUserId.approved_by=user.id
+                    checkUserId.is_request=approval_status
 
-                userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
+                    # checkUserId.user_name = user_name
+                    checkUserId.approved_at = datetime.now(settings.tz_IN)
 
-                addNotification = Notification(
-                user_id = getUser.id,
-                comment =f'{user.user_name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.user_name}. ' ,
-                title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
-                status=1,
-                admin_notify=1,
-                notification_type=4,
-                created_at =datetime.now(settings.tz_IN),
-                created_by = user.id
 
-                )
-                db.add(addNotification)
-                db.commit()
+                    # if password:
+                    #     checkUserId.password =  get_password_hash(password)
 
-            if approval_status ==2 :
-                login_url = "https://wepro.digital/wepro_admin" 
-                
-                message = (
-                    f"Congratulations! Your request for account creation has been successfully approved. "
-                    f"You can now proceed with accessing the platform and utilizing the available resources. "
-                    f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
-                    "<div>"
-                    "<p style='margin: 0;'>Login Credentials:</p>"
-                    f"<p style='margin: 0;'>User Name: {user_name}</p>"
-                    f"<p style='margin: 0;'>Password: {password}</p>"
-                    "</div>"
-                    f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                    db.commit()
+
+                    userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
+
+                    addNotification = Notification(
+                    user_id = checkUserId.id,
+                    comment =f'{user.user_name} approved the {userTypeData[checkUserId.user_type]} account creation for {checkUserId.user_name}. ' ,
+                    title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
+                    status=1,
+                    admin_notify=1,
+                    notification_type=4,
+                    created_at =datetime.now(settings.tz_IN),
+                    created_by = user.id
+
                     )
+                    db.add(addNotification)
+                    db.commit()
 
-                if comment:
-                    message = (f"{comment}"
-                               f"    User Name: {user_name}\n"
-                    f"    Password: {password}\n"
-                    f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
-                    )
+                if approval_status ==2 :
+                    login_url = "https://wepro.digital/wepro_admin" 
+                    
+                    message = (
+                        f"Congratulations! Your request for account creation has been successfully approved. "
+                        f"You can now proceed with accessing the platform and utilizing the available resources. "
+                        f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+                        "<div>"
+                        "<p style='margin: 0;'>Login Credentials:</p>"
+                        f"<p style='margin: 0;'>User Name: {user_name}</p>"
+                        f"<p style='margin: 0;'>Password: {password}</p>"
+                        "</div>"
+                        f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                        )
+
+                    if comment:
+                        message = (f"{comment}"
+                                f"    User Name: {user_name}\n"
+                        f"    Password: {password}\n"
+                        f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                        )
  
-            if approval_status ==3 and not comment:
+                if approval_status ==3 and not comment:
 
-                message = (
-                    "Your application is currently under review as part of the interview process. "
-                    "We will keep you updated on the progress and notify you once the review is complete. "
-                    "Thank you for your patience, and please feel free to contact us if you have any questions."
-                )
+                    message = (
+                        "Your application is currently under review as part of the interview process. "
+                        "We will keep you updated on the progress and notify you once the review is complete. "
+                        "Thank you for your patience, and please feel free to contact us if you have any questions."
+                    )
 
-            if approval_status ==-1 and not comment:
-   
-                message = (
-                    "We regret to inform you that your request for account creation has been rejected. "
-                    "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
-                    "please contact us for more details."
-                )
+                if approval_status ==-1 and not comment:
+    
+                    message = (
+                        "We regret to inform you that your request for account creation has been rejected. "
+                        "We appreciate your interest and effort. If you have any questions or need feedback on your application, "
+                        "please contact us for more details."
+                    )
 
-            if approval_status:
+                if approval_status:
 
-                approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
-                subject = f"User Account {approvalSts[approval_status]}"
-                sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=checkUserId.id,
-                    receiver_email=checkUserId.email,subject=subject,journalistName=checkUserId.name,
-                    message=message,
-                )
+                    approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
+                    subject = f"User Account {approvalSts[approval_status]}"
+                    sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=checkUserId.id,
+                        receiver_email=checkUserId.email,subject=subject,journalistName=checkUserId.name,
+                        message=message,
+                    )
 
             return {"status":1,"msg":"User successfully updated."}
           

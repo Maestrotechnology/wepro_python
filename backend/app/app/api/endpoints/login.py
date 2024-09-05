@@ -43,12 +43,7 @@ async def login(*,db: Session = Depends(deps.get_db),
         auth_text = device_id + str(userName)
     else:
         auth_text = userName
-    tenDays = datetime.now(settings.tz_IN)-timedelta(days=10)
-    
-    deleteOverDueArticle = db.query(Article).filter(Article.status==1,
-                                           Article.topic_ce_approved_at <= tenDays ,
-                                          Article.updated_at==None).update({"status":-1}, synchronize_session='fetch')
-    db.commit()
+
     
     deviceTypeData = [1,2]
     user = deps.authenticate(db,username = userName,
@@ -199,7 +194,6 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
     user = db.query(User).filter( User.email == email,
                                   User.status == 1)
     checkUser = user.first()
-    print(checkUser.id)
     if checkUser:
         if checkUser.is_active ==0:
             return {"status":0,
