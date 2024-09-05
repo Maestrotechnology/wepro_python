@@ -47,6 +47,7 @@ def get_by_user(db: Session, *, username: str):
                         User.phone == username,
                         User.email == username,
                         User.alternative_no == username) ,User.status == 1).first()
+        
         return getUser
 
 

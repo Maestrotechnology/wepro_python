@@ -1239,7 +1239,7 @@ async def deadlineReminder(db:Session = Depends(deps.get_db),
 @router.post("/change_payment_status")
 async def changePaymentStatus(db:Session=Depends(deps.get_db),
                              token:str=Form(...),article_id:int=Form(...),
-                             amount:int=Form(...),
+                             amount:float=Form(...),
                              payment_status:int=Form(...,description="2-paid"),
                              comment:str=Form(None)):
     
@@ -1375,7 +1375,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                        state_id:int=Form(None),
                        sub_category_id:int=Form(None),
                        journalist_id:int=Form(None),
-                       name:str=Form(None),
+                       journalist_name:str=Form(None),
                        editor_type:int=Form(None,description="1-se,2-ce"),
                        section_type:int=Form(None,description="1-Topic,2-Content"),
                        topic:str=Form(None),
@@ -1392,9 +1392,9 @@ async def listArticle(db:Session =Depends(deps.get_db),
 
             userCreationDt = user.created_at
             
-            if name:
+            if journalist_name:
                 
-                getAllArticle = getAllArticle.join(User,Article.created_by==User.id).filter(User.name.like("%"+name+"%"))
+                getAllArticle = getAllArticle.join(User,Article.created_by==User.id).filter(User.user_name.like("%"+journalist_name+"%"))
             if topic:
                 getAllArticle =  getAllArticle.filter(Article.topic.like("%"+topic+"%"))
 

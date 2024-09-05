@@ -76,7 +76,7 @@ async def uploadFile(db:Session=Depends(deps.get_db),
         if not checkArticle:
             return {"status":0,"msg":"No Article record found."}
         else:
-            if upload_file:
+            if upload_file and description:
                 row = 0
                 imageData =[]
                 for file,eachDes in zip(upload_file,description):
@@ -106,6 +106,54 @@ async def uploadFile(db:Session=Depends(deps.get_db),
                         "img_path" : returnFilePath,
                         "img_alter" : img_alter,
                         "description" : eachDes,
+                        "created_at" : datetime.now(settings.tz_IN),
+                        "status" : 1,
+                        "file_type":file_type,
+                        "article_id":article_id,
+                        "created_by":user.id
+                    })
+                    # print(returnFilePath)
+                    row += 1
+                
+                try:
+                    with db as conn:
+                        conn.execute(ArticleFiles.__table__.insert().values(imageData))
+                        conn.commit()
+                    return({"status": 1,"msg": "Uploaded Successfully."})
+                
+                except Exception as e:
+                    
+                    print(f"Error during bulk insert: {str(e)}")
+                    return {"status": 0,"msg": "Failed to insert image"}
+            if upload_file and not description:
+                row = 0
+                imageData =[]
+                for file in upload_file:
+                    uploadedFile = file.filename
+                    fName,*etn = uploadedFile.split(".")
+                    filePath,returnFilePath = file_storage(file,fName)
+
+                    splited_filename = img_alter.split(',') if img_alter else None
+
+
+                    file_type = file_type_int_map["other"]  # Default to 'other' if type is not recognized
+                    content_type = file.content_type.lower()
+
+                    # Check for GIF first
+                    if content_type in file_type_map["gif"]:
+                        file_type = file_type_int_map["gif"]
+                    else:
+                        for key, values in file_type_map.items():
+                            # if key != "gif" and any(content_type.startswith(value.split('/')[0]) for value in values):
+                            if key != "gif" and content_type in values:
+                                file_type = file_type_int_map[key]
+                                break
+
+                    
+
+                    imageData.append({
+                        "img_path" : returnFilePath,
+                        "img_alter" : img_alter,
                         "created_at" : datetime.now(settings.tz_IN),
                         "status" : 1,
                         "file_type":file_type,

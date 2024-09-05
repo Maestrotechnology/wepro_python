@@ -754,6 +754,9 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
             #         "Thank you for your patience, and please feel free to contact us if you have any questions."
             #     )
 
+            if not getUser:
+                return {"status":0,"msg":"No user Found"}
+
             if approval_status ==-1 and not comment:
                 getUser.is_request=approval_status
                 db.commit()
