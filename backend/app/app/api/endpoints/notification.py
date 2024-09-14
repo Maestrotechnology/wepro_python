@@ -155,13 +155,14 @@ async def listNotification(db:Session =Depends(deps.get_db),
             totalPages,offset,limit = get_pagination(totalCount,page,size)
             getAllNotify = getAllNotify.order_by(ArticleHistory.id.desc()).limit(limit).offset(offset).all()
 
-            historyName = ["-","TOPIC","CONTENT","EDITORS CHOICE"]
+            historyName = ["-","TOPIC","CONTENT","EDITORS CHOICE","Over Due"]
             stsName = ["-","new","review","comment","Approved","CE Approved","Approved"]
 
 
             dataList=[]
             if getAllNotify:
                 for row in getAllNotify:
+                    print(row.id)
                     dataList.append({
                 "article_history_id":row.id,
                 "title":row.title,

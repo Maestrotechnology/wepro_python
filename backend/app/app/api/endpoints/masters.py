@@ -98,6 +98,7 @@ async def updateCategory(db:Session = Depends(deps.get_db),
     
     if user:
         if user.user_type in [1,2,6]:
+            cat = [5,21,24,55,25,28,29,30,27,56]
 
             existTitle = db.query(Category).filter(Category.id!=category_id,
                                                    Category.title==title,Category.status==1).first()
