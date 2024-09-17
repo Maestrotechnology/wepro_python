@@ -162,7 +162,8 @@ async def categoryDropDown(db:Session=Depends(deps.get_db),
     if user:
         if user:
 
-            getCategory = db.query(Category).filter(Category.status == 1,Category.is_active==1)
+            getCategory = db.query(Category).filter(Category.status == 1,Category.is_active==1,
+                                                 Category.id.in_([5,21,24,55,25,28,29,30,27,56])   )
 
 
             # if not is_report:
