@@ -1,1 +1,1 @@
-from .quotation import Quotations,UpdateQuotation,UpdateOrder
+from .quotation import ListTerms

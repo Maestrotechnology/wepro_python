@@ -7,8 +7,8 @@ from datetime import datetime
 
 
 
-# class ListTerms(BaseModel):
-#     terms_id:int
+class ListTerms(BaseModel):
+    terms_id:int
 
 # class AccessoriesList(BaseModel):
 #     quantity:int=0

@@ -1,9 +1,10 @@
 from fastapi import APIRouter
-from .endpoints import careers,article_files,dashboard,dropdown,report,login, media_files,user,masters,brand_campaigns,cms_settings,notification,article
+from .endpoints import careers,article_files,pro_Series,dashboard,dropdown,report,login, media_files,user,masters,brand_campaigns,cms_settings,notification,article
 
 
 api_router = APIRouter()
 
+api_router.include_router(pro_Series.router, prefix="/pro_stories",tags=["ProStories"])
 api_router.include_router(article_files.router, tags=["ArticleFiles"])
 api_router.include_router(careers.router, tags=["Carreers"])
 api_router.include_router(dashboard.router, tags=["Dashboard"])
