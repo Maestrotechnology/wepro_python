@@ -112,7 +112,7 @@ async def updateProStories(db:Session = Depends(deps.get_db),
                      img_path:Optional[UploadFile] = File(None),
                     upload_files: Optional[List[UploadFile]] = File(None),
                      multi_image_url:str=Form(None),
-                     
+                    #   editFiles: str = Form(None)
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -128,17 +128,39 @@ async def updateProStories(db:Session = Depends(deps.get_db),
 
             if title:
 
-                existTitle = db.query(ProStories).filter(ProStories.title==title,ProStories.status==1).first()
+                existTitle = db.query(ProStories).filter(ProStories.id!=getProStories.id,ProStories.title==title,ProStories.status==1).first()
 
                 if existTitle:
                     return {"status":0,"msg":"This Title already used."}
 
 
-            getProStories.title = title
-            getProStories.url = url
-            getProStories.description = description
+                getProStories.title = title
+            if url:
+                getProStories.url = url
+            if description:
+                getProStories.description = description
 
             db.commit()
+
+            # edit_files_list = json.loads(editFiles)
+            # expectDelIds=[]
+            
+            # # Process each file_id and file_url
+            # for file_data in edit_files_list:
+            #     file_id = file_data.get("id")
+            #     file_url = file_data.get("url")
+            #     if file_id and file_url:
+            #         getProFiles= db.query(ProStories).filter(ProStories.id==file_id).first()
+            #         if getProFiles:
+            #             getProFiles.url=file_url
+            #             db.commit()
+            #             expectDelIds.append(file_id)
+
+            # deletePro = db.query(ProStories).filter(ProStories.status==1,
+            #                                         ProStories.parent_id==getProStories.id,
+            #                                         ProStories.id.notin_(expectDelIds)).update({"status":-1}, synchronize_session='fetch')
+            # db.commit()
+
 
             if img_path:
 
@@ -223,7 +245,11 @@ async def listProStories(db:Session =Depends(deps.get_db),
 
             totalCount = getAllProStories.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllProStories = getAllProStories.limit(limit).offset(offset).all()
+            if not pro_stories_id:
+                getAllProStories = getAllProStories.limit(limit).offset(offset).all()
+            else:
+                getAllProStories = getAllProStories.all()
+
 
             dataList=[]
             if getAllProStories:
