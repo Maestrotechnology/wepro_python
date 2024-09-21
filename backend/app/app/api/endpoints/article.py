@@ -511,7 +511,7 @@ async def deleteArticle(db:Session=Depends(deps.get_db),
                      article_id:int=Form(...)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2] :
+        if user.user_type in [1,2,6] :
             getArticle = db.query(Article).filter(Article.id == article_id,
                                             Article.status == 1)
             
@@ -553,7 +553,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
     user = deps.get_user_token(db=db,token=token)
 
     if user:
-        if user.user_type :
+        if user :
 
             
 
@@ -603,7 +603,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
             getArticle.status=1
             getArticle.save_for_later=0
 
-            if not save_for_later:
+            if not save_for_later and user.user_type!=1:
                 getArticle.save_for_later=save_for_later
 
                 getArticle.content_se_approved =1 if getArticle.content_approved !=4 else 4
@@ -639,7 +639,7 @@ async def updateArticle(db:Session =Depends(deps.get_db),
 
                 db.commit()
 
-            if not save_for_later:
+            if not save_for_later and user.user_type!=1:
 
                 addHistory = ArticleHistory(
                     article_id = article_id,

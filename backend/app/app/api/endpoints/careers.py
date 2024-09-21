@@ -26,6 +26,8 @@ async def createCareers(db:Session = Depends(deps.get_db),
                      designation_type:int=Form(...,description="designation dropdown"),
                      experience_year_from:str=Form(None),
                      experience_year_to:str=Form(None),
+                     sort_order:int=Form(None),
+
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -40,6 +42,7 @@ async def createCareers(db:Session = Depends(deps.get_db),
 
             addCareers = Careers(
             title = title,
+            sort_order = sort_order,
             salary = salary,
             experience_type = experience_type,
             experience_year_to = experience_year_to,
@@ -75,6 +78,7 @@ async def updateCareers(db:Session = Depends(deps.get_db),
                      designation_type:int=Form(...,description="designation dropdown"),
                      experience_year_from:str=Form(None),
                      experience_year_to:str=Form(None),
+                     sort_order:int=Form(None),
                      ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -99,6 +103,7 @@ async def updateCareers(db:Session = Depends(deps.get_db),
             getCareers.experience_year_to = experience_year_to
             getCareers.experience_year_from = experience_year_from
             getCareers.title = title
+            getCareers.sort_order = sort_order
             getCareers.requirements = requirements
             getCareers.employement_type = employement_type
             getCareers.description = description
@@ -152,6 +157,7 @@ async def listCareers(db:Session =Depends(deps.get_db),
                     dataList.append({
                 "career_id":row.id,
                 "title":row.title,
+                "sort_order":row.sort_order,
                 "salary":int(row.salary),
                 "designation_type":row.designation_type,
                 "designation_type_name":userTypeData[row.designation_type] if row.designation_type else None,
@@ -205,6 +211,7 @@ async def viewCareers(db:Session =Depends(deps.get_db),
         data={
                         "career_id":getCareers.id,
                         "title":getCareers.title,
+                        "sort_order":getCareers.sort_order,
                         "salary":int(getCareers.salary),
                         "designation_type":getCareers.designation_type,
                         "designation_type_name":userTypeData[getCareers.designation_type] if getCareers.designation_type else None,

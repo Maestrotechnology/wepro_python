@@ -39,8 +39,8 @@ async def signUp(db:Session = Depends(deps.get_db),
                      alternative_no:str=Form(None),
                      resume_file:Optional[UploadFile] = File(None),
                      img_path:Optional[UploadFile] = File(None),
-
-                    #  alt_img:str=Form(None),
+                     employment_type:int=Form(None,description="1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper"),
+                     #  alt_img:str=Form(None),
                      city_id:int=Form(None),
                      user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-SEO-Google Strategist,10-Marketing,11-Web designer,12-Graphic Designer")
                      ):
@@ -77,6 +77,7 @@ async def signUp(db:Session = Depends(deps.get_db),
     createUsers = User(
         user_type = user_type,
         name = name,
+        employment_type = employment_type,
         past_designation = past_designation,
         pan_number = pan_number,
         aadhaar_number = aadhaar_number,
@@ -236,6 +237,9 @@ async def createUser(db:Session = Depends(deps.get_db),
             db.add(createUsers)
             db.commit()
 
+            login_url = "https://wepro.digital/wepro_admin" 
+
+
             message = (
                     f"Congratulations! Your account has been successfully created."
                     f"You can now proceed with accessing the platform and utilizing the available resources. "
@@ -244,6 +248,8 @@ async def createUser(db:Session = Depends(deps.get_db),
                     "<p style='margin: 0;'>Login Credentials:</p>"
                     f"<p style='margin: 0;'>User Name: {user_name}</p>"
                     f"<p style='margin: 0;'>Password: {password}</p>"
+                    f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+
                     "</div>")
 
             subject = f"Account Creation"
@@ -450,8 +456,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
                         "<p style='margin: 0;'>Login Credentials:</p>"
                         f"<p style='margin: 0;'>User Name: {user_name}</p>"
                         f"<p style='margin: 0;'>Password: {password}</p>"
-                        "</div>"
                         f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                        "</div>"
                         )
 
                     if comment:
@@ -546,12 +552,16 @@ async def listUser(db:Session =Depends(deps.get_db),
             
             userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
             dataList = []
+            employmentType = ["-","Full-time", "Part-time", "Contract", "Internship","Temporary","Hyper"]
+
             if getAllUser:
                 for userData in getAllUser:
                     dataList.append(
                         {
                             "user_id":userData.id,
                             "user_name":userData.user_name,
+                            "employment_type":userData.employment_type,
+                            "employment_type_name":employmentType[userData.employment_type] if userData.employment_type else None,
                             "name":userData.name,
                             "alternative_no":userData.alternative_no,
                             "address":userData.address,
@@ -703,57 +713,7 @@ async def changeJournalistRequest(db:Session=Depends(deps.get_db),
 
             message =comment
 
-            # if approval_status ==2 :
-            #     getUser.approved_by=user.id
-
-            #     # getUser.user_name = user_name
-            #     getUser.approved_at = datetime.now(settings.tz_IN)
-
-
-            #     # if password:
-            #     #     getUser.password =  get_password_hash(password)
-
-            #     db.commit()
-
-            #     userTypeData = ["-","-","Admin","Hr","Chief Editor","Sub Editor","Technical Lead","Digital Marketing strategist","Journalist","SEO-Google Strategist","Marketing","Web designer","Graphic Designer"]
-
-            #     addNotification = Notification(
-            #     user_id = getUser.id,
-            #     comment =f'{user.user_name} approved the {userTypeData[getUser.user_type]} account creation for {getUser.user_name}. ' ,
-            #     title = f'{user.user_name}({userTypeData[user.user_type]}) - Account Approved',
-            #     status=1,
-            #     admin_notify=1,
-            #     notification_type=4,
-            #     created_at =datetime.now(settings.tz_IN),
-            #     created_by = user.id
-
-            #     )
-            #     db.add(addNotification)
-            #     db.commit()
-                
-            #     message = (
-            #         f"Congratulations! Your request for account creation has been successfully approved. "
-            #         f"You can now proceed with accessing the platform and utilizing the available resources. "
-            #         f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
-            #         "<div>"
-            #         "<p style='margin: 0;'>Login Credentials:</p>"
-            #         "<p style='margin: 0;'>User Name: {user_name}</p>"
-            #         "<p style='margin: 0;'>Password: {password}</p>"
-            #         "</div>")
-
-            #     if comment:
-            #         message = (f"{comment}"
-            #                    f"    User Name: {user_name}\n"
-            #         f"    Password: {password}\n")
- 
-            # if approval_status ==3 and not comment:
-
-            #     message = (
-            #         "Your application is currently under review as part of the interview process. "
-            #         "We will keep you updated on the progress and notify you once the review is complete. "
-            #         "Thank you for your patience, and please feel free to contact us if you have any questions."
-            #     )
-
+        
             if not getUser:
                 return {"status":0,"msg":"No user Found"}
 

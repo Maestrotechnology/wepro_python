@@ -16,7 +16,7 @@ router = APIRouter()
 @router.post("/create_category")
 async def createCategory(db:Session = Depends(deps.get_db),
                      title:str=Form(...),
-                     description:str=Form(...),
+                     description:str=Form(None),
                      img_alter:str=Form(...),
                      seo_url:str=Form(None),
                      sort_order:int=Form(...),
@@ -85,12 +85,13 @@ async def createCategory(db:Session = Depends(deps.get_db),
 async def updateCategory(db:Session = Depends(deps.get_db),
                      category_id:int=Form(...),
                     title:str=Form(...),
-                     description:str=Form(...),
+                     description:str=Form(None),
                      img_alter:str=Form(...),
                      seo_url:str=Form(None),
                      sort_order:int=Form(...),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
+                     is_delete:int=Form(None,description="1-delete img")
                      
                      ):
     
@@ -115,6 +116,10 @@ async def updateCategory(db:Session = Depends(deps.get_db),
 
             if not getCategory:
                 return{"status":0,"msg":"Not Found"}
+            
+            if is_delete==1:
+                getCategory.img_path = None
+                db.commit()
             
             if media_file:
 
@@ -174,6 +179,8 @@ async def listCategory(db:Session =Depends(deps.get_db),
 
             totalCount = getAllCategory.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
+            getAllCategory = getAllCategory.order_by(Category.sort_order.asc())
+
             getAllCategory = getAllCategory.limit(limit).offset(offset).all()
 
             dataList=[]
@@ -185,7 +192,7 @@ async def listCategory(db:Session =Depends(deps.get_db),
                 "seo_url":row.seo_url,
                 "is_active":row.is_active,
                 "description":row.description,
-                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
+                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else "",
                 "img_alter":row.img_alter,
                 "img_type":row.img_type,
                 "sort_order":row.sort_order,
@@ -230,7 +237,7 @@ async def viewCategory(db:Session =Depends(deps.get_db),
             "is_active":getCategory.is_active,
             "img_alter":getCategory.img_alter,
             "sort_order":getCategory.sort_order,
-            "media_file":f"{settings.BASE_DOMAIN}{getCategory.img_path}" if getCategory.img_path else None,
+            "media_file":f"{settings.BASE_DOMAIN}{getCategory.img_path}" if getCategory.img_path else "",
             "created_at":getCategory.created_at,                  
             "updated_at":getCategory.updated_at,                  
             "created_by":getCategory.createdBy.user_name if getCategory.created_by else None,                  
@@ -351,6 +358,7 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
                      description:str=Form(None),
                      token:str=Form(...),
                      media_file:Optional[UploadFile] = File(None),
+                     is_delete:int=Form(None,description="1-delete img")
                      
                      ):
     
@@ -369,6 +377,10 @@ async def updateSubCategory(db:Session = Depends(deps.get_db),
 
             if not getSubCategory:
                 return{"status":0,"msg":"Not Found"}
+            
+            if is_delete==1:
+                getSubCategory.img_path = None
+                db.commit()
             
             if media_file:
 
@@ -427,7 +439,7 @@ async def listSubCategory(db:Session =Depends(deps.get_db),
                 "description":row.description,
                 "category_id":row.category_id,
                 "category_title": row.category.title if row.category_id else None,
-                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
+                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else "",
                 "sort_order":row.sort_order,
                 "created_at":row.created_at,                  
                 "updated_at":row.updated_at,                  
@@ -469,7 +481,7 @@ async def viewSubCategory(db:Session =Depends(deps.get_db),
             "img_alter":getSubCategory.img_alter,
             "description":getSubCategory.description,
             "sort_order":getSubCategory.sort_order,
-            "media_file":f"{settings.BASE_DOMAIN}{getSubCategory.img_path}",
+            "media_file":f"{settings.BASE_DOMAIN}{getSubCategory.img_path}" if getSubCategory.img_path else "",
             "created_at":getSubCategory.created_at,                  
             "updated_at":getSubCategory.updated_at,                  
             "created_by":getSubCategory.createdBy.user_name if getSubCategory.created_by else None,                  

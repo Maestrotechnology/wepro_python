@@ -46,6 +46,8 @@ class User(Base):
     reset_key=Column(String(255))
     otp = Column(String(10))
     resume_path = Column(Text)
+    employment_type = Column(TINYINT,comment='1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper')
+
 
     otp_expire_at = Column(DateTime)
 

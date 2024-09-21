@@ -26,6 +26,22 @@ async def checkToken(*,db: Session = Depends(deps.get_db),
     else:
         return {"status": 0,"msg": "Failed."}
 
+@router.post('/captcha_check')
+async def captchaCheck(captcha_token:str=Form(...)):
+    # created by om mail id
+    secret_key = "6LcH-z8nAAAAAMHx-zDG-pjDBhBjiA08vCQSMmBx"
+    site_Key =  "6LcH-z8nAAAAAM2Jorl4lAWl_DxqAPtUPDj_jNYc"
+    import requests
+    response_data = {'secret': secret_key, 'response': captcha_token}
+    response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=response_data)
+    if response.status_code == 200:
+        reply = response.json()['success']
+        if reply == False:
+            return({'status':1, 'msg' :'Try Again'})
+        else:
+            return({'status':1,'msg':'Success....'})
+    else:
+        return({'status' :-1, 'msg' :'Try Again'})
 
 #1.Login
 @router.post("/login")
