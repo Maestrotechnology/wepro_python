@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, Integer,ForeignKey,DECIMAL,Text,DateTime,String
+from sqlalchemy import LargeBinary,Column, Integer,ForeignKey,DECIMAL,Text,DateTime,String
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
 from app.db.base_class import Base

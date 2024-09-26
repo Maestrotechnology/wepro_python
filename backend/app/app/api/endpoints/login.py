@@ -29,6 +29,8 @@ async def checkToken(*,db: Session = Depends(deps.get_db),
 @router.post('/captcha_check')
 async def captchaCheck(captcha_token:str=Form(...)):
     # created by om mail id
+    # secret_key = "6LcH-z8nAAAAAMHx-zDG-pjDBhBjiA08vCQSMmBx"
+    # site_Key =  "6LcH-z8nAAAAAM2Jorl4lAWl_DxqAPtUPDj_jNYc"
     secret_key = "6Lf5pEwqAAAAAMLJe34-dzgjfjfzPJqv11WscpPz"
     site_Key =  "6Lf5pEwqAAAAAJ58bWvFgHyJiCz7G7Nd9hoojJy7"
     import requests

@@ -342,12 +342,18 @@ def file_storage(file_name, f_name):
     files_name = f_name.split(".")
 
     save_full_path = f'{output_dir}{files_name[0]}{dt}.{txt1}'
+    print(save_full_path)
+
 
     file_exe = f"file_wepro/{f_name}{dt}.{txt1}"
     with open(save_full_path, "wb") as buffer:
         shutil.copyfileobj(file_name.file, buffer)
-    print(save_full_path)
+    encoded_data=None
 
+    # import base64
+    # with open(save_full_path, "rb") as buffer:
+    #     file_data = buffer.read()  # Read the raw file data
+    #     encoded_data = base64.b64encode(file_data).decode('utf-8')
     return save_full_path, file_exe
 
 

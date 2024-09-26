@@ -100,8 +100,7 @@ async def uploadFile(db:Session=Depends(deps.get_db),
                                 file_type = file_type_int_map[key]
                                 break
 
-                    
-
+                 
                     imageData.append({
                         "img_path" : returnFilePath,
                         "img_alter" : img_alter,
@@ -149,14 +148,27 @@ async def uploadFile(db:Session=Depends(deps.get_db),
                                 file_type = file_type_int_map[key]
                                 break
 
-                    
+                    # addImg = ArticleFiles(
+                    #      img_path = returnFilePath,
+                    #     img_alter = img_alter,
+                    #     created_at = datetime.now(settings.tz_IN),
+                    #     status = 1,
+                    #     file_type=file_type,
+                    #     raw_file=encoded_data,
+                    #     article_id=article_id,
+                    #     created_by=user.id
 
+                    # )
+                    # db.add(addImg)
+                    # db.commit()
+                
                     imageData.append({
                         "img_path" : returnFilePath,
                         "img_alter" : img_alter,
                         "created_at" : datetime.now(settings.tz_IN),
                         "status" : 1,
                         "file_type":file_type,
+                        # "raw_file":encoded_data,
                         "article_id":article_id,
                         "created_by":user.id
                     })
@@ -203,6 +215,7 @@ async def listArticleFiles(db:Session = Depends(deps.get_db),
                 dataList.append({
                     "article_file_id":row.id,
                     "alter_img":row.img_alter,
+                    # "raw_file":row.raw_file,
                     "description":row.description,
                     "file_type":row.file_type,
                     "img_path": f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else None,
