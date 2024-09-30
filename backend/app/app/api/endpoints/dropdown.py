@@ -171,7 +171,7 @@ async def categoryDropDown(db:Session=Depends(deps.get_db),
             #     getCategory = getCategory.filter(Category.is_active==1)
 
             count = getCategory.count()
-            getCategory = getCategory.order_by(Category.title.asc()).all()
+            getCategory = getCategory.order_by(Category.sort_order.asc()).all()
             
 
             dataList =[]

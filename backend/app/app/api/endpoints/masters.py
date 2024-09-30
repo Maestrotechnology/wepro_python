@@ -670,12 +670,14 @@ async def listArticleTopic(db:Session =Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     if user:
         if user:
-            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1)
+            getAllArticleTopic = db.query(ArticleTopic).filter(ArticleTopic.status ==1).filter(
+                or_(ArticleTopic.is_choosed==None,ArticleTopic.is_choosed==0))
 
             userCreationDt = user.created_at
 
             if user.user_type in [4,5]:
-                getAllArticleTopic = getAllArticleTopic.filter(ArticleTopic.created_at>=userCreationDt)
+                getAllArticleTopic = getAllArticleTopic.filter(ArticleTopic.created_at>=userCreationDt
+                                                               )
 
             if topic:
                 getAllArticleTopic =  getAllArticleTopic.filter(ArticleTopic.topic.like("%"+topic+"%"))
@@ -771,3 +773,75 @@ async def deleteArticleTopic(db:Session=Depends(deps.get_db),
             return {'status':0,"msg":"You are not authenticated to delete sub category"}
     else:
         return {'status':-1,"msg":"Your login session expires.Please login again."}
+    
+
+
+@router.post("/updateRatings")
+async def updateRatings(db:Session = Depends(deps.get_db),
+                     ratingId:int=Form(...),
+                    # star:int=Form(...),
+                    amount:int=Form(...),
+                     token:str=Form(...),
+                     
+                     ):
+    
+    user=deps.get_user_token(db=db,token=token)
+    
+    if user:
+        if user:
+
+            getRatings = db.query(Ratings).filter(Ratings.id==ratingId).first()
+
+            if not getRatings:
+                return{"status":0,"msg":"Not Found"}
+
+            
+            # getRatings.star = star
+            getRatings.amount = amount
+            getRatings.updated_by = user.id
+            db.commit()
+
+            return {"status":1,"msg":"Successfully Ratings Updated"}
+
+        else:
+            return {'status':0,"msg":"You are not authenticated to update Ratings."}
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
+
+
+
+@router.post("/listRatings")
+async def listRatings(db:Session =Depends(deps.get_db),
+                       token:str = Form(...),
+                       page:int=1,size:int = 10):
+    user=deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getAllRatings = db.query(Ratings).filter(Ratings.status ==1)
+
+            totalCount = getAllRatings.count()
+            totalPages,offset,limit = get_pagination(totalCount,page,size)
+            getAllRatings = getAllRatings.limit(limit).offset(offset).all()
+
+            dataList=[]
+            if getAllRatings:
+                for row in getAllRatings:
+                    dataList.append({
+                "ratingId":row.id,
+                "star":row.star,
+                "amount":row.amount,
+                "updated_by":row.updated_by,
+                "updated_by_name": row.updatedBy.user_name if row.updated_by else None,
+                      }  )
+            
+            data=({"page":page,"size":size,
+                   "total_page":totalPages,
+                   "total_count":totalCount,
+                   "items":dataList})
+        
+            return ({"status":1,"msg":"Success","data":data})
+        else:
+            return {'status':0,"msg":"You are not authenticated to view Ratings."}
+    else:
+        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+    

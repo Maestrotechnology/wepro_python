@@ -216,7 +216,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,7]:
+        if user:
 
             # if media_url:
 
@@ -341,7 +341,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
     user=deps.get_user_token(db=db,token=token)
     
     if user:
-        if user.user_type in [1,2,7]:
+        if user:
 
             getMediaFiles = db.query(MediaFiles).filter(MediaFiles.id==media_files_id).first()
 
@@ -583,7 +583,7 @@ async def deleteMediaFiles(db:Session=Depends(deps.get_db),
                      media_files_id:int=Form(...)):
     user = deps.get_user_token(db=db,token=token)
     if user:
-        if user.user_type in [1,2,6] :
+        if user:
             getMediaFiles = db.query(MediaFiles).filter(MediaFiles.id == media_files_id,
                                             MediaFiles.status == 1)
             

@@ -20,7 +20,7 @@ import smtplib
 from email_validator import validate_email, EmailNotValidError
 import tracemalloc
 from pathlib import Path
-
+from email.mime.application import MIMEApplication
 tracemalloc.start()
 
 
@@ -77,39 +77,46 @@ def get_timer(data):
     time2 = datetime.now(settings.tz_IN)
 
     time_difference = (time2 - time1).total_seconds() / 60
-    # hours = time_diff.seconds // 3600
-    # minutes = (time_diff.seconds % 3600) // 60
     return (f"{int(time_difference)}")
 
+
 def send_html_email(email_to: str, subject_template: str, html_template: str, environment: dict) -> None:
-    from_email = "johnsonkoilraj53@gmail.com"
+    from_email = settings.SENDER_EMAIL
     
     env = Environment(loader=FileSystemLoader("/"))
     template = env.from_string(html_template)
 
-    # Render the template with the environment variables
     html_content = template.render(environment)
 
+    # ses = boto3.client(
+    #     "ses",
+    #     region_name="ap-south-1",
+    #     aws_access_key_id=access_key,
+    #     aws_secret_access_key=access_secret,
+    # )
     # Prepare the email message
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = email_to
     msg['Subject'] = subject_template
 
-    # Attach HTML content
     msg.attach(MIMEText(html_content, 'html'))
-
-    # Send email using SMTP
+    
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(from_email, "bkdy ftou hcdx gwod")  # Update with your email password
+            server.login(from_email, "bkdy ftou hcdx gwod") 
             server.sendmail(from_email, email_to, msg.as_string())
+        # result = ses.send_raw_email(
+        #     Source=msg["From"],
+        #     Destinations=[email_to],
+        #     RawMessage={"Data": msg.as_string()},
+        # )
     except Exception as e:
         print(f"Error sending email: {e}")
 
 async def send_mail_req_approval(db,email_type,article_id, user_id, subject,journalistName, receiver_email, message):
-    from_email = "johnsonkoilraj53@gmail.com"
+    from_email = settings.SENDER_EMAIL
 
     # Save email history to database
     addEmailHistory = EmailHistory(
@@ -125,6 +132,8 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
     )
     db.add(addEmailHistory)
     db.commit()
+
+    checkUserApp =db.query(User).filter(User.status==1,User.is_request==2,User.id==user_id).first()
 
     try:
 
@@ -244,9 +253,13 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
                     <!-- <img src="http://stgtal.jpg" alt="WePRO"> -->
                 </div>
                 <div class="content">
-                    <p>Hi {{ name }},</p>
+                    <p>Dear {{ name }},</p>
                     <p class="message">{{ message }}</p>
-                    <p>Regards,<br>WePRO Team</p>
+
+                    {% if attachment_link %}
+                <p>We've included a <strong>{{ attachment_name }}</strong> to help you get started and understand our working process. <a href="{{ attachment_link }}" download>Click here to open the attachment</a> and learn more about how you can contribute to our community.</p>
+                {% endif %}
+                    <p>Warm regards,<br>Team WePRO.Digital</p>
                 </div>
                 <div class="footer">
                     <p>&copy; {{ current_year }} WePRO. All rights reserved.</p>
@@ -255,8 +268,20 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
         </body>
         </html>
         """
+        attachment=None
+        userType=None
+        attachmentLink =None
+        attachmentName =None
 
-        # Send the email using the send_html_email function
+        if checkUserApp and email_type==1:
+            attachment=1
+            if checkUserApp.user_type==8:
+                attachmentLink = f"{settings.BASE_DOMAIN}/welcome_letter.pdf"
+                attachmentName ="welcome Letter"
+
+                
+
+
         send_html_email(
             email_to=receiver_email,
             subject_template=subject,
@@ -266,8 +291,10 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
                 "message": message,
                 "subject": subject,
                 "current_year": datetime.now(settings.tz_IN).year,
-                # "project_name": "Your Project Name",  # Update with your project name
-                "email": receiver_email
+                "email": receiver_email,
+                "attachment_link": attachmentLink,
+                 "attachment_name": attachmentName
+
             }
         )
         addEmailHistory.response = "success"
@@ -441,29 +468,6 @@ def paginate_for_file_count(page, size, data, total, file_count):
              "file_count": file_count, "size": size}
     return reply
 
-
-# async def send_emails(from_mail, to_mail, subject, message):
-#     conf = ConnectionConfig(
-#         MAIL_USERNAME="emailtomaestro@gmail.com",  # "testmaestromail@gmail.com",
-#         MAIL_PASSWORD="prdwskswxgqlsjqa",  # testmaestro@123",
-#         MAIL_FROM="emailtomaestro@gmail.com",  # from_mail,
-#         MAIL_PORT=587,
-#         MAIL_SERVER="smtp.gmail.com",  # "smtp.gmail.com",
-#         MAIL_FROM_NAME="MConnect",  # from_mail,
-#         MAIL_TLS=True,
-#         MAIL_SSL=False,
-#         VALIDATE_CERTS=True,
-#         USE_CREDENTIALS=True
-#     )
-#     message = MessageSchema(
-#         subject=subject,
-#         recipients=[to_mail],
-#         body=message,
-#     )
-
-#     fm = FastMail(conf)
-#     await fm.send_message(message)
-#     return True
 
 
 def common_date(date, without_time=None):

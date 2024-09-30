@@ -37,6 +37,7 @@ class Article(Base):
     submition_date = Column(Date)
     seo_url = Column(String(250))
     state_id = Column(Integer,ForeignKey("states.id")) 
+    rating_id = Column(Integer,ForeignKey("ratings.id")) 
     article_topic_id = Column(Integer,ForeignKey("article_topic.id")) 
     city_id = Column(Integer,ForeignKey("cities.id")) 
     category_id = Column(Integer,ForeignKey("category.id")) 
@@ -94,6 +95,7 @@ class Article(Base):
     sub_category=relationship("SubCategory",back_populates="article")
     article_topic=relationship("ArticleTopic",back_populates="article")
     notification=relationship("Notification",back_populates="article")
+    ratings=relationship("Ratings",back_populates="article")
 
 
 

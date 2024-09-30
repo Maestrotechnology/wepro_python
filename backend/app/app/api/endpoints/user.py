@@ -127,7 +127,7 @@ async def signUp(db:Session = Depends(deps.get_db),
 
         db.commit()
         
-    subject = "Sign-Up Request Received"
+    subject = "Career Application Received"
     comment = "Thank you for requesting to sign up! We have received your request, and our team will review it shortly. You will hear from us soon with the next steps."
 
     mailForSignupUpdate = await send_mail_req_approval(
@@ -240,19 +240,38 @@ async def createUser(db:Session = Depends(deps.get_db),
             login_url = "https://wepro.digital/wepro_admin" 
 
 
+            # message = (
+            #         f"Congratulations! Your account has been successfully created."
+            #         f"You can now proceed with accessing the platform and utilizing the available resources. "
+            #         f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+            #         "<div>"
+            #         "<p style='margin: 0;'>Login Credentials:</p>"
+            #         f"<p style='margin: 0;'>User Name: {user_name}</p>"
+            #         f"<p style='margin: 0;'>Password: {password}</p>"
+            #         f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+
+            #         "</div>")
+
             message = (
-                    f"Congratulations! Your account has been successfully created."
-                    f"You can now proceed with accessing the platform and utilizing the available resources. "
-                    f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+                    f"Welcome to WePro.digital, the exclusive platform empowering women in journalism! "
+                    f"We are thrilled to have you as a part of our community, where you can connect, collaborate, and showcase your expertise.<br>"
                     "<div>"
-                    "<p style='margin: 0;'>Login Credentials:</p>"
-                    f"<p style='margin: 0;'>User Name: {user_name}</p>"
-                    f"<p style='margin: 0;'>Password: {password}</p>"
-                    f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                    "<p style='margin: 0;'>To get started, here are your login credentials:</p>"
+                    f"<ul style='margin: 0; padding-left: 15px;'>"
+                    f"<li> Username: {user_name}</li>"
+                    f"<li> Temporary Password: {password}</li>"
+                    "</ul>"
+                    f"<p>Please log in at <a href='{login_url}' style='color: #007bff;'>WePro.digital</a> and update your password after your first login to ensure the security of your account.</p>"
+                    f"<p>We believe in fostering a supportive space where women can thrive, and we’re excited for you to join the conversation!</p>"
+                    f"<p>If you have any questions or need assistance, feel free to reach out to our support team at "
+                    "<a href='mailto:connect@wepro.digital' style='color: #007bff;'>connect@wepro.digital</a>.</p>"
+                    f"<p>Thank you for being a part of this movement. We look forward to seeing your contributions!</p>"
+                    f"<p>Let’s celebrate the SHEroes of today and empower the leadHERs of tomorrow!</p>"
+                    "</div>"
+                )
 
-                    "</div>")
 
-            subject = f"Account Creation"
+            subject = f"Welcome to WePro.digital! Here Are Your Login Details"
             sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=createUsers.id,
                 receiver_email=createUsers.email,subject=subject,journalistName=createUsers.name,
                 message=message,
@@ -291,6 +310,7 @@ async def updateUser (db:Session=Depends(deps.get_db),
                      alternative_no:str=Form(None),
                      address:str=Form(...),
                      pincode:str=Form(...),
+                     user_type:int=Form(None,description="2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-SEO-Google Strategist,10-Marketing,11-Web designer,12-Graphic Designer"),
                      password:str=Form(None),
                      dob:date=Form(...),
                      email:str=Form(...),
@@ -374,6 +394,9 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 checkUserId.alternative_no = alternative_no
                 checkUserId.account_number = account_number
                 checkUserId.bank = bank
+                if user_type:
+                    checkUserId.user_type = user_type
+
                 if password:
                     checkUserId.password =  get_password_hash(password)
                 checkUserId.ifsc_code = ifsc_code
@@ -448,24 +471,42 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 if approval_status ==2 :
                     login_url = "https://wepro.digital/wepro_admin" 
                     
-                    message = (
-                        f"Congratulations! Your request for account creation has been successfully approved. "
-                        f"You can now proceed with accessing the platform and utilizing the available resources. "
-                        f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
-                        "<div>"
-                        "<p style='margin: 0;'>Login Credentials:</p>"
-                        f"<p style='margin: 0;'>User Name: {user_name}</p>"
-                        f"<p style='margin: 0;'>Password: {password}</p>"
-                        f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
-                        "</div>"
-                        )
+                    # message = (
+                    #     f"Congratulations! Your request for account creation has been successfully approved. "
+                    #     f"You can now proceed with accessing the platform and utilizing the available resources. "
+                    #     f"If you have any questions or need further assistance, please don't hesitate to reach out.<br>"
+                    #     "<div>"
+                    #     "<p style='margin: 0;'>Login Credentials:</p>"
+                    #     f"<p style='margin: 0;'>User Name: {user_name}</p>"
+                    #     f"<p style='margin: 0;'>Password: {password}</p>"
+                    #     f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                    #     "</div>"
+                    #     )
 
-                    if comment:
-                        message = (f"{comment}"
-                                f"    User Name: {user_name}\n"
-                        f"    Password: {password}\n"
-                        f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
-                        )
+                    # if comment:
+                    #     message = (f"{comment}"
+                    #             f"    User Name: {user_name}\n"
+                    #     f"    Password: {password}\n"
+                    #     f"<p>You can login to your account <a href='{login_url}'>here</a>.</p>"
+                    #     )
+
+                    message = (
+                    f"Welcome to WePro.digital, the exclusive platform empowering women in journalism! "
+                    f"We are thrilled to have you as a part of our community, where you can connect, collaborate, and showcase your expertise.<br>"
+                    "<div>"
+                    "<p style='margin: 0;'>To get started, here are your login credentials:</p>"
+                    f"<ul style='margin: 0; padding-left: 15px;'>"
+                    f"<li> Username: {user_name}</li>"
+                    f"<li> Temporary Password: {password}</li>"
+                    "</ul>"
+                    f"<p>Please log in at <a href='{login_url}' style='color: #007bff;'>WePro.digital</a> and update your password after your first login to ensure the security of your account.</p>"
+                    f"<p>We believe in fostering a supportive space where women can thrive, and we’re excited for you to join the conversation!</p>"
+                    f"<p>If you have any questions or need assistance, feel free to reach out to our support team at "
+                    "<a href='mailto:connect@wepro.digital' style='color: #007bff;'>connect@wepro.digital</a>.</p>"
+                    f"<p>Thank you for being a part of this movement. We look forward to seeing your contributions!</p>"
+                    f"<p>Let’s celebrate the SHEroes of today and empower the leadHERs of tomorrow!</p>"
+                    "</div>"
+                )
  
                 if approval_status ==3 and not comment:
 
@@ -486,7 +527,9 @@ async def updateUser (db:Session=Depends(deps.get_db),
                 if approval_status:
 
                     approvalSts = ["-","-","Accepted","Interview Process","Rejected"]
-                    subject = f"User Account {approvalSts[approval_status]}"
+                    subject = f"Career Application {approvalSts[approval_status]}"
+                    if approval_status==2:
+                        subject = "Welcome to WePro.digital! Here Are Your Login Details"
                     sendNotifyEmail = await send_mail_req_approval(db=db,email_type=1,article_id=None,user_id=checkUserId.id,
                         receiver_email=checkUserId.email,subject=subject,journalistName=checkUserId.name,
                         message=message,
@@ -503,7 +546,8 @@ async def updateUser (db:Session=Depends(deps.get_db),
 async def listUser(db:Session =Depends(deps.get_db),
                    token:str=Form(...),page:int=1,
                    size:int=10,phone:str=Form(None),
-                   user_type:int=Form(None,description="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-Member,10-SEO-Google Strategist,11-Marketing,12-Web designer,13-Graphic Designer"),
+                   user_type:int=Form(None,description="1->SuperAdmin,2->Admin,3->Hr,4->Chief Editor,5->Sub Editor,6-Technical Lead,7->Digital Marketing strategist,8-journalist,9-SEO-Google Strategist,10-Marketing,11-Web designer,12-Graphic Designer"),
+                   is_others:int=Form(None),
                    email:str=Form(None),state_id:int=Form(None),city_id:int=Form(None),
                    name:str=Form(None),
                    is_requested:int=Form(None),
@@ -519,6 +563,8 @@ async def listUser(db:Session =Depends(deps.get_db),
             if user_type:
                 getAllUser = getAllUser.filter(User.user_type == user_type)
 
+            if is_others==1:
+                getAllUser = getAllUser.filter(User.user_type > 8)
 
             if is_requested:
                 getAllUser = getAllUser.filter(User.is_request != 2)

@@ -256,7 +256,7 @@ async def categorywise_barchart(
                 else_='No'
             ).label('has_articles')
         ).outerjoin(
-            article_count_subquery, Category.id == article_count_subquery.c.category_id
+            article_count_subquery, Category.id == article_count_subquery.c.category_id,
         ).filter(Category.status==1).order_by(Category.sort_order.asc())
 
         totalCount = getAllArticle.count()
@@ -308,7 +308,6 @@ async def journalistChart(
             }
        
                     
-       
     else:
         return {"status": -1, "msg": "Sorry, your login session has expired. Please login again."}
     

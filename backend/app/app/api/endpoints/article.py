@@ -907,9 +907,9 @@ async def articleTopicApprove(db:Session = Depends(deps.get_db),
             msgForCmt = [
                 "-",
                 "-",
-                f"{getArticle.topic} article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
-               f"We wanted to inform you that the publication of {getArticle.topic} article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
-                f"We are delighted to inform you that {getArticle.topic} article topic has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                f"{getArticle.topic} article is currently under review by our {userType} Editor. Our editorial team is diligently working to ensure the highest quality and relevance of the topic. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
+               f"We wanted to inform you that the publication of {getArticle.topic} article has been put on hold for further review. This step ensures that all aspects of the topic are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
+                f"We are delighted to inform you that {getArticle.topic} article topic has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\n Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
                 "We are delighted to inform you that {getArticle.topic} article topic has been approved by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
 
                     ]
@@ -1085,9 +1085,10 @@ async def articleContentApprove(db:Session = Depends(deps.get_db),
             msgForCmt = [
                 "-",
                 "-",
-                f"{getArticle.topic} article is currently under review. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
+                f"{getArticle.topic} article is currently under review by our {userType} Editor. Our editorial team is diligently working to ensure the highest quality and relevance of the content. We appreciate your patience during this process.\n\nThank you for your submission and cooperation.",
                f"We wanted to inform you that the publication of {getArticle.topic} article has been put on hold for further review. This step ensures that all aspects of the content are thoroughly examined to meet our standards. \n\nWe understand the importance of your article and appreciate your patience during this review process. We will keep you updated on the status and notify you once the review is complete. If you have any questions or need additional information, please do not hesitate to contact us.\n\nThank you for your understanding and cooperation.",
-                f"We are delighted to inform you that {getArticle.topic} article has been approved by our {userType} Editor. Your article has met our editorial standards and is ready for the next stage. \n\nWe will now proceed with the final steps before publication. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
+                (f"We are pleased to inform you that your {getArticle.topic} article has been approved by our Sub-editor. Your article has met our editorial standards and is now ready for review by our Chief Editor.\n\n Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us."
+                  if user.user_type==5 else f"We are thrilled to announce that your {getArticle.topic} article has been approved and published by our Chief Editor. Your article has met our editorial standards and is now live.\n\nThank you for your dedication and exceptional work. If you have any further questions, please feel free to contact us."),
                 "We are delighted to inform you that your article has been approved and Published by our Chief Editor. Thank you for your dedication and exceptional work. If you have any questions, please feel free to contact us.",
 
                     ]
@@ -1239,7 +1240,7 @@ async def deadlineReminder(db:Session = Depends(deps.get_db),
 @router.post("/change_payment_status")
 async def changePaymentStatus(db:Session=Depends(deps.get_db),
                              token:str=Form(...),article_id:int=Form(...),
-                             amount:float=Form(...),
+                            #  amount:float=Form(...),
                              payment_status:int=Form(...,description="2-paid"),
                              comment:str=Form(None)):
     
@@ -1263,12 +1264,12 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
 
             if payment_status ==2 :
                 getArticle.is_paid=payment_status
-                getArticle.paid_amount=amount
+                # getArticle.paid_amount=amount
                 db.commit()
 
                 
                 message = (
-                        f"We are pleased to inform you that your payment of {amount} for the article '{getArticle.topic}' has been successfully processed and paid."
+                        f"We are pleased to inform you that your payment of {getArticle.paid_amount} for the article '{getArticle.topic}' has been successfully processed and paid."
                         f"Thank you for your valuable contribution.<br><br>"
                         f"If you have any questions or require further assistance, please do not hesitate to reach out to our support team.<br><br>"
                     
@@ -1277,12 +1278,12 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
                 if comment:
                     message = comment
             
-            subject = "Payment Status"
+            subject = "Payment Update"
 
 
             addHistory = ArticleHistory(
                 article_id = article_id,
-                comment = f"Payment of {amount} paid for the {getArticle.topic} article" if not comment else comment,
+                comment = f"Payment of {getArticle.paid_amount} paid for the {getArticle.topic} article" if not comment else comment,
                 title=f'{user.user_name}(HR)-Payment Update',
                 journalist_id = getArticle.created_by ,
                 journalist_notify = 1,
@@ -1626,6 +1627,7 @@ async def listArticle(db:Session =Depends(deps.get_db),
                 "article_title":row.article_title,
                 "editors_choice":row.editors_choice,
                 "is_paid":row.is_paid,
+                "ratings":row.ratings.star if row.rating_id else None,
                 "topic_approved_at":row.topic_ce_approved_at,
                 "is_editable":1 if row.updated_at else 0,
                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
@@ -1687,182 +1689,36 @@ async def listArticle(db:Session =Depends(deps.get_db),
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
     
 
-
-
-# @router.post("/test_list_article")
-# async def test_listArticle(db:Session =Depends(deps.get_db),
-#                        token:str = Form(...),
-#                        category_id:int=Form(None),
-#                        city_id:int=Form(None),
-#                        state_id:int=Form(None),
-#                        sub_category_id:int=Form(None),
-#                        journalist_id:int=Form(None),
-#                        section_type:int=Form(None,description="1-Topic,2-Content"),
-
-#                        article_status:int=Form(None,description="1-new,2-review,3-comment,5-published"),
-#                        editors_choice:int=Form(None,description="1-no,2-yes"),
-#                        is_paid :int =Form(None,description="1-pending,2-paid"),\
-#                        page:int=1,size:int = 10):
+@router.post("/articleRating")
+async def articleRating(db:Session=Depends(deps.get_db),
+                             token:str=Form(...),article_id:int=Form(...),
+                            #  amount:float=Form(...),
+                             ratingId:int=Form(...)):
     
-#     user=deps.get_user_token(db=db,token=token)
-#     if user:
-#         if user:
-#             getAllArticle = db.query(Article).filter(Article.status ==1)
-
-#             if state_id:
-#                 getAllArticle = getAllArticle.filter(Article.state_id==state_id)
-#             if is_paid:
-#                 getAllArticle = getAllArticle.filter(Article.is_paid==is_paid)
-#             if editors_choice:
-#                 getAllArticle = getAllArticle.filter(Article.editors_choice==editors_choice)
-#             if journalist_id:
-#                 getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
-#             if city_id:
-#                 getAllArticle = getAllArticle.filter(Article.city_id==city_id)
-
-#             if category_id:
-#                 getAllArticle = getAllArticle.filter(Article.category_id==category_id)
-
-#             if sub_category_id:
-#                 getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
-
-#             # if article_status==4:
-#             #     getAllArticle = getAllArticle.filter(Article.content_approved!=5)
-
-   
-#             approval_pending = db.query(Article).filter(Article.status==1,
-#                                                           Article.content_approved!=5)
+    user = deps.get_user_token(db=db,token=token)
+    if user:
+        if user:
+            getArticle = db.query(Article).filter(Article.id == article_id,
+                                            Article.status == 1).first()
             
-#             if user.user_type==8:
-#                 approval_pending =approval_pending.filter(Article.created_by==user.id)
-#                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
-
-#             approval_pending =approval_pending.count()
-
-
-#             if article_status ==5 and not section_type:
-
-#                 getAllArticle = getAllArticle.filter(Article.topic_approved==article_status,
-#                                                      Article.content_approved==article_status)
-                
-#             # if article_status and article_status not in [4,5]:
-
-#             #     getAllArticle = getAllArticle.filter(or_(Article.topic_approved==article_status,
-#             #                                          Article.content_approved==article_status))
-
-#             if article_status==1 and not section_type:
-#                  getAllArticle =getAllArticle.filter(or_(Article.topic_approved==1,
-#                                                          Article.content_approved==1))
-#             if user.user_type==4:
-                
-#                 if section_type==2 and user.user_type==4:
-
-#                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-#                                                             Article.content_approved==4)
-#                 if section_type==1 and user.user_type==4:
-
-#                     getAllArticle = getAllArticle.filter(Article.topic_approved==4 )
-
-#             if user.user_type==5:
-                
-#                 if section_type==2 and user.user_type==5:
-#                     getAllArticle = getAllArticle.filter(Article.topic_approved==5,
-#                                                         Article.content_approved.not_in([4,5]))
-                    
-#                 if section_type==1 and user.user_type==5:
-#                     getAllArticle = getAllArticle.filter(Article.topic_approved.not_in([4,5]))
-
-                
-
-    
-#             notifyCount = 0
-#             deadlineArtcileCount = 0
-
-#             getAllNotify = db.query(ArticleHistory).filter(ArticleHistory.status==1)
-
-#             if user.user_type in [1,2,3]:
-#                 getDeadlineArticles = db.query(Article).filter(
-#                     Article.status==1,
-#                     Article.content_approved==1,
-#                     Article.submition_date<=datetime.now(settings.tz_IN)
-#                 ).count()
-#                 deadlineArtcileCount = getDeadlineArticles
-
-#             if user.user_type ==4:
-#                 getAllNotify = getAllNotify.filter(
-#                     ArticleHistory.chief_editor_id==user.id,
-#                                                    ArticleHistory.chief_editor_notify==1).count()
-#                 notifyCount = getAllNotify
-
-#             if user.user_type ==5:
-#                 getAllNotify = getAllNotify.filter(
-#                     ArticleHistory.sub_editor_id==user.id,
-#                                                    ArticleHistory.sub_editor_notify==1).count()
-#                 notifyCount = getAllNotify
-
-#             if user.user_type ==8:
-#                 getAllArticle = getAllArticle.filter(Article.created_by==user.id)
-
-#                 getAllNotify = getAllNotify.filter(ArticleHistory.journalist_id==user.id,
-#                                                    ArticleHistory.journalist_notify==1).count()
-#                 notifyCount = getAllNotify
-
-#             totalCount = getAllArticle.count()
-#             totalPages,offset,limit = get_pagination(totalCount,page,size)
-#             getAllArticle = getAllArticle.limit(limit).offset(offset).all()
-
-#             dataList=[]
-
-#             stsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
-#             contentStsName = ["-","new","review","comment","SE Approved","CE Approved","Approved"]
-#             paymentStatus = ["-","Pending","Paid"]
-#             if getAllArticle:
-#                 for row in getAllArticle:
-#                     dataList.append({
-#                 "article_id":row.id,
-#                 "meta_title":row.meta_title,
-#                 "article_title":row.article_title,
-#                 "editors_choice":row.editors_choice,
-#                 "is_paid":row.is_paid,
-#                 "media_file":f'{settings.BASE_DOMAIN}{row.img_path}',
-
-#                 "meta_description":row.meta_description,
-#                 "category_id":row.category_id,
-#                 "category_title":row.category.title if row.category_id else None,
-#                 "seo_url":row.seo_url,
-#                 "meta_keywords":row.meta_keywords,
-#                 "sub_category_id":row.sub_category_id,
-#                 "topic":row.topic,
-#                 "img_alter":row.img_alter,
-#                 "header_content":row.header_content,
-#                 "footer_content":row.footer_content,
-#                 "middle_content":row.middle_content,
-#                  "state_id":row.state_id,
-#                 "state_name":row.states.name if row.state_id else None,
-#                 "city_id":row.city_id,
-#                 "is_journalist":row.is_journalist,
-#                 "city_name":row.cities.name if row.city_id else None,
-#                 "submition_date":row.submition_date,
-#                 "topic_approved":row.topic_approved,
-#                 "topic_approved_name":stsName[row.topic_approved] if row.topic_approved else None ,
-#                 "content_approved":row.content_approved,
-#                 "content_approved_name":contentStsName[row.content_approved] if row.content_approved else None,
-#                 "created_at":row.created_at,                  
-#                 "updated_at":row.updated_at, 
-#                 "journalist_id":row.created_by,                 
-#                 "journalist_name":row.createdBy.user_name if row.created_by else None,                  
-#                 "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-#                       }  )
+            if not getArticle:
+                return {"status":0,"msg":" Article Not found"}
             
-#             data=({"approval_pending":approval_pending,
-#                    "deadline_article_count":deadlineArtcileCount,
-#                    "notification_count":notifyCount,"page":page,"size":size,
-#                    "total_page":totalPages,
-#                    "total_count":totalCount,
-#                    "items":dataList})
-        
-#             return ({"status":1,"msg":"Success","data":data})
-#         else:
-#             return {'status':0,"msg":"You are not authenticated to view Article."}
-#     else:
-#         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+            if getArticle.content_approved!=4:
+                return{"sttaus":0,"msg":"You cannot Give ratings until the article is published."}
+            
+            getRating =db.query(Ratings).filter(Ratings.status==1,
+                                                Ratings.id==ratingId).first()
+            
+            if not getRating:
+                return {"status":0,"msg":"This rating is currently unavailable."}
+
+            getArticle.rating_id = ratingId
+            getArticle.paid_amount = getRating.amount
+            db.commit()
+
+            return {"status":1,"msg":"success"}
+        else:
+            return {'status':0,"msg":"You are not authenticated to change status of any user"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login again."}
