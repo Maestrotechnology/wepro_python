@@ -14,7 +14,7 @@ class EmailHistory(Base):
     response = Column(String(2000))
     article_id = Column(Integer,ForeignKey("article.id"),comment="article tab id")
     user_id = Column(Integer,ForeignKey("user.id"),comment="user tab id")
-    email_type=Column(TINYINT,comment="1->Journalist Account,2->Article,3->Forget Password,4->Reset Password,5-signup,6-Payment")
+    email_type=Column(TINYINT,comment="1->Journalist Account,2->Article,3->Forget Password,4->Reset Password,5-signup,6-Payment,7-newsletter")
 
 
     created_at=Column(DateTime)

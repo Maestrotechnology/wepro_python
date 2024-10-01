@@ -17,3 +17,4 @@ from .notification import Notification
 from .media_top_images import MediaTopImages
 from .pro_series import ProStories
 from .rating import Ratings
+from .website_forms import WebsiteForms

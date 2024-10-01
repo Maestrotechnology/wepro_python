@@ -1266,10 +1266,11 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
                 getArticle.is_paid=payment_status
                 # getArticle.paid_amount=amount
                 db.commit()
-
+                
+                amount = int(getArticle.paid_amount) if getArticle.paid_amount else None
                 
                 message = (
-                        f"We are pleased to inform you that your payment of {getArticle.paid_amount} for the article '{getArticle.topic}' has been successfully processed and paid."
+                        f"We are pleased to inform you that your payment of {amount} for the article '{getArticle.topic}' has been successfully processed and paid."
                         f"Thank you for your valuable contribution.<br><br>"
                         f"If you have any questions or require further assistance, please do not hesitate to reach out to our support team.<br><br>"
                     
@@ -1298,7 +1299,6 @@ async def changePaymentStatus(db:Session=Depends(deps.get_db),
                 receiver_email=email,subject=subject,journalistName=name,
                 message=message,
             )
-            print(sendNotifyEmail)
 
 
             return {"status":1,"msg":"success"}
@@ -1712,6 +1712,9 @@ async def articleRating(db:Session=Depends(deps.get_db),
             
             if not getRating:
                 return {"status":0,"msg":"This rating is currently unavailable."}
+            
+            if getArticle.is_paid==2:
+                return {"status":0,"msg":"After Payment,you can't change ratings."}
 
             getArticle.rating_id = ratingId
             getArticle.paid_amount = getRating.amount
