@@ -97,7 +97,7 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
     # Prepare the email message
     msg = MIMEMultipart()
     msg['From'] = from_email
-    msg['To'] = email_to
+    msg['To'] =  ','.join(email_to) 
     msg['Subject'] = subject_template
 
     msg.attach(MIMEText(html_content, 'html'))
@@ -117,14 +117,14 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
 
 async def send_mail_req_approval(db,email_type,article_id, user_id, subject,journalistName, receiver_email, message):
     from_email = settings.SENDER_EMAIL
-
+    to_email_str = ','.join([email for email in receiver_email])
     # Save email history to database
     addEmailHistory = EmailHistory(
         article_id=article_id ,
         user_id=user_id ,
         from_email=from_email,
         subject=subject,
-        to_email=receiver_email,
+        to_email=to_email_str,
         email_type = email_type,
         status=1,
         created_at=datetime.now(),

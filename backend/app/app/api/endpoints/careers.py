@@ -136,7 +136,6 @@ async def listCareers(db:Session =Depends(deps.get_db),
 
             if title:
                 getAllCareers =  getAllCareers.filter(Careers.title.like("%"+title+"%"))
-            print(designation_type)
 
             if designation_type:
                 getAllCareers = getAllCareers.filter(Careers.designation_type==designation_type)

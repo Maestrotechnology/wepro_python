@@ -16,6 +16,7 @@ router = APIRouter()
 @router.post("/list_website_forms")
 async def list_website_forms(db:Session =Depends(deps.get_db),
                        token:str = Form(...),
+                       email:str=Form(None),
                        page:int=1,size:int = 10):
     user=deps.get_user_token(db=db,token=token)
     if user:
@@ -24,8 +25,8 @@ async def list_website_forms(db:Session =Depends(deps.get_db),
 
             # if series_type:
             #     getAllWebsiteForms = getAllWebsiteForms.filter(WebsiteForms.series_type==series_type)
-            
-  
+            if email:
+                getAllWebsiteForms =  getAllWebsiteForms.filter(WebsiteForms.email.like("%"+email+"%"))
 
             totalCount = getAllWebsiteForms.count()
             totalPages,offset,limit = get_pagination(totalCount,page,size)
@@ -53,10 +54,11 @@ async def list_website_forms(db:Session =Depends(deps.get_db),
     else:
         return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
 
-@router.post("send_newsletter_email")
-async def sendNewsletterEmail(db:Session =Depends(deps.get_db),
+@router.post("/send_newsletter_email")
+async def sendNewsletterEmail(db:Session =Depends(deps.get_db), 
                               token:str = Form(...),
-                              form_ids:str = Form(...),
+                              form_ids:str = Form(None),
+                              is_all:int=Form(None,description="1-send email for everyone")
                       ):
     
     user=deps.get_user_token(db=db,token=token)
@@ -68,6 +70,7 @@ async def sendNewsletterEmail(db:Session =Depends(deps.get_db),
 
             getAllWebsiteForms = getAllWebsiteForms.filter(WebsiteForms.id.in_(form_ids))
 
+
         getAllWebsiteForms =getAllWebsiteForms.all()
 
         if not getAllWebsiteForms:
@@ -76,7 +79,7 @@ async def sendNewsletterEmail(db:Session =Depends(deps.get_db),
         email = []
 
         for row in getAllWebsiteForms:
-            email.append(row)
+            email.append(row.email)
         
         sendNotifyEmail = await send_mail_req_approval(db=db,email_type=7,article_id=None,user_id=None,
                         receiver_email=email,subject="NewsLetter",journalistName="Subscriber",
