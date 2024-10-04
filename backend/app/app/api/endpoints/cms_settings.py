@@ -80,6 +80,8 @@ async def sendNewsletterEmail(db:Session =Depends(deps.get_db),
 
         for row in getAllWebsiteForms:
             email.append(row.email)
+
+        # email = (",").join(email)
         
         sendNotifyEmail = await send_mail_req_approval(db=db,email_type=7,article_id=None,user_id=None,
                         receiver_email=email,subject="NewsLetter",journalistName="Subscriber",

@@ -81,8 +81,8 @@ def get_timer(data):
 
 
 def send_html_email(email_to: str, subject_template: str, html_template: str, environment: dict) -> None:
-    from_email = settings.SENDER_EMAIL
-    
+    from_email = "johnsonkoilraj53@gmail.com"
+    # career@wepro.digital
     env = Environment(loader=FileSystemLoader("/"))
     template = env.from_string(html_template)
 
@@ -96,8 +96,15 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
     # )
     # Prepare the email message
     msg = MIMEMultipart()
+
+    if isinstance(email_to,str) :
+        msg['To'] = email_to
+       
+    else:
+        msg['To'] = ", ".join(email_to)  # Join if more than one email
+        
     msg['From'] = from_email
-    msg['To'] =  ','.join(email_to) 
+    # msg['To'] =  email_to
     msg['Subject'] = subject_template
 
     msg.attach(MIMEText(html_content, 'html'))
@@ -116,8 +123,12 @@ def send_html_email(email_to: str, subject_template: str, html_template: str, en
         print(f"Error sending email: {e}")
 
 async def send_mail_req_approval(db,email_type,article_id, user_id, subject,journalistName, receiver_email, message):
-    from_email = settings.SENDER_EMAIL
-    to_email_str = ','.join([email for email in receiver_email])
+    from_email = "johnsonkoilraj53@gmail.com"
+    to_email_str = receiver_email
+    
+    if isinstance(receiver_email, list):
+        to_email_str = ','.join([email for email in receiver_email])
+
     # Save email history to database
     addEmailHistory = EmailHistory(
         article_id=article_id ,
@@ -167,7 +178,7 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
                     text-align: center;
                     padding: 20px;
                     border-bottom: 1px solid #ddd;
-                    background: url('http://35.154.143.177/WePRO_Digital.jpg') no-repeat center center;
+                    background: url('https://wepro.digital/WePRO_Digital.jpg') no-repeat center center;
                     background-size: cover;
                     height: 100px; /* Adjust based on your image height */
                 }
@@ -276,7 +287,7 @@ async def send_mail_req_approval(db,email_type,article_id, user_id, subject,jour
         if checkUserApp and email_type==1:
             attachment=1
             if checkUserApp.user_type==8:
-                attachmentLink = f"{settings.BASE_DOMAIN}/welcome_letter.pdf"
+                attachmentLink = f"https://wepro.digital/welcome_letter.pdf"
                 attachmentName ="welcome Letter"
 
                 
