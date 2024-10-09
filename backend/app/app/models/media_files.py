@@ -11,6 +11,7 @@ class MediaFiles(Base):
     id=Column(Integer,primary_key=True)
     description=Column(String(2000))
     title=Column(String(250))
+    choosed_images=Column(String(500))
     start_date=Column(Date)
     end_date=Column(Date)
     brand_name=Column(String(250))

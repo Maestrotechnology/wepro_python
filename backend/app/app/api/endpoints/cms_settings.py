@@ -85,7 +85,7 @@ async def sendNewsletterEmail(db:Session =Depends(deps.get_db),
         
         sendNotifyEmail = await send_mail_req_approval(db=db,email_type=7,article_id=None,user_id=None,
                         receiver_email=email,subject="NewsLetter",journalistName="Subscriber",
-                        message="hai",
+                        message="Stay connected with us for more updates and insights. Thank you for being part of our community!",
                     )
 
         return {"status":1,"msg":"Successfully Newsletter sent."}

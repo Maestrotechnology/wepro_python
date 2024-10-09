@@ -205,6 +205,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
                      bottom_image:Optional[UploadFile] = File(None),
                      right_image:Optional[UploadFile] = File(None),
                      left_image:Optional[UploadFile] = File(None),
+                     choosed_images:str= Form(None),
                      is_left_remove:int=Form(None),
                      brand_name:str=Form(None),
                      media_position:int=Form(None,description="1->Top,2-Bottom,3-right,4-Left"),
@@ -228,6 +229,7 @@ async def createMediaFiles(db:Session = Depends(deps.get_db),
             addCsmSettings = MediaFiles(media_url = media_url,
             title = title,
             description = description,
+            choosed_images = choosed_images,
             meta_title = meta_title,
             brand_name = brand_name,
             media_page = media_page,
@@ -327,12 +329,12 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      bottom_url:str= File(None),
                      right_url:str= File(None),
                      left_url:str= File(None),
+                     choosed_images:str= File(None),
 
                     #  content_type:str=Form(None),
                      meta_keywords:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
                      media_type:int=Form(None,description="1->img,2-shorts,3->Video"),
-
                      media_orientation:int=Form(None,description="1->Portrait,2-Landscape"),
                     #  seo_url:str=Form(None),
                      token:str=Form(...)
@@ -356,6 +358,7 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
             #         return {"status":0,"msg":"This url already used"}
             
             getMediaFiles.media_url = media_url
+            getMediaFiles.choosed_images = choosed_images
             getMediaFiles.start_date = start_date
             getMediaFiles.end_date = end_date
             getMediaFiles.brand_name = brand_name
@@ -472,6 +475,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
                 for row in getAllAds:
                     dataList.append({
                 "media_files_id":row.id,
+                "choosed_images":row.choosed_images,
                 "start_date":row.start_date,
                 "end_date":row.end_date,
                 "media_position_name":medPositionName[row.media_position] if row.media_position else None,
@@ -538,6 +542,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
         data={
             "media_files_id":getData.id,
             "media_position":getData.media_position,
+            "choosed_images":getData.choosed_images,
             "start_date":getData.start_date,
             "end_date":getData.end_date,
             "media_position_name":medPositionName[getData.media_position] if getData.media_position else None,
