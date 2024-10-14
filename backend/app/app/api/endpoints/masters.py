@@ -164,89 +164,100 @@ async def updateCategory(db:Session = Depends(deps.get_db),
 
 @router.post("/list_category")
 async def listCategory(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
+                       token:str = Form(None),
                        title:str=Form(None),
                        page:int=1,size:int = 10):
     user=deps.get_user_token(db=db,token=token)
-    if user:
+    getAllCategory = db.query(Category).filter(Category.status ==1)
+
+    if token:
         if user:
-            getAllCategory = db.query(Category).filter(Category.status ==1)
+            if user:
+                getAllCategory = db.query(Category).filter(Category.status ==1)
 
-
-            if title:
-                getAllCategory =  getAllCategory.filter(Category.title.like("%"+title+"%"))
-
-
-            totalCount = getAllCategory.count()
-            totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllCategory = getAllCategory.order_by(Category.sort_order.asc())
-
-            getAllCategory = getAllCategory.limit(limit).offset(offset).all()
-
-            dataList=[]
-            if getAllCategory:
-                for row in getAllCategory:
-                    dataList.append({
-                "category_id":row.id,
-                "title":row.title,
-                "seo_url":row.seo_url,
-                "is_active":row.is_active,
-                "description":row.description,
-                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else "",
-                "img_alter":row.img_alter,
-                "img_type":row.img_type,
-                "sort_order":row.sort_order,
-                "created_at":row.created_at,                  
-                "updated_at":row.updated_at,                  
-                "created_by":row.createdBy.user_name if row.created_by else None,                  
-                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-                      }  )
-            
-            data=({"page":page,"size":size,
-                   "total_page":totalPages,
-                   "total_count":totalCount,
-                   "items":dataList})
-        
-            return ({"status":1,"msg":"Success","data":data})
+            else:
+                return {'status':0,"msg":"You are not authenticated to view Category."}
         else:
-            return {'status':0,"msg":"You are not authenticated to view Category."}
+            return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+        
     else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+        getAllCategory = getAllCategory.filter(Category.is_active ==1)
+
+
+    if title:
+        getAllCategory =  getAllCategory.filter(Category.title.like("%"+title+"%"))
+
+
+    totalCount = getAllCategory.count()
+    totalPages,offset,limit = get_pagination(totalCount,page,size)
+    getAllCategory = getAllCategory.order_by(Category.sort_order.asc())
+
+    getAllCategory = getAllCategory.limit(limit).offset(offset).all()
+
+    dataList=[]
+    if getAllCategory:
+        for row in getAllCategory:
+            dataList.append({
+        "category_id":row.id,
+        "title":row.title,
+        "seo_url":row.seo_url,
+        "is_active":row.is_active,
+        "description":row.description,
+        "media_file":f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else "",
+        "img_alter":row.img_alter,
+        "img_type":row.img_type,
+        "sort_order":row.sort_order,
+        "created_at":row.created_at,                  
+        "updated_at":row.updated_at,                  
+        "created_by":row.createdBy.user_name if row.created_by else None,                  
+        "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                }  )
+    
+    data=({"page":page,"size":size,
+            "total_page":totalPages,
+            "total_count":totalCount,
+            "items":dataList})
+
+    return ({"status":1,"msg":"Success","data":data})
+
     
 @router.post("/view_category")
 async def viewCategory(db:Session =Depends(deps.get_db),
-                   token:str=Form(...),
+                   token:str=Form(None),
                    category_id:int=Form(...),
                    ):
     user = deps.get_user_token(db=db,token=token)
 
-    if user:
+    if token:
+        if user:
+            pass
+        else:
+            return {"status":-1,"msg":"Your login session expires.Please login again."}
             
-        getCategory = db.query(Category).filter(
-            Category.status==1,Category.id==category_id).first()
-        
-        if not getCategory:
-            return {"status":0,"msg":"No Record Found"}
+    getCategory = db.query(Category).filter(
+        Category.status==1,Category.id==category_id).first()
+    
+    if not getCategory:
+        return {"status":0,"msg":"No Record Found"}
 
-        data={
-            "category_id":getCategory.id,
-            "title":getCategory.title,
-            "seo_url":getCategory.seo_url,
-            "img_type":getCategory.img_type,
-            "description":getCategory.description,
-            "is_active":getCategory.is_active,
-            "img_alter":getCategory.img_alter,
-            "sort_order":getCategory.sort_order,
-            "media_file":f"{settings.BASE_DOMAIN}{getCategory.img_path}" if getCategory.img_path else "",
-            "created_at":getCategory.created_at,                  
-            "updated_at":getCategory.updated_at,                  
-            "created_by":getCategory.createdBy.user_name if getCategory.created_by else None,                  
-            "updated_by":getCategory.updatedBy.user_name if getCategory.updated_by else None,                  
-            }
+    data={
+        "category_id":getCategory.id,
+        "title":getCategory.title,
+        "seo_url":getCategory.seo_url,
+        "img_type":getCategory.img_type,
+        "description":getCategory.description,
+        "is_active":getCategory.is_active,
+        "img_alter":getCategory.img_alter,
+        "sort_order":getCategory.sort_order,
+        "media_file":f"{settings.BASE_DOMAIN}{getCategory.img_path}" if getCategory.img_path else "",
+        "created_at":getCategory.created_at,                  
+        "updated_at":getCategory.updated_at,                  
+        "created_by":getCategory.createdBy.user_name if getCategory.created_by else None,                  
+        "updated_by":getCategory.updatedBy.user_name if getCategory.updated_by else None,                  
+        }
 
-        return ({"status":1,"msg":"Success.","data":data})
-    else:
-        return {"status":-1,"msg":"Your login session expires.Please login again."}
+    return ({"status":1,"msg":"Success.","data":data})
+
 
 @router.post("/active_inactive_category")
 async def activeInactiveCategory(db:Session=Depends(deps.get_db),

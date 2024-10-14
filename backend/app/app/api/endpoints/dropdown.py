@@ -158,35 +158,36 @@ async def topicDropDown(db:Session=Depends(deps.get_db),
 async def categoryDropDown(db:Session=Depends(deps.get_db),
                        token:str=Form(...),
                        is_report:int=Form(None)):
-    user = deps.get_user_token(db=db,token =token)
-    if user:
+        
+    if token:
+        user = deps.get_user_token(db=db,token =token)
         if user:
-
-            getCategory = db.query(Category).filter(Category.status == 1,Category.is_active==1,
-                                                #  Category.id.in_([5,21,24,56,55,25,28,27,59,29,30,58])  
-                                                   )
-
-
-            # if not is_report:
-            #     getCategory = getCategory.filter(Category.is_active==1)
-
-            count = getCategory.count()
-            getCategory = getCategory.order_by(Category.sort_order.asc()).all()
-            
-
-            dataList =[]
-
-            if getCategory:
-                for category in getCategory:
-                    dataList.append({
-                        "category_id":category.id,
-                        "title":category.title
-                    })
-
-            return {"status":1,"msg":"Success","data":dataList}
+            pass
         else:
             return {"status":0,"msg":"You are not authenticated to see the Category details."}
-    return {'status':-1,"msg":"Your login session expires.Please login later."}
+
+    getCategory = db.query(Category).filter(Category.status == 1,Category.is_active==1,
+                                        #  Category.id.in_([5,21,24,56,55,25,28,27,59,29,30,58])  
+                                            )
+
+
+    # if not is_report:
+    #     getCategory = getCategory.filter(Category.is_active==1)
+
+    count = getCategory.count()
+    getCategory = getCategory.order_by(Category.sort_order.asc()).all()
+    
+
+    dataList =[]
+
+    if getCategory:
+        for category in getCategory:
+            dataList.append({
+                "category_id":category.id,
+                "title":category.title
+            })
+
+    return {"status":1,"msg":"Success","data":dataList}
 
 
 @router.post("/sub_category_dropdown")

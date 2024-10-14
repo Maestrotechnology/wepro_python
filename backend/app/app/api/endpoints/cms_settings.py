@@ -191,39 +191,73 @@ async def updateCmsSettings(db:Session = Depends(deps.get_db),
 
 @router.post("/view_csms_settings")
 async def viewCmsSettings(db:Session =Depends(deps.get_db),
-                   token:str=Form(...),
+                   token:str=Form(None),
                    cms_settings_id:int=Form(...),
                    ):
-    user = deps.get_user_token(db=db,token=token)
 
-    if user:
-            
-        getCmsSetting = db.query(CmsSettings).filter(
-            CmsSettings.status==1,CmsSettings.id==cms_settings_id).first()
-        
-        if not getCmsSetting:
-            return {"status":0,"msg":"No Record Found"}
+    if token:
+        user = deps.get_user_token(db=db,token=token)
 
-        data={
-            "cms_settings_id":getCmsSetting.id,
-            "google_play":getCmsSetting.google_play,
-            "app_store":getCmsSetting.app_store,
-            "our_teams":getCmsSetting.our_teams,
-            "facebook":getCmsSetting.facebook,
-            "wepro_text":getCmsSetting.wepro_text,
-            "about":getCmsSetting.about,
-            "instagram":getCmsSetting.instagram,
-            "twitter":getCmsSetting.twitter,
-            "youtube":getCmsSetting.youtube,
-            "linkedin":getCmsSetting.linkedin,
-            "threads":getCmsSetting.threads,
-            "created_at":getCmsSetting.created_at,                  
-            "updated_at":getCmsSetting.updated_at,                  
-            "created_by":getCmsSetting.createdBy.user_name if getCmsSetting.created_by else None,                  
-            "updated_by":getCmsSetting.updatedBy.user_name if getCmsSetting.updated_by else None,                  
-            }
-
-        return ({"status":1,"msg":"Success.","data":data})
-    else:
-        return {"status":-1,"msg":"Your login session expires.Please login again."}
+        if user:
+            pass
+        else:
+            return {"status":-1,"msg":"Your login session expires.Please login again."}
     
+    getCmsSetting = db.query(CmsSettings).filter(
+        CmsSettings.status==1,CmsSettings.id==cms_settings_id).first()
+    
+    if not getCmsSetting:
+        return {"status":0,"msg":"No Record Found"}
+
+    data={
+        "cms_settings_id":getCmsSetting.id,
+        "google_play":getCmsSetting.google_play,
+        "app_store":getCmsSetting.app_store,
+        "our_teams":getCmsSetting.our_teams,
+        "facebook":getCmsSetting.facebook,
+        "wepro_text":getCmsSetting.wepro_text,
+        "about":getCmsSetting.about,
+        "instagram":getCmsSetting.instagram,
+        "twitter":getCmsSetting.twitter,
+        "youtube":getCmsSetting.youtube,
+        "linkedin":getCmsSetting.linkedin,
+        "threads":getCmsSetting.threads,
+        "created_at":getCmsSetting.created_at,                  
+        "updated_at":getCmsSetting.updated_at,                  
+        "created_by":getCmsSetting.createdBy.user_name if getCmsSetting.created_by else None,                  
+        "updated_by":getCmsSetting.updatedBy.user_name if getCmsSetting.updated_by else None,                  
+        }
+
+    return ({"status":1,"msg":"Success.","data":data})
+
+
+@router.post("/add_website_form")
+async def addWebsiteForm(db:Session = Depends(deps.get_db),
+                     phone_number:str=Form(None),
+                     name:str=Form(None),
+                     email:str=Form(None),
+                     company_name:str=Form(None),
+                     company_location:str=Form(None),
+                     subject:str=Form(None),
+                     message:str=Form(None),
+                     service_type:int=Form(None),
+                     form_type:str=Form(None,description="	1 -> AD/Brand form, 2 -> contact form 3 -> newsletter"),
+                     ):
+    
+        addForm = WebsiteForms(phone_number = phone_number,
+        name = name,
+        email = email,
+        form_type = form_type,
+        message = message,
+        company_name = company_name,
+        service_type = service_type,
+        company_location = company_location,
+        subject = subject,
+        status=1,
+        created_at = datetime.now(settings.tz_IN))
+
+        db.add(addForm)
+        db.commit()
+
+        return {"status":1,"msg":"Successfully Send"}
+

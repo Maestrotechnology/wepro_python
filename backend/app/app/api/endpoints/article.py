@@ -1724,3 +1724,96 @@ async def articleRating(db:Session=Depends(deps.get_db),
             return {'status':0,"msg":"You are not authenticated to change status of any user"}
     else:
         return {'status':-1,"msg":"Your login session expires.Please login again."}
+
+    
+@router.post("/list_article_app")
+async def listArticleApp(db:Session =Depends(deps.get_db),
+                       category_id:int=Form(None),
+                       city_id:int=Form(None),
+                       state_id:int=Form(None),
+                       sub_category_id:int=Form(None),
+                       journalist_id:int=Form(None),
+                       journalist_name:str=Form(None),
+                       topic:str=Form(None),
+                       page:int=1,size:int = 10):
+    
+        getAllArticle = db.query(Article).filter(Article.status ==1)
+
+        userCreationDt = user.created_at
+        
+        if journalist_name:
+            
+            getAllArticle = getAllArticle.join(User,Article.created_by==User.id).filter(User.user_name.like("%"+journalist_name+"%"))
+        if topic:
+            getAllArticle =  getAllArticle.filter(Article.topic.like("%"+topic+"%"))
+
+        if state_id:
+            getAllArticle = getAllArticle.filter(Article.state_id==state_id)
+        if journalist_id:
+            getAllArticle = getAllArticle.filter(Article.created_by==journalist_id)
+        if city_id:
+            getAllArticle = getAllArticle.filter(Article.city_id==city_id)
+
+        if category_id:
+            getAllArticle = getAllArticle.filter(Article.category_id==category_id)
+
+        if sub_category_id:
+            getAllArticle = getAllArticle.filter(Article.sub_category_id==sub_category_id)
+
+        getAllArticle = getAllArticle.filter(Article.content_approved==4,
+                                                        )
+        totalCount = getAllArticle.count()
+        getAllArticle = getAllArticle.order_by(Article.created_at.desc())
+        totalPages,offset,limit = get_pagination(totalCount,page,size)
+        getAllArticle = getAllArticle.limit(limit).offset(offset).all()
+
+        dataList=[]
+
+        if getAllArticle:
+            for row in getAllArticle:
+
+
+                dataList.append({
+            "article_id":row.id,
+            "meta_title":row.meta_title,
+            "article_title":row.article_title,
+            "editors_choice":row.editors_choice,
+            "ratings":row.ratings.star if row.rating_id else None,
+            "media_file":f'{settings.BASE_DOMAIN}{row.img_path}' if row.img_path else "",
+            "header_image_description":row.header_image_description,
+            "middle_image_description":row.middle_image_description,
+            "header_image":f'{settings.BASE_DOMAIN}{row.header_image}' if row.header_image else None,
+            "middle_image":f'{settings.BASE_DOMAIN}{row.middle_image}' if row.middle_image else None,
+            "meta_description":row.meta_description,
+            "description":row.description,
+            "category_id":row.category_id,
+            "youtube_link":row.youtube_link,
+            "category_title":row.category.title if row.category_id else None,
+            "seo_url":row.seo_url,
+            "meta_keywords":row.meta_keywords,
+            "sub_category_id":row.sub_category_id,
+            "sub_category_title":row.sub_category.title if row.sub_category_id else None,
+            "topic":row.topic,
+            "img_alter":row.img_alter,
+            "header_content":row.header_content,
+            "footer_content":row.footer_content,
+            "middle_content":row.middle_content,
+                "state_id":row.state_id,
+            "state_name":row.states.name if row.state_id else None,
+            "city_id":row.city_id,
+            "is_journalist":row.is_journalist,
+            "city_name":row.cities.name if row.city_id else None,
+            "submition_date":row.submition_date,
+            "created_at":row.created_at,                  
+            "journalist_id":row.created_by,                 
+            "journalist_name":row.createdBy.user_name if row.created_by else None,                  
+                    }  )
+        
+        data=({
+            # "approval_pending":approval_pending,
+                "page":page,"size":size,
+                "total_page":totalPages,
+                "total_count":totalCount,
+                "items":dataList})
+    
+        return ({"status":1,"msg":"Success","data":data})

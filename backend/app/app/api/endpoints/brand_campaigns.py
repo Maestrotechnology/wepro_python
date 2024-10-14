@@ -114,54 +114,56 @@ async def updateBrandCampaigns(db:Session = Depends(deps.get_db),
 
 @router.post("/list_brand_campaigns")
 async def listBrandCampaigns(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
+                       token:str = Form(None),
                        media_type:int=Form(None),
                        title:str=Form(None),
                        page:int=1,size:int = 10):
-    user=deps.get_user_token(db=db,token=token)
-    if user:
-        if user:
-            getAllBrandCam = db.query(BrandCampaigns).filter(BrandCampaigns.status ==1)
-
-            if media_type:
-                getAllBrandCam = getAllBrandCam.filter(BrandCampaigns.media_type==media_type)
-            
-            if title:
-                getAllBrandCam =  getAllBrandCam.filter(BrandCampaigns.title.like("%"+title+"%"))
-
-
-            totalCount = getAllBrandCam.count()
-            totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllBrandCam = getAllBrandCam.limit(limit).offset(offset).all()
-
-            dataList=[]
-            if getAllBrandCam:
-                for row in getAllBrandCam:
-                    dataList.append({
-                "brand_campaigns_id":row.id,
-                "title":row.title,
-                "description":row.description,
-                "media_type":row.media_type,
-                "brand_url":row.brand_url,
-                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
-                "sort_order":row.sort_order,
-                "img_alter":row.img_alter,
-                "created_at":row.created_at,                  
-                "updated_at":row.updated_at,                  
-                "created_by":row.createdBy.user_name if row.created_by else None,                  
-                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-                      }  )
-            
-            data=({"page":page,"size":size,
-                   "total_page":totalPages,
-                   "total_count":totalCount,
-                   "items":dataList})
         
-            return ({"status":1,"msg":"Success","data":data})
+    if token:
+        user=deps.get_user_token(db=db,token=token)
+        if user:
+            pass
+
         else:
             return {'status':0,"msg":"You are not authenticated to view Brand Campaign."}
-    else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+        
+    getAllBrandCam = db.query(BrandCampaigns).filter(BrandCampaigns.status ==1)
+
+    if media_type:
+        getAllBrandCam = getAllBrandCam.filter(BrandCampaigns.media_type==media_type)
+    
+    if title:
+        getAllBrandCam =  getAllBrandCam.filter(BrandCampaigns.title.like("%"+title+"%"))
+
+
+    totalCount = getAllBrandCam.count()
+    totalPages,offset,limit = get_pagination(totalCount,page,size)
+    getAllBrandCam = getAllBrandCam.limit(limit).offset(offset).all()
+
+    dataList=[]
+    if getAllBrandCam:
+        for row in getAllBrandCam:
+            dataList.append({
+        "brand_campaigns_id":row.id,
+        "title":row.title,
+        "description":row.description,
+        "media_type":row.media_type,
+        "brand_url":row.brand_url,
+        "media_file":f"{settings.BASE_DOMAIN}{row.img_path}",
+        "sort_order":row.sort_order,
+        "img_alter":row.img_alter,
+        "created_at":row.created_at,                  
+        "updated_at":row.updated_at,                  
+        "created_by":row.createdBy.user_name if row.created_by else None,                  
+        "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                }  )
+    
+    data=({"page":page,"size":size,
+            "total_page":totalPages,
+            "total_count":totalCount,
+            "items":dataList})
+
+    return ({"status":1,"msg":"Success","data":data})
     
 @router.post("/view_brand_campaigns")
 async def viewBrandCampaigns(db:Session =Depends(deps.get_db),
@@ -181,7 +183,6 @@ async def viewBrandCampaigns(db:Session =Depends(deps.get_db),
         data={
             "brand_campaigns_id":getBrandCam.id,
             "title":getBrandCam.title,
-            "media_type":getBrandCam.media_type,
             "media_type":getBrandCam.media_type,
             "description":getBrandCam.description,
             "img_alter":getBrandCam.img_alter,

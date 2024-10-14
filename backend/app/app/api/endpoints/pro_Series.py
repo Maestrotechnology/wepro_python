@@ -220,62 +220,63 @@ async def updateProStories(db:Session = Depends(deps.get_db),
 
 @router.post("/list_pro_stories")
 async def listProStories(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
+                       token:str = Form(None),
                        title:str=Form(None),
                     #    series_type:int=Form(...,description='1-Parent, 2-child'),
                        pro_stories_id:int=Form(None),
                        page:int=1,size:int = 10):
-    user=deps.get_user_token(db=db,token=token)
-    if user:
+    
+    if token:
+        user=deps.get_user_token(db=db,token=token)
         if user:
-            getAllProStories = db.query(ProStories).filter(ProStories.status ==1)
-
-            # if series_type:
-            #     getAllProStories = getAllProStories.filter(ProStories.series_type==series_type)
-            
-            if pro_stories_id:
-                getAllProStories = getAllProStories.filter(ProStories.parent_id==pro_stories_id)
-                   
-            else:
-                getAllProStories = getAllProStories.filter(ProStories.series_type==1)
-                   
-            if title:
-                getAllProStories =  getAllProStories.filter(ProStories.title.like("%"+title+"%"))
-
-
-            totalCount = getAllProStories.count()
-            totalPages,offset,limit = get_pagination(totalCount,page,size)
-            if not pro_stories_id:
-                getAllProStories = getAllProStories.limit(limit).offset(offset).all()
-            else:
-                getAllProStories = getAllProStories.all()
-
-
-            dataList=[]
-            if getAllProStories:
-                for row in getAllProStories:
-                    dataList.append({
-                "pro_stories_id":row.id,
-                "title":row.title,
-                "url":row.url,
-                "description":row.description,
-                "img_path":f"{settings.BASE_DOMAIN}{row.img_path}",
-                "created_at":row.created_at,                  
-                "updated_at":row.updated_at,                  
-                "created_by":row.createdBy.user_name if row.created_by else None,                  
-                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-                      }  )
-            
-            data=({"page":page,"size":size,
-                   "total_page":totalPages,
-                   "total_count":totalCount,
-                   "items":dataList})
-        
-            return ({"status":1,"msg":"Success","data":data})
+            pass
         else:
             return {'status':0,"msg":"You are not authenticated to view ProStories."}
+        
+    getAllProStories = db.query(ProStories).filter(ProStories.status ==1)
+
+    # if series_type:
+    #     getAllProStories = getAllProStories.filter(ProStories.series_type==series_type)
+    
+    if pro_stories_id:
+        getAllProStories = getAllProStories.filter(ProStories.parent_id==pro_stories_id)
+            
     else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+        getAllProStories = getAllProStories.filter(ProStories.series_type==1)
+            
+    if title:
+        getAllProStories =  getAllProStories.filter(ProStories.title.like("%"+title+"%"))
+
+
+    totalCount = getAllProStories.count()
+    totalPages,offset,limit = get_pagination(totalCount,page,size)
+    if not pro_stories_id:
+        getAllProStories = getAllProStories.limit(limit).offset(offset).all()
+    else:
+        getAllProStories = getAllProStories.all()
+
+
+    dataList=[]
+    if getAllProStories:
+        for row in getAllProStories:
+            dataList.append({
+        "pro_stories_id":row.id,
+        "title":row.title,
+        "url":row.url,
+        "description":row.description,
+        "img_path":f"{settings.BASE_DOMAIN}{row.img_path}",
+        "created_at":row.created_at,                  
+        "updated_at":row.updated_at,                  
+        "created_by":row.createdBy.user_name if row.created_by else None,                  
+        "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                }  )
+    
+    data=({"page":page,"size":size,
+            "total_page":totalPages,
+            "total_count":totalCount,
+            "items":dataList})
+
+    return ({"status":1,"msg":"Success","data":data})
 
 
 
