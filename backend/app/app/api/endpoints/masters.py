@@ -167,10 +167,11 @@ async def listCategory(db:Session =Depends(deps.get_db),
                        token:str = Form(None),
                        title:str=Form(None),
                        page:int=1,size:int = 10):
-    user=deps.get_user_token(db=db,token=token)
     getAllCategory = db.query(Category).filter(Category.status ==1)
 
     if token:
+        user=deps.get_user_token(db=db,token=token)
+
         if user:
             if user:
                 getAllCategory = db.query(Category).filter(Category.status ==1)
@@ -226,9 +227,10 @@ async def viewCategory(db:Session =Depends(deps.get_db),
                    token:str=Form(None),
                    category_id:int=Form(...),
                    ):
-    user = deps.get_user_token(db=db,token=token)
 
     if token:
+        user = deps.get_user_token(db=db,token=token)
+
         if user:
             pass
         else:
@@ -333,6 +335,7 @@ async def createSubCategory(db:Session = Depends(deps.get_db),
             title = title,
             img_alter = img_alter,
             sort_order = sort_order,
+            is_active =1,
             description = description,
             category_id = category_id,
             status=1,

@@ -665,96 +665,99 @@ async def updateArticle(db:Session =Depends(deps.get_db),
  
 @router.post("/view_article")
 async def viewArticle(db:Session =Depends(deps.get_db),
-                   token:str=Form(...),
+                   token:str=Form(None),
                    article_id:int=Form(...),
                    ):
-    user = deps.get_user_token(db=db,token=token)
-
-    if user:
+    if token:
+        user = deps.get_user_token(db=db,token=token)
+        if  user:
+            pass
+        else:
+            return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+        
             
-        getArticle = db.query(Article).filter(
-            Article.status==1,Article.id==article_id).first()
-        
-        if not getArticle:
-            return {"status":0,"msg":"No Record Found"}
-        
-        getAllFiles=db.query(ArticleFiles).filter(ArticleFiles.status==1,
-                                        ArticleFiles.article_id==getArticle.id).all()
-        
-        articleFiles=[]
+    getArticle = db.query(Article).filter(
+        Article.status==1,Article.id==article_id).first()
+    
+    if not getArticle:
+        return {"status":0,"msg":"No Record Found"}
+    
+    getAllFiles=db.query(ArticleFiles).filter(ArticleFiles.status==1,
+                                    ArticleFiles.article_id==getArticle.id).all()
+    
+    articleFiles=[]
 
-        for eachFile in getAllFiles:
-            articleFiles.append({
-                "image_id":eachFile.id,
-                "img_path":f'{settings.BASE_DOMAIN}{eachFile.img_path}' if eachFile.img_path else None,
-                "img_alter":eachFile.img_alter,
-                "file_type":eachFile.file_type,
-            })
-        
-        approvedStatus =["-","New","review","comment","Approved","Chief Editor Approved"]
-        contentApprovedStatus =["-","New","review","comment","Approved","Chief Editor Approved/Published"]
+    for eachFile in getAllFiles:
+        articleFiles.append({
+            "image_id":eachFile.id,
+            "img_path":f'{settings.BASE_DOMAIN}{eachFile.img_path}' if eachFile.img_path else None,
+            "img_alter":eachFile.img_alter,
+            "file_type":eachFile.file_type,
+        })
+    
+    approvedStatus =["-","New","review","comment","Approved","Chief Editor Approved"]
+    contentApprovedStatus =["-","New","review","comment","Approved","Chief Editor Approved/Published"]
 
-        data={
-            "article_id":getArticle.id,
-            "save_for_later":getArticle.save_for_later,
-            "topic":getArticle.topic,
-            "header_image_description":getArticle.header_image_description,
-            "middle_image_description":getArticle.middle_image_description,
-            "se_header_checkbox":getArticle.se_header_checkbox,
-            "se_middle_checkbox":getArticle.se_middle_checkbox,
-            "se_footer_checkbox":getArticle.se_footer_checkbox,
-            "ce_header_checkbox":getArticle.ce_header_checkbox,
-            "ce_middle_checkbox":getArticle.ce_middle_checkbox,
-            "ce_footer_checkbox":getArticle.ce_footer_checkbox,
-            "editors_choice":getArticle.editors_choice,
-            "is_paid":getArticle.is_paid,
-            "media_file":f'{settings.BASE_DOMAIN}{getArticle.img_path}',
-            "header_image":f'{settings.BASE_DOMAIN}{getArticle.header_image}',
-            "middle_image":f'{settings.BASE_DOMAIN}{getArticle.middle_image}',
-            "youtube_link":getArticle.youtube_link,
-
-
-            "article_title":getArticle.article_title,
-            "header_content":getArticle.header_content,
-            "footer_content":getArticle.footer_content,
-            "middle_content":getArticle.middle_content,
-            "article_title":getArticle.article_title,
-            "sub_category_title":getArticle.sub_category.title if getArticle.sub_category_id else None,
-            "sub_category_id":getArticle.sub_category_id,
-            "category_id":getArticle.category_id,
-            "category_title":getArticle.category.title if getArticle.category_id else None,
+    data={
+        "article_id":getArticle.id,
+        "save_for_later":getArticle.save_for_later,
+        "topic":getArticle.topic,
+        "header_image_description":getArticle.header_image_description,
+        "middle_image_description":getArticle.middle_image_description,
+        "se_header_checkbox":getArticle.se_header_checkbox,
+        "se_middle_checkbox":getArticle.se_middle_checkbox,
+        "se_footer_checkbox":getArticle.se_footer_checkbox,
+        "ce_header_checkbox":getArticle.ce_header_checkbox,
+        "ce_middle_checkbox":getArticle.ce_middle_checkbox,
+        "ce_footer_checkbox":getArticle.ce_footer_checkbox,
+        "editors_choice":getArticle.editors_choice,
+        "is_paid":getArticle.is_paid,
+        "media_file":f'{settings.BASE_DOMAIN}{getArticle.img_path}',
+        "header_image":f'{settings.BASE_DOMAIN}{getArticle.header_image}',
+        "middle_image":f'{settings.BASE_DOMAIN}{getArticle.middle_image}',
+        "youtube_link":getArticle.youtube_link,
 
 
-            "submition_date":getArticle.submition_date,
-            "meta_title":getArticle.meta_title,
-            "meta_description":getArticle.meta_description,
-            "meta_keywords":getArticle.meta_keywords,
-            "seo_url":getArticle.seo_url,
-            "state_id":getArticle.state_id,
-            "state_name":getArticle.states.name if getArticle.state_id else None,
-            "city_id":getArticle.city_id,
-            "is_journalist":getArticle.is_journalist,
-            "city_name":getArticle.cities.name if getArticle.city_id else None,
-            "topic_approved": approvedStatus[getArticle.topic_approved] if getArticle.topic_approved else None,
-            "content_approved": contentApprovedStatus[getArticle.content_approved] if getArticle.content_approved else None,
-             "topic_se_approved": approvedStatus[getArticle.topic_se_approved] if getArticle.topic_se_approved else None,
-            "content_se_approved": contentApprovedStatus[getArticle.content_se_approved] if getArticle.content_se_approved else None,
-            "approval_chief_editor":getArticle.chief_editor_id,
-            "chief_editor_name":getArticle.chiefEditerUser.user_name if getArticle.chief_editor_id else None, 
-            "sub_editor_name":getArticle.subEditerUser.user_name if getArticle.sub_editor_id else None, 
-            "approval_sub_editor":getArticle.sub_editor_id,
-            "article_images":articleFiles,
-            "comment":getArticle.comment,
-            "created_at":getArticle.created_at,                  
-            "updated_at":getArticle.updated_at,                  
-            "journalist_id":getArticle.created_by,                 
-            "journalist_name":getArticle.createdBy.user_name if getArticle.created_by else None,              
-            "updated_by":getArticle.updatedBy.user_name if getArticle.updated_by else None,                  
-            }
+        "article_title":getArticle.article_title,
+        "header_content":getArticle.header_content,
+        "footer_content":getArticle.footer_content,
+        "middle_content":getArticle.middle_content,
+        "article_title":getArticle.article_title,
+        "sub_category_title":getArticle.sub_category.title if getArticle.sub_category_id else None,
+        "sub_category_id":getArticle.sub_category_id,
+        "category_id":getArticle.category_id,
+        "category_title":getArticle.category.title if getArticle.category_id else None,
 
-        return ({"status":1,"msg":"Success.","data":data})
-    else:
-        return {"status":-1,"msg":"Your login session expires.Please login again."}
+
+        "submition_date":getArticle.submition_date,
+        "meta_title":getArticle.meta_title,
+        "meta_description":getArticle.meta_description,
+        "meta_keywords":getArticle.meta_keywords,
+        "seo_url":getArticle.seo_url,
+        "state_id":getArticle.state_id,
+        "state_name":getArticle.states.name if getArticle.state_id else None,
+        "city_id":getArticle.city_id,
+        "is_journalist":getArticle.is_journalist,
+        "city_name":getArticle.cities.name if getArticle.city_id else None,
+        "topic_approved": approvedStatus[getArticle.topic_approved] if getArticle.topic_approved else None,
+        "content_approved": contentApprovedStatus[getArticle.content_approved] if getArticle.content_approved else None,
+            "topic_se_approved": approvedStatus[getArticle.topic_se_approved] if getArticle.topic_se_approved else None,
+        "content_se_approved": contentApprovedStatus[getArticle.content_se_approved] if getArticle.content_se_approved else None,
+        "approval_chief_editor":getArticle.chief_editor_id,
+        "chief_editor_name":getArticle.chiefEditerUser.user_name if getArticle.chief_editor_id else None, 
+        "sub_editor_name":getArticle.subEditerUser.user_name if getArticle.sub_editor_id else None, 
+        "approval_sub_editor":getArticle.sub_editor_id,
+        "article_images":articleFiles,
+        "comment":getArticle.comment,
+        "created_at":getArticle.created_at,                  
+        "updated_at":getArticle.updated_at,                  
+        "journalist_id":getArticle.created_by,                 
+        "journalist_name":getArticle.createdBy.user_name if getArticle.created_by else None,              
+        "updated_by":getArticle.updatedBy.user_name if getArticle.updated_by else None,                  
+        }
+
+    return ({"status":1,"msg":"Success.","data":data})
+
     
 @router.post("/list_deadline_article")
 async def listDeadlineArticle(db:Session =Depends(deps.get_db),
@@ -1737,9 +1740,10 @@ async def listArticleApp(db:Session =Depends(deps.get_db),
                        topic:str=Form(None),
                        page:int=1,size:int = 10):
     
-        getAllArticle = db.query(Article).filter(Article.status ==1)
+        getAllArticle = db.query(Article).filter(Article.status ==1,
+                                                 Article.save_for_later==0)
 
-        userCreationDt = user.created_at
+        # userCreationDt = user.created_at
         
         if journalist_name:
             

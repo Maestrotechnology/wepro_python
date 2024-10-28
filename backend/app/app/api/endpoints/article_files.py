@@ -194,37 +194,40 @@ async def uploadFile(db:Session=Depends(deps.get_db),
 
 @router.post("/list_article_files")
 async def listArticleFiles(db:Session = Depends(deps.get_db),
-                        token:str = Form(...),article_id:int=Form(None),
+                        token:str = Form(None),article_id:int=Form(None),
                        ):
-    user = deps.get_user_token(db=db,token=token)
-    if  user:
-        getAllArticleFiles = db.query(ArticleFiles).filter(ArticleFiles.status == 1)
-        if article_id:
-            getAllArticleFiles = getAllArticleFiles.filter(ArticleFiles.article_id == article_id)
+    if token:
+        user = deps.get_user_token(db=db,token=token)
+        if  user:
+            pass
+        else:
+            return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+        
+    getAllArticleFiles = db.query(ArticleFiles).filter(ArticleFiles.status == 1)
+    if article_id:
+        getAllArticleFiles = getAllArticleFiles.filter(ArticleFiles.article_id == article_id)
 
-     
-        getAllArticleFiles = getAllArticleFiles.order_by(ArticleFiles.id.desc())
+    
+    getAllArticleFiles = getAllArticleFiles.order_by(ArticleFiles.id.desc())
 
-        attachmentCount = getAllArticleFiles.count()
-       
-        getAllArticleFiles = getAllArticleFiles.all()
+    attachmentCount = getAllArticleFiles.count()
+    
+    getAllArticleFiles = getAllArticleFiles.all()
 
-        dataList = []
-        if getAllArticleFiles:
-            for row in getAllArticleFiles:
-                dataList.append({
-                    "article_file_id":row.id,
-                    "alter_img":row.img_alter,
-                    # "raw_file":row.raw_file,
-                    "description":row.description,
-                    "file_type":row.file_type,
-                    "img_path": f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else None,
-                })
-        data=({
-               "total_count": attachmentCount,"items": dataList})
-        return {"status": 1,"msg": "success","data": data}
-    else:
-        return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+    dataList = []
+    if getAllArticleFiles:
+        for row in getAllArticleFiles:
+            dataList.append({
+                "article_file_id":row.id,
+                "alter_img":row.img_alter,
+                # "raw_file":row.raw_file,
+                "description":row.description,
+                "file_type":row.file_type,
+                "img_path": f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else None,
+            })
+    data=({
+            "total_count": attachmentCount,"items": dataList})
+    return {"status": 1,"msg": "success","data": data}
 
 @router.post("/delete_article_file")
 async def deleteAttachments(db: Session = Depends(deps.get_db),

@@ -15,34 +15,38 @@ router = APIRouter()
 
 @router.post("/list_media_top_image")
 async def listMediaTopImage(db:Session = Depends(deps.get_db),
-                        token:str = Form(...),media_file_id:int=Form(None),
+                        token:str = Form(None),media_file_id:int=Form(None),
                        ):
-    user = deps.get_user_token(db=db,token=token)
-    if  user:
-        getAllMediaTopImages = db.query(MediaTopImages).filter(MediaTopImages.status == 1)
-        if media_file_id:
-            getAllMediaTopImages = getAllMediaTopImages.filter(MediaTopImages.media_files_id == media_file_id)
+    if token:
+        user = deps.get_user_token(db=db,token=token)
+        if  user:
+            pass
+        else:
+            return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+        
+    getAllMediaTopImages = db.query(MediaTopImages).filter(MediaTopImages.status == 1)
+    if media_file_id:
+        getAllMediaTopImages = getAllMediaTopImages.filter(MediaTopImages.media_files_id == media_file_id)
 
-     
-        getAllMediaTopImages = getAllMediaTopImages.order_by(MediaTopImages.id.desc())
+    
+    getAllMediaTopImages = getAllMediaTopImages.order_by(MediaTopImages.id.desc())
 
-        attachmentCount = getAllMediaTopImages.count()
-       
-        getAllMediaTopImages = getAllMediaTopImages.all()
+    attachmentCount = getAllMediaTopImages.count()
+    
+    getAllMediaTopImages = getAllMediaTopImages.all()
 
-        dataList = []
-        if getAllMediaTopImages:
-            for row in getAllMediaTopImages:
-                dataList.append({
-                    "media_top_image_id":row.id,
-                    "top_url":row.top_url,
-                    "top_image": f"{settings.BASE_DOMAIN}{row.top_image}",
-                })
-        data=({
-               "total_count": attachmentCount,"items": dataList})
-        return {"status": 1,"msg": "success","data": data}
-    else:
-        return {"status":-1,"msg":"Sorry your login session expires.Please login again."}
+    dataList = []
+    if getAllMediaTopImages:
+        for row in getAllMediaTopImages:
+            dataList.append({
+                "media_top_image_id":row.id,
+                "top_url":row.top_url,
+                "top_image": f"{settings.BASE_DOMAIN}{row.top_image}",
+            })
+    data=({
+            "total_count": attachmentCount,"items": dataList})
+    return {"status": 1,"msg": "success","data": data}
+
 
 @router.post("/delete_media_top_image")
 async def deleteMediaTopImage(db: Session = Depends(deps.get_db),
@@ -440,146 +444,150 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 
 @router.post("/list_media_files")
 async def listMediaFiles(db:Session =Depends(deps.get_db),
-                       token:str = Form(...),
+                       token:str = Form(None),
 
                        content_type:int=Form(None,description="1->Advertisement,2->Banners,3-youtube,4-shorts"),
                         media_type:int=Form(None,description="1->img,2-shorts,3->Video"),
                         media_page:int=Form(None,description="1->Home,2-Category"),
                        title:str=Form(None),
                        page:int=1,size:int = 10):
-    user=deps.get_user_token(db=db,token=token)
-    if user:
+    if token:
+        user=deps.get_user_token(db=db,token=token)
+
         if user:
-            getAllAds = db.query(MediaFiles).filter(MediaFiles.status ==1)
-
-            if content_type:
-                getAllAds = getAllAds.filter(MediaFiles.content_type==content_type)
-
-
-            if media_type:
-                getAllAds = getAllAds.filter(MediaFiles.media_type==media_type)
-
-            if media_page:
-                getAllAds = getAllAds.filter(MediaFiles.media_page==media_page)
-            if title:
-                getAllAds =  getAllAds.filter(MediaFiles.title.like("%"+title+"%"))
-
-            totalCount = getAllAds.count()
-            totalPages,offset,limit = get_pagination(totalCount,page,size)
-            getAllAds = getAllAds.limit(limit).offset(offset).all()
-            medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
-            medOrientationName =["-","Portrait","Landscape"]
-
-            dataList=[]
-            if getAllAds:
-                for row in getAllAds:
-                    dataList.append({
-                "media_files_id":row.id,
-                "choosed_images":row.choosed_images,
-                "start_date":row.start_date,
-                "end_date":row.end_date,
-                "media_position_name":medPositionName[row.media_position] if row.media_position else None,
-                "top_url":row.top_url,
-                "brand_name":row.brand_name,
-                "bottom_url":row.bottom_url,
-                "left_url":row.left_url,
-                "right_url":row.right_url,
-                "media_url":row.media_url,
-                "media_page":row.media_page,
-                "media_position":row.media_position,
-                "title":row.title,
-                "description":row.description,
-                "meta_title":row.meta_title,
-                "media_orientation":row.media_orientation,
-                "media_orientation_name":medOrientationName[row.media_orientation] if row.media_orientation else None,
-                "meta_description":row.meta_description,
-                # "seo_url":row.seo_url,
-                "img_alter":row.img_alter,
-                "media_file":f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else "",
-                "top_image":f"{settings.BASE_DOMAIN}{row.top_image}" if row.top_image else "",
-                "right_image":f"{settings.BASE_DOMAIN}{row.right_image}" if row.right_image else "",
-                "left_image":f"{settings.BASE_DOMAIN}{row.left_image}" if row.left_image else "",
-                "bottom_image":f"{settings.BASE_DOMAIN}{row.bottom_image}" if row.bottom_image else "",
-                "media_type":row.media_type,
-                "content_type":row.content_type,
-                "meta_keywords":row.meta_keywords,
-                "created_at":row.created_at,                  
-                "updated_at":row.updated_at,                  
-                "created_by":row.createdBy.user_name if row.created_by else None,                  
-                "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
-                      }  )
-            
-            data=({"page":page,"size":size,
-                   "total_page":totalPages,
-                   "total_count":totalCount,
-                   "items":dataList})
-        
-            return ({"status":1,"msg":"Success","data":data})
+            pass
         else:
             return {'status':0,"msg":"You are not authenticated to view media_ iles."}
-    else:
-        return ({"status": -1,"msg": "Sorry your login session expires.Please login again."})
+        
+    getAllAds = db.query(MediaFiles).filter(MediaFiles.status ==1)
+
+    if content_type:
+        getAllAds = getAllAds.filter(MediaFiles.content_type==content_type)
+
+
+    if media_type:
+        getAllAds = getAllAds.filter(MediaFiles.media_type==media_type)
+
+    if media_page:
+        getAllAds = getAllAds.filter(MediaFiles.media_page==media_page)
+    if title:
+        getAllAds =  getAllAds.filter(MediaFiles.title.like("%"+title+"%"))
+
+    totalCount = getAllAds.count()
+    totalPages,offset,limit = get_pagination(totalCount,page,size)
+    getAllAds = getAllAds.limit(limit).offset(offset).all()
+    medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+    medOrientationName =["-","Portrait","Landscape"]
+
+    dataList=[]
+    if getAllAds:
+        for row in getAllAds:
+            dataList.append({
+        "media_files_id":row.id,
+        "choosed_images":row.choosed_images,
+        "start_date":row.start_date,
+        "end_date":row.end_date,
+        "media_position_name":medPositionName[row.media_position] if row.media_position else None,
+        "top_url":row.top_url,
+        "brand_name":row.brand_name,
+        "bottom_url":row.bottom_url,
+        "left_url":row.left_url,
+        "right_url":row.right_url,
+        "media_url":row.media_url,
+        "media_page":row.media_page,
+        "media_position":row.media_position,
+        "title":row.title,
+        "description":row.description,
+        "meta_title":row.meta_title,
+        "media_orientation":row.media_orientation,
+        "media_orientation_name":medOrientationName[row.media_orientation] if row.media_orientation else None,
+        "meta_description":row.meta_description,
+        # "seo_url":row.seo_url,
+        "img_alter":row.img_alter,
+        "media_file":f"{settings.BASE_DOMAIN}{row.img_path}" if row.img_path else "",
+        "top_image":f"{settings.BASE_DOMAIN}{row.top_image}" if row.top_image else "",
+        "right_image":f"{settings.BASE_DOMAIN}{row.right_image}" if row.right_image else "",
+        "left_image":f"{settings.BASE_DOMAIN}{row.left_image}" if row.left_image else "",
+        "bottom_image":f"{settings.BASE_DOMAIN}{row.bottom_image}" if row.bottom_image else "",
+        "media_type":row.media_type,
+        "content_type":row.content_type,
+        "meta_keywords":row.meta_keywords,
+        "created_at":row.created_at,                  
+        "updated_at":row.updated_at,                  
+        "created_by":row.createdBy.user_name if row.created_by else None,                  
+        "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
+                }  )
+    
+    data=({"page":page,"size":size,
+            "total_page":totalPages,
+            "total_count":totalCount,
+            "items":dataList})
+
+    return ({"status":1,"msg":"Success","data":data})
+    
     
 @router.post("/view_media_files")
 async def viewMediaFiles(db:Session =Depends(deps.get_db),
-                   token:str=Form(...),
+                   token:str=Form(None),
                    media_files_id:int=Form(...),
                    ):
-    user = deps.get_user_token(db=db,token=token)
+    if token:
+        user=deps.get_user_token(db=db,token=token)
 
-    if user:
+        if user:
+            pass
+        else:
+            return {'status':0,"msg":"You are not authenticated to view media files."}
             
-        getData = db.query(MediaFiles).filter(
-            MediaFiles.status==1,MediaFiles.id==media_files_id).first()
-        
-        if not getData:
-            return {"status":0,"msg":"No Record Found"}
-        
-        medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
-        medOrientationName =["-","Portrait","Landscape"]
+    getData = db.query(MediaFiles).filter(
+        MediaFiles.status==1,MediaFiles.id==media_files_id).first()
+    
+    if not getData:
+        return {"status":0,"msg":"No Record Found"}
+    
+    medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+    medOrientationName =["-","Portrait","Landscape"]
 
 
-        data={
-            "media_files_id":getData.id,
-            "media_position":getData.media_position,
-            "choosed_images":getData.choosed_images,
-            "start_date":getData.start_date,
-            "end_date":getData.end_date,
-            "media_position_name":medPositionName[getData.media_position] if getData.media_position else None,
+    data={
+        "media_files_id":getData.id,
+        "media_position":getData.media_position,
+        "choosed_images":getData.choosed_images,
+        "start_date":getData.start_date,
+        "end_date":getData.end_date,
+        "media_position_name":medPositionName[getData.media_position] if getData.media_position else None,
 
-            "media_url":getData.media_url,
-            "brand_name":getData.brand_name,
-            "top_url":getData.top_url,
-            "bottom_url":getData.bottom_url,
-            "left_url":getData.left_url,
-            "right_url":getData.right_url,
-            "media_page":getData.media_page,
-            "title":getData.title,
-            "media_file":f"{settings.BASE_DOMAIN}{getData.img_path}" if getData.img_path else "",
-            "media_orientation_name":medOrientationName[getData.media_orientation] if getData.media_orientation else None,
-            "top_image":f"{settings.BASE_DOMAIN}{getData.top_image}" if getData.top_image else "",
-            "right_image":f"{settings.BASE_DOMAIN}{getData.right_image}" if getData.right_image else "",
-            "left_image":f"{settings.BASE_DOMAIN}{getData.left_image}" if getData.left_image else "",
-            "bottom_image":f"{settings.BASE_DOMAIN}{getData.bottom_image}" if getData.bottom_image else "",
-            "description":getData.description,
-            "img_alter":getData.img_alter,
-            "media_orientation":getData.media_orientation,
+        "media_url":getData.media_url,
+        "brand_name":getData.brand_name,
+        "top_url":getData.top_url,
+        "bottom_url":getData.bottom_url,
+        "left_url":getData.left_url,
+        "right_url":getData.right_url,
+        "media_page":getData.media_page,
+        "title":getData.title,
+        "media_file":f"{settings.BASE_DOMAIN}{getData.img_path}" if getData.img_path else "",
+        "media_orientation_name":medOrientationName[getData.media_orientation] if getData.media_orientation else None,
+        "top_image":f"{settings.BASE_DOMAIN}{getData.top_image}" if getData.top_image else "",
+        "right_image":f"{settings.BASE_DOMAIN}{getData.right_image}" if getData.right_image else "",
+        "left_image":f"{settings.BASE_DOMAIN}{getData.left_image}" if getData.left_image else "",
+        "bottom_image":f"{settings.BASE_DOMAIN}{getData.bottom_image}" if getData.bottom_image else "",
+        "description":getData.description,
+        "img_alter":getData.img_alter,
+        "media_orientation":getData.media_orientation,
 
-            "meta_title":getData.meta_title,
-            "meta_description":getData.meta_description,
-            # "seo_url":getData.seo_url,
-            "media_type":getData.media_type,
-            "content_type":getData.content_type,
-            "meta_keywords":getData.meta_keywords,
-            "created_at":getData.created_at,                  
-            "updated_at":getData.updated_at,                  
-            "created_by":getData.createdBy.user_name if getData.created_by else None,                  
-            "updated_by":getData.updatedBy.user_name if getData.updated_by else None,                  
-            }
+        "meta_title":getData.meta_title,
+        "meta_description":getData.meta_description,
+        # "seo_url":getData.seo_url,
+        "media_type":getData.media_type,
+        "content_type":getData.content_type,
+        "meta_keywords":getData.meta_keywords,
+        "created_at":getData.created_at,                  
+        "updated_at":getData.updated_at,                  
+        "created_by":getData.createdBy.user_name if getData.created_by else None,                  
+        "updated_by":getData.updatedBy.user_name if getData.updated_by else None,                  
+        }
 
-        return ({"status":1,"msg":"Success.","data":data})
-    else:
-        return {"status":-1,"msg":"Your login session expires.Please login again."}
+    return ({"status":1,"msg":"Success.","data":data})
     
 
 @router.post("/delete_media_files")
