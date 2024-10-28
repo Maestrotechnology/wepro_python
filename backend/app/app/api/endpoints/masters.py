@@ -336,6 +336,7 @@ async def createSubCategory(db:Session = Depends(deps.get_db),
             img_alter = img_alter,
             sort_order = sort_order,
             is_active =1,
+            
             description = description,
             category_id = category_id,
             status=1,
