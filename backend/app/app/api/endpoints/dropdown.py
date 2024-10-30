@@ -8,36 +8,40 @@ router = APIRouter()
     
 @router.post("/designation_type_dropdown")
 async def bannerDropdown(db:Session=Depends(deps.get_db),
-                          token:str=Form(...)):
-    user = deps.get_user_token(db=db,token =token)
-    
-    if user:
+                          token:str=Form(None)):
+    if token:
+        user=deps.get_user_token(db=db,token=token)
+        if user:
+            pass
 
-            dataList = []
- 
-            dataList=[{"id":3,
-                                 "name":"Hr"},
-                                 {"id":4,
-                                 "name":"Chief Editor"},
-                                 {"id":5,
-                                 "name":"Sub Editor"},
-                                 {"id":6,
-                                 "name":"Technical Lead"},
-                                 {"id":7,
-                                 "name":"Digital Marketing strategist"},
-                                 {"id":8,
-                                 "name":"Journalist"},
-                                 {"id":9,
-                                 "name":"SEO-Google Strategist"},
-                                 {"id":10,
-                                 "name":"Marketing"},
-                                               {"id":11,
-                                 "name":"Web designer"},
-                                               {"id":12,
-                                 "name":"Graphic Designer"}]
+        else:
+            return {'status':0,"msg":"You are not authenticated to view Brand Campaign."}
+        
 
-            return {"status":1,"msg":"Success","data":dataList}
-    return {'status':-1,"msg":"Your login session expires.Please login later."}
+    dataList = []
+
+    dataList=[{"id":3,
+                            "name":"Hr"},
+                            {"id":4,
+                            "name":"Chief Editor"},
+                            {"id":5,
+                            "name":"Sub Editor"},
+                            {"id":6,
+                            "name":"Technical Lead"},
+                            {"id":7,
+                            "name":"Digital Marketing strategist"},
+                            {"id":8,
+                            "name":"Journalist"},
+                            {"id":9,
+                            "name":"SEO-Google Strategist"},
+                            {"id":10,
+                            "name":"Marketing"},
+                                        {"id":11,
+                            "name":"Web designer"},
+                                        {"id":12,
+                            "name":"Graphic Designer"}]
+
+    return {"status":1,"msg":"Success","data":dataList}
 
 @router.post("/user_dropdown")
 async def userDropdown(db:Session=Depends(deps.get_db),

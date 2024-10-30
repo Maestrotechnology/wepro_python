@@ -126,7 +126,8 @@ async def updateCareers(db:Session = Depends(deps.get_db),
 async def listCareers(db:Session =Depends(deps.get_db),
                        token:str = Form(None),
                        title:str=Form(None),
-                       designation_type :int=Form(None,description="1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper"),
+                       designation_type :int=Form(None,description="r"),
+                       employement_type :int=Form(None,description="1-full-time, 2-part-time, 3-contract, 4-internship, 5-temporary,6-hyper"),
                        page:int=1,size:int = 10):
     # user=deps.get_user_token(db=db,token=token)
     # if user:
@@ -139,6 +140,8 @@ async def listCareers(db:Session =Depends(deps.get_db),
 
             if designation_type:
                 getAllCareers = getAllCareers.filter(Careers.designation_type==designation_type)
+            if employement_type:
+                getAllCareers = getAllCareers.filter(Careers.employement_type==employement_type)
 
 
             totalCount = getAllCareers.count()
