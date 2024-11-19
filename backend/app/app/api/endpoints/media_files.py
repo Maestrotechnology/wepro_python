@@ -334,7 +334,9 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                      right_url:str= File(None),
                      left_url:str= File(None),
                      choosed_images:str= File(None),
-
+                     delete_left:int=Form(None,description="1-remove"),
+                     delete_right:int=Form(None),
+                     delete_bottom:int=Form(None),
                     #  content_type:str=Form(None),
                      meta_keywords:str=Form(None),
                      media_file:Optional[UploadFile] = File(None),
@@ -403,6 +405,21 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
                 getMediaFiles.top_image = returnFilePath
 
                 db.commit()
+
+            # if not top_image:
+            #     getMediaFiles.top_image = None
+            #     db.commit()
+
+            if delete_bottom==1:
+                getMediaFiles.bottom_image = None
+                db.commit()     
+
+            if delete_right==1:
+                getMediaFiles.right_image = None
+                db.commit()        
+            if delete_left==1:
+                getMediaFiles.left_image = None
+                db.commit()    
 
             if bottom_image:
 

@@ -1738,6 +1738,8 @@ async def listArticleApp(db:Session =Depends(deps.get_db),
                        journalist_id:int=Form(None),
                        journalist_name:str=Form(None),
                        topic:str=Form(None),
+
+                       without_pagination:int=Form(None,description="1-without pagination"),
                        page:int=1,size:int = 10):
     
         getAllArticle = db.query(Article).filter(Article.status ==1,
@@ -1769,7 +1771,14 @@ async def listArticleApp(db:Session =Depends(deps.get_db),
         totalCount = getAllArticle.count()
         getAllArticle = getAllArticle.order_by(Article.created_at.desc())
         totalPages,offset,limit = get_pagination(totalCount,page,size)
-        getAllArticle = getAllArticle.limit(limit).offset(offset).all()
+
+        if not without_pagination:
+            getAllArticle = getAllArticle.limit(limit).offset(offset)
+
+        if without_pagination==1:
+            getAllArticle = getAllArticle
+            
+        getAllArticle = getAllArticle.all()
 
         dataList=[]
 
