@@ -462,11 +462,13 @@ async def updateMediaFiles(db:Session = Depends(deps.get_db),
 @router.post("/list_media_files")
 async def listMediaFiles(db:Session =Depends(deps.get_db),
                        token:str = Form(None),
-
+                     start_date:date=Form(None),
+                     end_date:date=Form(None),
                        content_type:int=Form(None,description="1->Advertisement,2->Banners,3-youtube,4-shorts"),
                         media_type:int=Form(None,description="1->img,2-shorts,3->Video"),
                         media_page:int=Form(None,description="1->Home,2-Category"),
                        title:str=Form(None),
+                       is_export:int=Form(None,description="1-export"),
                        page:int=1,size:int = 10):
     if token:
         user=deps.get_user_token(db=db,token=token)
@@ -481,6 +483,11 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
     if content_type:
         getAllAds = getAllAds.filter(MediaFiles.content_type==content_type)
 
+    if start_date:
+        getAllAds = getAllAds.filter(MediaFiles.start_date==start_date)
+
+    if end_date:
+        getAllAds = getAllAds.filter(MediaFiles.end_date==end_date)
 
     if media_type:
         getAllAds = getAllAds.filter(MediaFiles.media_type==media_type)
@@ -493,7 +500,8 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
     totalCount = getAllAds.count()
     totalPages,offset,limit = get_pagination(totalCount,page,size)
     getAllAds = getAllAds.limit(limit).offset(offset).all()
-    medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+    # medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+    medPositionName =["-","Home Page Banner Ad","Home Page Left Pillar Ad","Home Page Right Pillar Ad","Article Page Top Banner Ad","Article Page Mid-Strip Banner Ad","Article Page Right Banner Ad", "Website Bottom Banner Ad"]
     medOrientationName =["-","Portrait","Landscape"]
 
     dataList=[]
@@ -504,7 +512,8 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
         "choosed_images":row.choosed_images,
         "start_date":row.start_date,
         "end_date":row.end_date,
-        "media_position_name":row.media_position,
+        "media_position_name":medPositionName[row.media_position] if row.media_position else None ,
+
         "top_url":row.top_url,
         "brand_name":row.brand_name,
         "bottom_url":row.bottom_url,
@@ -534,6 +543,8 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
         "created_by":row.createdBy.user_name if row.created_by else None,                  
         "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
                 }  )
+            
+    # if is_export==1:
     
     data=({"page":page,"size":size,
             "total_page":totalPages,
@@ -562,7 +573,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
     if not getData:
         return {"status":0,"msg":"No Record Found"}
     
-    medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
+    medPositionName =["-","Home Page Banner Ad","Home Page Left Pillar Ad","Home Page Right Pillar Ad","Article Page Top Banner Ad","Article Page Mid-Strip Banner Ad","Article Page Right Banner Ad", "Website Bottom Banner Ad"]
     medOrientationName =["-","Portrait","Landscape"]
 
 
@@ -572,7 +583,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
         "choosed_images":getData.choosed_images,
         "start_date":getData.start_date,
         "end_date":getData.end_date,
-        "media_position_name":getData.media_position ,
+        "media_position_name":medPositionName[getData.media_position] if getData.media_position else None ,
 
         "media_url":getData.media_url,
         "brand_name":getData.brand_name,

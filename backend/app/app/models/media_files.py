@@ -18,7 +18,7 @@ class MediaFiles(Base):
     media_orientation =Column(TINYINT,comment="1->Portrait,2-Landscape")
     media_page =Column(TINYINT,comment="1->Home,2-Category")
     # is_google_ad =Column(TINYINT,comment="1->yes,0-No")
-    media_position =Column(String(250),comment="1->Top,2-Bottom,3-right,4-Left")
+    media_position =Column(Integer,comment="1-Home Page Banner Ad,2-Home Page Left Pillar Ad,3-Home Page Right Pillar Ad,4-Article Page Top Banner Ad,5-Article Page Mid-Strip Banner Ad,6-Article Page Right Banner Ad,7- Website Bottom Banner Ad")
     meta_title = Column(String(250))
     meta_description = Column(String(250))
     meta_keywords = Column(String(250))
