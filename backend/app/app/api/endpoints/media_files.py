@@ -572,7 +572,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
         "choosed_images":getData.choosed_images,
         "start_date":getData.start_date,
         "end_date":getData.end_date,
-        "media_position_name":medPositionName[getData.media_position] if getData.media_position else None,
+        "media_position_name":getData.media_position ,
 
         "media_url":getData.media_url,
         "brand_name":getData.brand_name,
