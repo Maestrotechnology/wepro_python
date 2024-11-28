@@ -8,6 +8,7 @@ from app.utils import *
 from datetime import datetime
 from typing import Optional,List
 
+import xlsxwriter
 
 
 router = APIRouter()
@@ -476,7 +477,7 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
         if user:
             pass
         else:
-            return {'status':0,"msg":"You are not authenticated to view media_ iles."}
+            return {'status':0,"msg":"You are not authenticated to view media iles."}
         
     getAllAds = db.query(MediaFiles).filter(MediaFiles.status ==1)
 
@@ -484,10 +485,10 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
         getAllAds = getAllAds.filter(MediaFiles.content_type==content_type)
 
     if start_date:
-        getAllAds = getAllAds.filter(MediaFiles.start_date==start_date)
+        getAllAds = getAllAds.filter(MediaFiles.start_date>=start_date)
 
     if end_date:
-        getAllAds = getAllAds.filter(MediaFiles.end_date==end_date)
+        getAllAds = getAllAds.filter(MediaFiles.end_date<=end_date)
 
     if media_type:
         getAllAds = getAllAds.filter(MediaFiles.media_type==media_type)
@@ -499,21 +500,31 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
 
     totalCount = getAllAds.count()
     totalPages,offset,limit = get_pagination(totalCount,page,size)
-    getAllAds = getAllAds.limit(limit).offset(offset).all()
+    if not is_export:
+        getAllAds = getAllAds.limit(limit).offset(offset)
+
+    getAllAds = getAllAds.all()
     # medPositionName =["-","TOP","BOTTOM","RIGHT","LEFT"]
     medPositionName =["-","Home Page Banner Ad","Home Page Left Pillar Ad","Home Page Right Pillar Ad","Article Page Top Banner Ad","Article Page Mid-Strip Banner Ad","Article Page Right Banner Ad", "Website Bottom Banner Ad"]
     medOrientationName =["-","Portrait","Landscape"]
+    mediaPageName =["-","Home","Category"]
 
     dataList=[]
     if getAllAds:
         for row in getAllAds:
+            getAllMediaTopImages = db.query(MediaTopImages).filter(MediaTopImages.status == 1,
+                                    MediaTopImages.media_files_id == row.id).all()
+            
+    
+            listTopUrls = ",".join([row.top_url for row in getAllMediaTopImages])
             dataList.append({
         "media_files_id":row.id,
         "choosed_images":row.choosed_images,
         "start_date":row.start_date,
         "end_date":row.end_date,
         "media_position_name":medPositionName[row.media_position] if row.media_position else None ,
-
+        "listTopUrls":listTopUrls,
+        "media_page_name":mediaPageName[row.media_page] if row.media_page else None,
         "top_url":row.top_url,
         "brand_name":row.brand_name,
         "bottom_url":row.bottom_url,
@@ -543,9 +554,96 @@ async def listMediaFiles(db:Session =Depends(deps.get_db),
         "created_by":row.createdBy.user_name if row.created_by else None,                  
         "updated_by":row.updatedBy.user_name if row.updated_by else None,                  
                 }  )
+    if is_export==1:
+        headers = [["S.No","Advertisement Page","Start Date","End Date","Brand Name","Title","Advertisement Position",
+                "Advertisement Orientation","Top Url","Bottom Url","Left Url","Right Url","Created at"]]
+
+        base_dir = settings.BASE_UPLOAD_FOLDER+"/"
+          
+        try:
+            os.makedirs(base_dir, mode=0o777, exist_ok=True)
+        except OSError as e:
+            sys.exit("Can't create {dir}: {err}".format(
+                dir=base_dir, err=e))
             
-    # if is_export==1:
-    
+
+        output_dir = base_dir + settings.BASE_DIR +"/excel_upload/"
+        out_dir_2 = f"{settings.BASE_DIR}/excel_upload/"
+        
+        try:
+            os.makedirs(output_dir, mode=0o777, exist_ok=True)
+        except OSError as e:
+            sys.exit("Can't create {dir}: {err}".format(
+                dir=output_dir, err=e))
+        dt = str(int(datetime.utcnow().timestamp()))
+        
+            
+        fileName = f"{output_dir}Advertisement{dt}.xls"
+        fileName2 = f"{out_dir_2}Advertisement{dt}.xls"  
+
+        sr_no=0
+        for row in dataList:
+            datas=[]
+            sr_no+=1
+            datas.append(str(sr_no))
+            datas.append(str(row["media_page_name"] if row["media_page_name"] != None and row["media_page_name"] !='' else "-"))
+            datas.append(str(row["start_date"] if row["start_date"] != None and row["start_date"] !='' else "-"))
+            datas.append(str(row["end_date"] if row["end_date"] != None and row["end_date"] !=''else "-"))
+            datas.append(str(row["brand_name"] if row["brand_name"] != None and row["brand_name"] !=''else "-"))
+            datas.append(str(row["title"] if row["title"] != None and row["title"] !=''else "-"))
+            datas.append(str(row["media_position_name"] if row["media_position_name"] != None and row["media_position_name"] !=''else "-"))
+            datas.append(str(row["media_orientation_name"] if row["media_orientation_name"] != None and row["media_orientation_name"] !=''else "-"))
+            datas.append(str(row["listTopUrls"] if row["listTopUrls"] != None and row["listTopUrls"] !=''else "-"))
+            datas.append(str(row["bottom_url"] if row["bottom_url"] != None and row["bottom_url"] !=''else "-"))
+            datas.append(str(row["left_url"] if row["left_url"] != None and row["left_url"] !=''else "-"))
+            datas.append(str(row["right_url"] if row["right_url"] != None and row["right_url"] !=''else "-"))
+            datas.append(str(row["created_at"] if row["created_at"] != None and row["created_at"] !=''else "-"))
+            # datas.append(str(row["intervention"] if row["intervention"] != None and row["intervention"] !=''else "-"))
+            headers.append(datas)
+
+        workbook = xlsxwriter.Workbook(fileName)
+        worksheet = workbook.add_worksheet("Advertisement data")
+
+        merge_format = workbook.add_format({
+            'bold': 1,
+            'border': 1,
+            'align': 'center',
+            'valign': 'vcenter'})
+        merge_format_row = workbook.add_format({
+            'align': 'center',
+            'valign': 'vcenter'})
+        merge_format_row2 = workbook.add_format({
+            'align': 'right',
+            'valign': 'vcenter'})
+        merge_format_head = workbook.add_format({
+            'bold': 1,
+            'border': 1,
+            'align': 'center',
+            'valign': 'vcenter',
+            'fg_color': 'yellow'})
+        worksheet.merge_range('B2:L2', f'Advertisement Report',merge_format)
+
+        for i, l in enumerate(headers):
+            i+=2
+            for j, col in enumerate(l):
+                j+=1
+                if i==2:
+                    worksheet.write(i, j, col,merge_format_head)
+                else:
+                    worksheet.write(i, j, col,merge_format_row)
+
+        my_format = workbook.add_format()
+        my_format.set_align('vcenter')
+        worksheet.set_column('B:XFC', 20, my_format)
+        workbook.close()
+        reply=f"{settings.BASE_DOMAIN}{fileName2}"
+
+        data={
+            "file_url":reply
+        }
+
+        return ({"status":1,"msg":"Success","data":data})
+
     data=({"page":page,"size":size,
             "total_page":totalPages,
             "total_count":totalCount,
@@ -577,6 +675,7 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
     medOrientationName =["-","Portrait","Landscape"]
 
 
+
     data={
         "media_files_id":getData.id,
         "media_position":getData.media_position,
@@ -584,7 +683,6 @@ async def viewMediaFiles(db:Session =Depends(deps.get_db),
         "start_date":getData.start_date,
         "end_date":getData.end_date,
         "media_position_name":medPositionName[getData.media_position] if getData.media_position else None ,
-
         "media_url":getData.media_url,
         "brand_name":getData.brand_name,
         "top_url":getData.top_url,
